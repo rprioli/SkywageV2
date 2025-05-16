@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Skywage V2
+
+Skywage is a salary calculator tailored for airline cabin crew and pilots. It processes flight rosters to break down salaries by fixed and variable components, giving clear insights into monthly earnings.
+
+## Project Overview
+
+- **Audience**: CCMs, SCCMs, and pilots
+- **Platform**: Desktop-first, mobile later
+- **Supported Airline**: Flydubai (expandable)
+
+## Architecture
+
+- **Frontend**: HTML5, CSS3, React.js, Next.js, Shadcn
+- **Backend**: Django (Python), JWT auth
+- **Database**: Supabase
+- **Auth**: Supabase
 
 ## Getting Started
 
-First, run the development server:
+### Frontend
 
 ```bash
+# Install dependencies
+npm install
+
+# Run the development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Backend
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Navigate to backend directory
+cd backend
 
-## Learn More
+# Create a virtual environment
+python -m venv venv
 
-To learn more about Next.js, take a look at the following resources:
+# Activate the virtual environment
+# Windows
+venv\Scripts\activate
+# Unix/MacOS
+source venv/bin/activate
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Install dependencies
+pip install -r requirements.txt
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Set up environment variables
+# Create a .env file in the backend directory (see .env.example)
 
-## Deploy on Vercel
+# Run migrations
+python manage.py migrate
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Start the development server
+python manage.py runserver
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The API will be available at [http://localhost:8000/api/](http://localhost:8000/api/).
+
+## Features
+
+- User account management with airline and position
+- Flight data handling and processing
+- Salary calculation with fixed and variable components
+- Monthly earnings breakdown and visualization
