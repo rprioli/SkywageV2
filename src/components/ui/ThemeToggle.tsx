@@ -13,14 +13,13 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
 
   // Effect to detect and set initial theme
   useEffect(() => {
-    // Check if we're in dark mode
-    const isDark = 
-      document.documentElement.classList.contains('dark') || 
-      window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
+    // Check if we're in dark mode based on class or saved preference
+    const savedTheme = localStorage.getItem('theme');
+    const isDark = document.documentElement.classList.contains('dark') || savedTheme === 'dark';
+
     setIsDarkMode(isDark);
-    
-    // Apply the theme class
+
+    // Apply the theme class based on saved preference or default to light
     if (isDark) {
       document.documentElement.classList.add('dark');
     } else {
@@ -31,7 +30,7 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
   // Toggle theme
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
-    
+
     if (!isDarkMode) {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');

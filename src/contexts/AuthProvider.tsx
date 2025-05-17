@@ -29,14 +29,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Initialize theme
   useEffect(() => {
-    // Check for saved theme preference or use system preference
+    // Check for saved theme preference or use light mode as default
     const savedTheme = localStorage.getItem('theme');
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-    if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
+    if (savedTheme === 'dark') {
+      // Only apply dark mode if explicitly set
       document.documentElement.classList.add('dark');
     } else {
+      // Default to light mode
       document.documentElement.classList.remove('dark');
+      // If no theme is set yet, save the default preference
+      if (!savedTheme) {
+        localStorage.setItem('theme', 'light');
+      }
     }
   }, []);
 
