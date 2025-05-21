@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn, signUp, signOut } from '@/lib/auth';
-import { createProfile } from '@/lib/db';
 
 export function useAuthentication() {
   const [loading, setLoading] = useState(false);
@@ -15,13 +14,13 @@ export function useAuthentication() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const { user, error: signInError } = await signIn(email, password);
-      
+
       if (signInError) {
         throw new Error(signInError.message);
       }
-      
+
       if (user) {
         // Check if there's a redirect path stored
         const redirectPath = sessionStorage.getItem('redirectAfterLogin');
@@ -51,7 +50,7 @@ export function useAuthentication() {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Sign up the user with Supabase Auth
       const { user, error: signUpError } = await signUp(email, password, {
         first_name: firstName,
@@ -59,24 +58,14 @@ export function useAuthentication() {
         airline,
         position
       });
-      
+
       if (signUpError) {
         throw new Error(signUpError.message);
       }
-      
+
       if (user) {
-        // Create a profile in the database
-        const { error: profileError } = await createProfile({
-          id: user.id,
-          email,
-          airline,
-          position
-        });
-        
-        if (profileError) {
-          throw new Error(profileError.message);
-        }
-        
+        // No need to manually create a profile - it's created by the database trigger
+
         // Redirect to dashboard or confirmation page
         router.push('/dashboard');
       }
@@ -92,13 +81,13 @@ export function useAuthentication() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const { error: signOutError } = await signOut();
-      
+
       if (signOutError) {
         throw new Error(signOutError.message);
       }
-      
+
       // Redirect to home page
       router.push('/');
     } catch (err) {
