@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuthentication } from '@/hooks/useAuthentication';
 import { cn } from '@/lib/utils';
+import { CountrySelect } from '@/components/ui/CountrySelect';
 
 export function RegisterForm() {
   const searchParams = useSearchParams();
@@ -20,6 +21,7 @@ export function RegisterForm() {
     lastName: '',
     airline: 'Flydubai', // Default airline
     position: 'CCM' as 'CCM' | 'SCCM', // Default position
+    nationality: '', // Optional nationality
   });
 
   // Validation state
@@ -52,6 +54,11 @@ export function RegisterForm() {
   // Handle position selection
   const handlePositionSelect = (position: 'CCM' | 'SCCM') => {
     setFormData(prev => ({ ...prev, position }));
+  };
+
+  // Handle nationality selection
+  const handleNationalitySelect = (nationality: string) => {
+    setFormData(prev => ({ ...prev, nationality }));
   };
 
   // Validate form
@@ -109,7 +116,8 @@ export function RegisterForm() {
         formData.firstName,
         formData.lastName,
         formData.airline,
-        formData.position
+        formData.position,
+        formData.nationality || undefined // Only pass nationality if it's not empty
       );
     }
   };
@@ -270,6 +278,19 @@ export function RegisterForm() {
             SCCM
           </button>
         </div>
+      </div>
+
+      {/* Nationality (Optional) */}
+      <div className="space-y-2">
+        <label htmlFor="nationality" className="block text-sm font-medium">
+          Nationality (Optional)
+        </label>
+        <CountrySelect
+          value={formData.nationality}
+          onValueChange={handleNationalitySelect}
+          placeholder="Select your nationality"
+          className="w-full"
+        />
       </div>
 
       {/* Error message from API */}

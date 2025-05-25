@@ -1,25 +1,26 @@
 import { supabase } from './supabase';
-import { 
-  AuthError, 
-  Session, 
-  User, 
-  AuthResponse 
+import {
+  AuthError,
+  Session,
+  User,
+  AuthResponse
 } from '@supabase/supabase-js';
 
 // Sign up a new user
 export async function signUp(
-  email: string, 
-  password: string, 
-  metadata: { 
-    first_name: string; 
-    last_name: string; 
-    airline: string; 
-    position: 'CCM' | 'SCCM' 
+  email: string,
+  password: string,
+  metadata: {
+    first_name: string;
+    last_name: string;
+    airline: string;
+    position: 'CCM' | 'SCCM';
+    nationality?: string;
   }
-): Promise<{ 
-  user: User | null; 
-  error: AuthError | null; 
-  session: Session | null 
+): Promise<{
+  user: User | null;
+  error: AuthError | null;
+  session: Session | null
 }> {
   try {
     const { data, error } = await supabase.auth.signUp({
@@ -47,12 +48,12 @@ export async function signUp(
 
 // Sign in a user
 export async function signIn(
-  email: string, 
+  email: string,
   password: string
-): Promise<{ 
-  user: User | null; 
-  error: AuthError | null; 
-  session: Session | null 
+): Promise<{
+  user: User | null;
+  error: AuthError | null;
+  session: Session | null
 }> {
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -87,9 +88,9 @@ export async function signOut(): Promise<{ error: AuthError | null }> {
 }
 
 // Get the current session
-export async function getSession(): Promise<{ 
-  session: Session | null; 
-  error: AuthError | null 
+export async function getSession(): Promise<{
+  session: Session | null;
+  error: AuthError | null
 }> {
   try {
     const { data, error } = await supabase.auth.getSession();
@@ -107,9 +108,9 @@ export async function getSession(): Promise<{
 }
 
 // Get the current user
-export async function getUser(): Promise<{ 
-  user: User | null; 
-  error: AuthError | null 
+export async function getUser(): Promise<{
+  user: User | null;
+  error: AuthError | null
 }> {
   try {
     const { data, error } = await supabase.auth.getUser();

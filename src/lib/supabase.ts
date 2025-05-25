@@ -58,6 +58,7 @@ export type Database = {
           email: string;
           airline: string;
           position: 'CCM' | 'SCCM';
+          nationality?: string;
           created_at: string;
           updated_at: string;
         };
@@ -66,6 +67,7 @@ export type Database = {
           email: string;
           airline: string;
           position: 'CCM' | 'SCCM';
+          nationality?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -74,6 +76,7 @@ export type Database = {
           email?: string;
           airline?: string;
           position?: 'CCM' | 'SCCM';
+          nationality?: string;
           created_at?: string;
           updated_at?: string;
         };

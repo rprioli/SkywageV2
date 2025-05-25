@@ -45,7 +45,8 @@ export function useAuthentication() {
     firstName: string,
     lastName: string,
     airline: string,
-    position: 'CCM' | 'SCCM'
+    position: 'CCM' | 'SCCM',
+    nationality?: string
   ) => {
     try {
       setLoading(true);
@@ -56,7 +57,8 @@ export function useAuthentication() {
         first_name: firstName,
         last_name: lastName,
         airline,
-        position
+        position,
+        nationality
       });
 
       if (signUpError) {

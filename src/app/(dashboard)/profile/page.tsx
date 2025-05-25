@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthProvider';
 import { AvatarUpload } from '@/components/profile/AvatarUpload';
+import { NationalityUpdate } from '@/components/profile/NationalityUpdate';
 import { useState, useEffect } from 'react';
 import { setupAvatarsBucket } from '@/lib/setupStorage';
 
@@ -96,6 +97,10 @@ export default function ProfilePage() {
                    user?.user_metadata?.position === 'SCCM' ? 'Senior Cabin Crew Member' :
                    user?.user_metadata?.position || 'N/A'}
                 </p>
+              </div>
+
+              <div className="col-span-1 md:col-span-2">
+                <NationalityUpdate />
               </div>
             </div>
           </div>
