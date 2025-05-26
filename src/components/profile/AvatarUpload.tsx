@@ -58,7 +58,7 @@ export function AvatarUpload({ onUploadComplete, size = 150 }: AvatarUploadProps
     // Validate file
     const validation = validateImageFile(file);
     if (!validation.valid) {
-      setError(validation.error);
+      setError(validation.error || 'Invalid file');
       setSelectedFile(null);
       return;
     }

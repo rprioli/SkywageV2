@@ -2,38 +2,38 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
-import { CountrySelect } from '@/components/ui/CountrySelect';
-import { updateUserNationality } from '@/lib/userProfile';
+import { PositionSelect } from '@/components/ui/PositionSelect';
+import { updateUserPosition } from '@/lib/userProfile';
 import { getProfile } from '@/lib/db';
-import { getCountryName } from '@/lib/countryUtils';
+import { getPositionName } from '@/lib/positionUtils';
 
-export function NationalityUpdate() {
+export function PositionUpdate() {
   const { user, loading: authLoading } = useAuth();
-  const [nationality, setNationality] = useState<string>('');
+  const [position, setPosition] = useState<'CCM' | 'SCCM' | ''>('');
   const [isEditing, setIsEditing] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load nationality from database profile (source of truth)
+  // Load position from database profile (source of truth)
   useEffect(() => {
-    const loadNationality = async () => {
+    const loadPosition = async () => {
       if (user?.id) {
         try {
           const { data: profile, error } = await getProfile(user.id);
           if (profile && !error) {
-            setNationality(profile.nationality || '');
+            setPosition(profile.position || '');
           }
         } catch (err) {
-          console.warn('Failed to load nationality from profile:', err);
+          console.warn('Failed to load position from profile:', err);
           // Fallback to auth metadata if database fails
-          setNationality(user?.user_metadata?.nationality || '');
+          setPosition(user?.user_metadata?.position || '');
         }
       }
     };
 
-    loadNationality();
+    loadPosition();
   }, [user?.id]);
 
   // Cleanup timeout on unmount
@@ -45,20 +45,25 @@ export function NationalityUpdate() {
     };
   }, []);
 
-  const handleNationalityChange = (value: string) => {
-    setNationality(value);
+  const handlePositionChange = (value: 'CCM' | 'SCCM') => {
+    setPosition(value);
   };
 
   const handleSave = async () => {
+    if (!position || (position !== 'CCM' && position !== 'SCCM')) {
+      setError('Please select a valid position');
+      return;
+    }
+
     try {
       setIsUpdating(true);
       setError(null);
       setUpdateSuccess(false);
 
-      const result = await updateUserNationality(nationality, user?.id);
+      const { success, error } = await updateUserPosition(position, user?.id);
 
-      if (!result.success || result.error) {
-        throw new Error(result.error || 'Failed to update nationality');
+      if (!success || error) {
+        throw new Error(error || 'Failed to update position');
       }
 
       setUpdateSuccess(true);
@@ -73,7 +78,7 @@ export function NationalityUpdate() {
       }, 3000);
 
     } catch (err) {
-      console.error('Error updating nationality:', err);
+      console.error('Error updating position:', err);
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
       setIsUpdating(false);
@@ -86,11 +91,11 @@ export function NationalityUpdate() {
       try {
         const { data: profile, error } = await getProfile(user.id);
         if (profile && !error) {
-          setNationality(profile.nationality || '');
+          setPosition(profile.position || '');
         }
       } catch {
         // Fallback to auth metadata if database fails
-        setNationality(user?.user_metadata?.nationality || '');
+        setPosition(user?.user_metadata?.position || '');
       }
     }
     setIsEditing(false);
@@ -99,14 +104,13 @@ export function NationalityUpdate() {
 
   return (
     <div>
-      <p className="text-sm text-muted-foreground">Nationality</p>
+      <p className="text-sm text-muted-foreground">Position</p>
 
       {isEditing ? (
         <div className="mt-1">
-          <CountrySelect
-            value={nationality}
-            onValueChange={handleNationalityChange}
-            placeholder="Select your nationality"
+          <PositionSelect
+            value={position}
+            onValueChange={handlePositionChange}
             className="w-full mb-2"
           />
 
@@ -134,7 +138,7 @@ export function NationalityUpdate() {
       ) : (
         <div className="flex items-center gap-2">
           <p className="font-medium">
-            {authLoading ? 'Loading...' : getCountryName(nationality)}
+            {authLoading ? 'Loading...' : getPositionName(position)}
           </p>
           <button
             onClick={() => {
@@ -147,7 +151,7 @@ export function NationalityUpdate() {
             className="text-xs text-primary hover:underline"
             disabled={authLoading}
           >
-            {nationality ? 'Change' : 'Add'}
+            {position ? 'Change' : 'Add'}
           </button>
 
           {updateSuccess && (

@@ -3,6 +3,7 @@
 import { useAuth } from '@/contexts/AuthProvider';
 import { AvatarUpload } from '@/components/profile/AvatarUpload';
 import { NationalityUpdate } from '@/components/profile/NationalityUpdate';
+import { PositionUpdate } from '@/components/profile/PositionUpdate';
 import { useState, useEffect } from 'react';
 import { setupAvatarsBucket } from '@/lib/setupStorage';
 
@@ -30,7 +31,7 @@ export default function ProfilePage() {
     checkBucket();
   }, []);
 
-  const handleAvatarUploadComplete = (url: string) => {
+  const handleAvatarUploadComplete = () => {
     setAvatarUpdated(true);
     setBucketError(null);
 
@@ -91,12 +92,7 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <p className="text-sm text-muted-foreground">Position</p>
-                <p className="font-medium">
-                  {user?.user_metadata?.position === 'CCM' ? 'Cabin Crew Member' :
-                   user?.user_metadata?.position === 'SCCM' ? 'Senior Cabin Crew Member' :
-                   user?.user_metadata?.position || 'N/A'}
-                </p>
+                <PositionUpdate />
               </div>
 
               <div className="col-span-1 md:col-span-2">
