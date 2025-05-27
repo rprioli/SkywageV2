@@ -45,12 +45,12 @@ export function HeroSection({ className }: HeroSectionProps) {
                 placeholder="Enter your email..."
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="flex-grow px-4 py-3 rounded-full text-foreground bg-white border border-transparent focus:border-accent focus:ring-2 focus:ring-accent/30 outline-none"
+                className="flex-grow px-4 py-3 rounded-md text-foreground bg-white border border-transparent focus:border-accent focus:ring-2 focus:ring-accent/30 outline-none"
                 required
               />
               <button
                 type="submit"
-                className="px-6 py-3 bg-accent text-accent-foreground font-medium rounded-full hover:bg-accent/90 transition-colors"
+                className="px-6 py-3 bg-accent text-accent-foreground font-medium rounded-md hover:bg-accent/90 transition-colors"
               >
                 GO
               </button>

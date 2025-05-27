@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Logo } from '@/components/ui/Logo';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { Button } from '@/components/ui/button';
 import { BRAND } from '@/lib/brand';
 
 interface NavbarProps {
@@ -49,18 +50,16 @@ export function Navbar({ className }: NavbarProps) {
 
         {/* CTA Buttons and Theme Toggle */}
         <div className="flex items-center space-x-4">
-          <Link
-            href="/login"
-            className="border border-primary text-primary bg-transparent px-4 py-2 rounded-full text-sm font-medium hover:bg-primary hover:text-primary-foreground focus:ring-2 focus:ring-primary/30 focus:outline-none transition-colors"
-          >
-            Sign In
-          </Link>
-          <Link
-            href="/register"
-            className="bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium hover:bg-primary/90 transition-colors"
-          >
-            Get Started
-          </Link>
+          <Button variant="outline" asChild className="rounded-hd">
+            <Link href="/login">
+              Sign In
+            </Link>
+          </Button>
+          <Button asChild className="rounded-hd">
+            <Link href="/register">
+              Get Started
+            </Link>
+          </Button>
           <ThemeToggle />
         </div>
       </div>
