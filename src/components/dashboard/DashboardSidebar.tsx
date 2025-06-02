@@ -11,7 +11,8 @@ import {
   BarChart,
   User,
   Settings,
-  LogOut
+  LogOut,
+  Calculator
 } from 'lucide-react';
 
 // Default avatar as a data URL (simple user silhouette)
@@ -24,6 +25,7 @@ export default function DashboardSidebar() {
 
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Salary Calculator', href: '/salary-calculator', icon: Calculator },
     { name: 'Statistics', href: '/statistics', icon: BarChart },
     { name: 'Profile', href: '/profile', icon: User },
     { name: 'Settings', href: '/settings', icon: Settings },

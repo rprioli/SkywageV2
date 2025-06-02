@@ -1,6 +1,6 @@
 /**
- * Skywage Salary Calculator - Phase 1 Exports
- * Core calculation engine and utilities
+ * Skywage Salary Calculator - Phase 3 Exports
+ * Core calculation engine, utilities, and upload processing
  * Following existing export patterns in the codebase
  */
 
@@ -85,6 +85,36 @@ export {
 // Flydubai CSV parser
 export { FlydubaiCSVParser } from './airlines/flydubai-parser';
 
+// Phase 3: Upload processing
+export {
+  processCSVUpload,
+  validateCSVFileQuick,
+  type ProcessingStatus,
+  type ProcessingResult,
+  type ProgressCallback
+} from './upload-processor';
+
+// Phase 4: Manual entry processing
+export {
+  processManualEntry,
+  processBatchManualEntries,
+  validateManualEntryRealTime,
+  convertToFlightDuty,
+  getSuggestedFlightNumbers,
+  getSuggestedSectors,
+  type ManualEntryResult,
+  type BatchManualEntryResult
+} from './manual-entry-processor';
+
+export {
+  validateDate,
+  validateTime,
+  validateManualEntry,
+  type ManualFlightEntryData,
+  type FieldValidationResult,
+  type FormValidationResult
+} from './manual-entry-validation';
+
 // Type exports
 export type {
   Position,
@@ -113,3 +143,11 @@ export type {
   AirlineConfigRegistry,
   ConfigFactory
 } from '@/types/airline-config';
+
+// Phase 5: Edit functionality and recalculation
+export {
+  RecalculationResult,
+  recalculateMonthlyTotals,
+  handleFlightEdit,
+  validateFlightEdit
+} from './recalculation-engine';
