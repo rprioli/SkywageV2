@@ -54,8 +54,25 @@ export default function SalaryCalculatorTestPage() {
       timeResult.success && timeResult.timeValue?.hours === 9 && timeResult.timeValue?.minutes === 20);
 
     const crossDayResult = parseTimeString('05:45¹');
-    addResult('Cross-day Time Parsing (05:45¹)', `Cross-day: ${crossDayResult.isCrossDay}`, 
+    addResult('Cross-day Time Parsing (05:45¹)', `Cross-day: ${crossDayResult.isCrossDay}`,
       crossDayResult.success && crossDayResult.isCrossDay);
+
+    // Test 5: Special Character Time Parsing (for CSV parsing fixes)
+    const specialCharResult1 = parseTimeString('04:33?♦');
+    addResult('Special Char Time Parsing (04:33?♦)', `Success: ${specialCharResult1.success}, Time: ${specialCharResult1.timeValue?.hours}:${specialCharResult1.timeValue?.minutes}`,
+      specialCharResult1.success && specialCharResult1.timeValue?.hours === 4 && specialCharResult1.timeValue?.minutes === 33);
+
+    const specialCharResult2 = parseTimeString('00:22?♦');
+    addResult('Special Char Time Parsing (00:22?♦)', `Success: ${specialCharResult2.success}, Time: ${specialCharResult2.timeValue?.hours}:${specialCharResult2.timeValue?.minutes}`,
+      specialCharResult2.success && specialCharResult2.timeValue?.hours === 0 && specialCharResult2.timeValue?.minutes === 22);
+
+    const specialCharResult3 = parseTimeString('01:43?♦');
+    addResult('Special Char Time Parsing (01:43?♦)', `Success: ${specialCharResult3.success}, Time: ${specialCharResult3.timeValue?.hours}:${specialCharResult3.timeValue?.minutes}`,
+      specialCharResult3.success && specialCharResult3.timeValue?.hours === 1 && specialCharResult3.timeValue?.minutes === 43);
+
+    const specialCharResult4 = parseTimeString('05:22?♦');
+    addResult('Special Char Time Parsing (05:22?♦)', `Success: ${specialCharResult4.success}, Time: ${specialCharResult4.timeValue?.hours}:${specialCharResult4.timeValue?.minutes}`,
+      specialCharResult4.success && specialCharResult4.timeValue?.hours === 5 && specialCharResult4.timeValue?.minutes === 22);
 
     // Test 5: Duration Calculation
     if (timeResult.timeValue) {

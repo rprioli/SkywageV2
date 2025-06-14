@@ -38,12 +38,16 @@ export function classifyFlightDuty(
     };
   }
 
-  // Check for Off Days
-  if (dutiesUpper.includes('OFF') || dutiesUpper === 'X') {
+  // Check for Off Days and Rest Days
+  if (dutiesUpper.includes('OFF') ||
+      dutiesUpper.includes('DAY OFF') ||
+      dutiesUpper.includes('REST DAY') ||
+      dutiesUpper.includes('ADDITIONAL DAY OFF') ||
+      dutiesUpper === 'X') {
     return {
       dutyType: 'off',
       confidence: 1.0,
-      reasoning: 'Contains OFF or X indicating off day',
+      reasoning: 'Contains OFF, DAY OFF, REST DAY, or X indicating off day',
       warnings: []
     };
   }

@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 import { 
   FileText, 
   CheckCircle, 
@@ -46,7 +47,8 @@ export function ManualFlightEntry({
   className
 }: ManualFlightEntryProps) {
   const { user } = useAuth();
-  
+  const { salaryCalculator } = useToast();
+
   // Component state
   const [entryState, setEntryState] = useState<EntryState>('form');
   const [loading, setLoading] = useState(false);
@@ -56,7 +58,9 @@ export function ManualFlightEntry({
   // Handle form submission
   const handleFormSubmit = async (data: ManualFlightEntryData) => {
     if (!user?.id) {
-      setError('User not authenticated');
+      const errorMsg = 'User not authenticated';
+      setError(errorMsg);
+      salaryCalculator.csvUploadError(errorMsg);
       return;
     }
 
@@ -66,18 +70,26 @@ export function ManualFlightEntry({
 
     try {
       const processingResult = await processManualEntry(data, user.id, position);
-      
+
       if (processingResult.success) {
         setResult(processingResult);
         setEntryState('success');
+
+        // Show success toast
+        if (processingResult.flightDuty) {
+          salaryCalculator.flightSaved(processingResult.flightDuty.flightNumbers);
+        }
       } else {
-        setError(processingResult.errors?.join(', ') || 'Failed to save flight duty');
+        const errorMsg = processingResult.errors?.join(', ') || 'Failed to save flight duty';
+        setError(errorMsg);
         setEntryState('error');
+        salaryCalculator.csvUploadError(errorMsg);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
       setEntryState('error');
+      salaryCalculator.csvUploadError(errorMessage);
     } finally {
       setLoading(false);
     }

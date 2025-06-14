@@ -131,12 +131,24 @@ export type Database = {
           updated_at?: string;
         };
       };
-      // Enhanced flights table for salary calculator
+      // Enhanced flights table for salary calculator (includes both old and new schema)
       flights: {
         Row: {
           id: string;
           user_id: string;
           date: string;
+          // Old schema columns (for backward compatibility)
+          flight_number: string;
+          sector: string;
+          reporting_time: string;
+          debriefing_time: string;
+          hours: number;
+          pay: number;
+          is_outbound?: boolean;
+          is_turnaround?: boolean;
+          is_layover?: boolean;
+          is_asby?: boolean;
+          // New schema columns (salary calculator)
           flight_numbers: string[];
           sectors: string[];
           duty_type: 'turnaround' | 'layover' | 'asby' | 'sby' | 'off';
@@ -158,13 +170,25 @@ export type Database = {
           id?: string;
           user_id: string;
           date: string;
-          flight_numbers: string[];
-          sectors: string[];
-          duty_type: 'turnaround' | 'layover' | 'asby' | 'sby' | 'off';
-          report_time: string;
-          debrief_time: string;
-          duty_hours: number;
-          flight_pay: number;
+          // Old schema columns (for backward compatibility)
+          flight_number: string;
+          sector: string;
+          reporting_time: string;
+          debriefing_time: string;
+          hours: number;
+          pay: number;
+          is_outbound?: boolean;
+          is_turnaround?: boolean;
+          is_layover?: boolean;
+          is_asby?: boolean;
+          // New schema columns (salary calculator)
+          flight_numbers?: string[];
+          sectors?: string[];
+          duty_type?: 'turnaround' | 'layover' | 'asby' | 'sby' | 'off';
+          report_time?: string;
+          debrief_time?: string;
+          duty_hours?: number;
+          flight_pay?: number;
           is_cross_day?: boolean;
           data_source?: 'csv' | 'manual' | 'edited';
           original_data?: any;
@@ -179,6 +203,18 @@ export type Database = {
           id?: string;
           user_id?: string;
           date?: string;
+          // Old schema columns (for backward compatibility)
+          flight_number?: string;
+          sector?: string;
+          reporting_time?: string;
+          debriefing_time?: string;
+          hours?: number;
+          pay?: number;
+          is_outbound?: boolean;
+          is_turnaround?: boolean;
+          is_layover?: boolean;
+          is_asby?: boolean;
+          // New schema columns (salary calculator)
           flight_numbers?: string[];
           sectors?: string[];
           duty_type?: 'turnaround' | 'layover' | 'asby' | 'sby' | 'off';

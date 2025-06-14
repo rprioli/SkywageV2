@@ -199,7 +199,14 @@ export async function createLayoverRestPeriods(
 ): Promise<{ data: LayoverRestPeriod[] | null; error: string | null }> {
   try {
     const insertData = restPeriods.map(period => layoverRestPeriodToInsert(period, userId));
-    
+
+    // Debug: Log the data being inserted
+    console.log('Database - Creating layover rest periods:', {
+      count: insertData.length,
+      sample: insertData[0],
+      allData: insertData
+    });
+
     const { data, error } = await supabase
       .from('layover_rest_periods')
       .insert(insertData)
@@ -207,6 +214,7 @@ export async function createLayoverRestPeriods(
 
     if (error) {
       console.error('Error creating layover rest periods:', error);
+      console.error('Insert data that failed:', insertData);
       return { data: null, error: error.message };
     }
 

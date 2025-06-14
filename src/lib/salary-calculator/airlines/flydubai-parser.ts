@@ -81,9 +81,12 @@ export class FlydubaiCSVParser implements CSVParser {
           continue;
         }
 
-        // Validate date format
+        // Validate date format (handle dates with day names like "03/04/2025 Thu")
         if (date && date.trim() !== '') {
-          if (!/^\d{1,2}[\/\-\.]\d{1,2}([\/\-\.]\d{2,4})?$/.test(date.trim())) {
+          const dateWithDayPattern = /^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}\s+(Mon|Tue|Wed|Thu|Fri|Sat|Sun|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)$/i;
+          const basicDatePattern = /^\d{1,2}[\/\-\.]\d{1,2}([\/\-\.]\d{2,4})?$/;
+
+          if (!dateWithDayPattern.test(date.trim()) && !basicDatePattern.test(date.trim())) {
             warnings.push(`Row ${rowNum}: Date format "${date}" may not be recognized`);
           }
         }

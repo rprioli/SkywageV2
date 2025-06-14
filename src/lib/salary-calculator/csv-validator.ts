@@ -139,8 +139,9 @@ export function validateCSVRow(
   const errors: string[] = [];
   const warnings: string[] = [];
 
+  // Convert column count mismatch to warning instead of error to be more lenient
   if (row.length < expectedColumns) {
-    errors.push(`Row ${rowIndex + 1}: Expected at least ${expectedColumns} columns, found ${row.length}`);
+    warnings.push(`Row ${rowIndex + 1}: Expected at least ${expectedColumns} columns, found ${row.length}`);
   }
 
   // Check for completely empty rows
@@ -151,22 +152,29 @@ export function validateCSVRow(
   // Validate date format in first column (if present)
   const dateCell = row[0]?.trim();
   if (dateCell && dateCell !== '') {
-    if (!/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(dateCell) && !/^\d{1,2}-\d{1,2}-\d{2,4}$/.test(dateCell) && !/^\d{1,2}\.\d{1,2}\.\d{2,4}$/.test(dateCell)) {
+    // Updated regex to handle dates with day names like "03/04/2025 Thu"
+    const dateWithDayPattern = /^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}\s+(Mon|Tue|Wed|Thu|Fri|Sat|Sun|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)$/i;
+    const basicDatePattern = /^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/;
+
+    if (!dateWithDayPattern.test(dateCell) && !basicDatePattern.test(dateCell)) {
       warnings.push(`Row ${rowIndex + 1}: Date format "${dateCell}" may not be recognized`);
     }
   }
 
   // Validate time formats in report/debrief columns (columns 4 and 5)
+  // Updated regex to handle special characters like ♦, ?♦, ¹, ?¹, �, ?�, etc.
+  const timeFormatRegex = /^\d{1,2}:\d{2}(\?[¹²³⁴⁵⁶⁷⁸⁹♦◆�]|[¹²³⁴⁵⁶⁷⁸⁹♦◆�])*$/;
+
   if (row.length >= 4) {
     const reportTime = row[3]?.trim();
-    if (reportTime && reportTime !== '' && !/^\d{1,2}:\d{2}/.test(reportTime)) {
+    if (reportTime && reportTime !== '' && !timeFormatRegex.test(reportTime)) {
       warnings.push(`Row ${rowIndex + 1}: Report time format "${reportTime}" may not be recognized`);
     }
   }
 
   if (row.length >= 5) {
     const debriefTime = row[4]?.trim();
-    if (debriefTime && debriefTime !== '' && !/^\d{1,2}:\d{2}/.test(debriefTime)) {
+    if (debriefTime && debriefTime !== '' && !timeFormatRegex.test(debriefTime)) {
       warnings.push(`Row ${rowIndex + 1}: Debrief time format "${debriefTime}" may not be recognized`);
     }
   }
@@ -201,10 +209,18 @@ export function validateFlightNumbers(duties: string, rowIndex: number): Validat
       }
     }
   } else {
-    // Check for special duty types
+    // Check for special duty types and non-duty entries
     const dutiesUpper = duties.toUpperCase();
-    if (!dutiesUpper.includes('ASBY') && !dutiesUpper.includes('SBY') && 
-        !dutiesUpper.includes('OFF') && dutiesUpper !== 'X') {
+    const isNonDutyEntry =
+      dutiesUpper.includes('ASBY') ||
+      dutiesUpper.includes('SBY') ||
+      dutiesUpper.includes('OFF') ||
+      dutiesUpper.includes('DAY OFF') ||
+      dutiesUpper.includes('REST DAY') ||
+      dutiesUpper.includes('ADDITIONAL DAY OFF') ||
+      dutiesUpper === 'X';
+
+    if (!isNonDutyEntry) {
       warnings.push(`Row ${rowIndex + 1}: No valid flight numbers or duty types found in "${duties}"`);
     }
   }
@@ -225,6 +241,20 @@ export function validateSectors(details: string, rowIndex: number): ValidationRe
 
   if (!details || details.trim() === '') {
     return { valid: true, errors, warnings }; // Empty is valid for non-flight duties
+  }
+
+  // Check if this is a non-duty entry that shouldn't have sectors
+  const detailsUpper = details.toUpperCase().trim();
+  const isNonDutyEntry =
+    detailsUpper.includes('DAY OFF') ||
+    detailsUpper.includes('REST DAY') ||
+    detailsUpper.includes('ADDITIONAL DAY OFF') ||
+    detailsUpper.includes('OFF') ||
+    detailsUpper === 'X';
+
+  // Skip sector validation for non-duty entries
+  if (isNonDutyEntry) {
+    return { valid: true, errors, warnings };
   }
 
   // Extract potential sectors

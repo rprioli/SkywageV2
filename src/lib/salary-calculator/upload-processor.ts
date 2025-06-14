@@ -89,7 +89,7 @@ export async function processCSVUpload(
     const parser = new FlydubaiCSVParser();
     const parseResult = parser.parseFlightDuties(content, userId);
 
-    if (!parseResult.success || !parseResult.flightDuties) {
+    if (!parseResult.success || !parseResult.data) {
       return {
         success: false,
         errors: parseResult.errors || ['Failed to parse CSV content'],
@@ -97,57 +97,97 @@ export async function processCSVUpload(
       };
     }
 
-    const flightDuties = parseResult.flightDuties;
+    console.log('Upload Processor - Success condition passed, extracting flight duties...');
+    let flightDuties = parseResult.data;
+    console.log('Upload Processor - Flight duties extracted:', flightDuties.length, 'duties');
     warnings.push(...(parseResult.warnings || []));
 
-    // Step 3: Calculate layover rest periods
+    console.log('Upload Processor - About to start Step 3 - calculating flight payments...');
+
+    // Step 3: Calculate duty hours and flight pay for each flight duty
     onProgress?.({
       step: 'calculating',
-      progress: 50,
-      message: 'Calculating salary components...',
-      details: 'Processing layovers and rest periods'
+      progress: 40,
+      message: 'Calculating flight payments...',
+      details: 'Computing duty hours and flight pay'
     });
 
-    const layoverRestPeriods = calculateLayoverRestPeriods(flightDuties);
+    // Import calculation functions
+    const { calculateFlightDuty } = await import('./calculation-engine');
 
-    // Step 4: Calculate monthly totals
+    // Calculate duty hours and flight pay for each flight duty
+    flightDuties = flightDuties.map(duty => {
+      const calculationResult = calculateFlightDuty(duty, position);
+      if (calculationResult.errors.length === 0) {
+        // Calculation successful, use the updated flight duty
+        warnings.push(...calculationResult.warnings);
+        return calculationResult.flightDuty;
+      } else {
+        // Calculation failed, add errors to warnings and return original
+        console.warn('Failed to calculate flight duty:', calculationResult.errors);
+        warnings.push(...calculationResult.errors);
+        warnings.push(...calculationResult.warnings);
+        return duty; // Return original if calculation fails
+      }
+    });
+
+    console.log('Upload Processor - Flight duties calculated, sample:', {
+      id: flightDuties[0]?.id,
+      dutyHours: flightDuties[0]?.dutyHours,
+      flightPay: flightDuties[0]?.flightPay
+    });
+
+    // Step 4: Calculate layover rest periods
     onProgress?.({
       step: 'calculating',
-      progress: 70,
-      message: 'Calculating monthly totals...',
-      details: 'Computing final salary breakdown'
+      progress: 55,
+      message: 'Calculating layover periods...',
+      details: 'Computing rest times and per diem'
     });
 
-    // Extract month and year from first flight duty
+    console.log('Upload Processor - Progress update sent, starting layover calculation...');
+    const layoverRestPeriods = calculateLayoverRestPeriods(flightDuties, userId, position);
+    console.log('Upload Processor - Layover calculation complete:', layoverRestPeriods.length, 'periods');
+
+    // Extract month and year from first flight duty for later use
     const firstFlight = flightDuties[0];
     if (!firstFlight) {
+      console.log('Upload Processor - Error: No flight duties found');
       return {
         success: false,
         errors: ['No flight duties found in CSV'],
         warnings
       };
     }
+    const month = firstFlight.month;
+    const year = firstFlight.year;
 
-    const monthlyCalculation = calculateMonthlySalary(
-      flightDuties,
-      layoverRestPeriods,
-      position,
-      firstFlight.month,
-      firstFlight.year,
-      userId
-    );
+    // Validate month and year before proceeding
+    if (!month || !year || month < 1 || month > 12 || year < 2020 || year > 2100) {
+      return {
+        success: false,
+        errors: [`Invalid month/year extracted from CSV: ${month}/${year}. Expected month 1-12 and year 2020-2100.`],
+        warnings
+      };
+    }
 
     // Step 5: Save to database
     onProgress?.({
       step: 'saving',
-      progress: 85,
+      progress: 70,
       message: 'Saving to database...',
       details: 'Storing flight duties and calculations'
     });
 
-    // Save flight duties
+    // Save flight duties first to get database IDs
+    console.log('Upload Processor - Starting flight duties save...');
+    console.log('Upload Processor - Flight duties to save:', flightDuties.length, 'duties');
+    console.log('Upload Processor - Sample flight duty:', flightDuties[0]);
+
     const flightSaveResult = await createFlightDuties(flightDuties, userId);
+    console.log('Upload Processor - Flight duties save result:', flightSaveResult);
     if (flightSaveResult.error) {
+      console.log('Upload Processor - Flight duties save failed:', flightSaveResult.error);
       return {
         success: false,
         errors: [`Failed to save flight duties: ${flightSaveResult.error}`],
@@ -155,17 +195,50 @@ export async function processCSVUpload(
       };
     }
 
+    // Update flight duties with database IDs for layover calculation
+    const savedFlightDuties = flightSaveResult.data || [];
+
+    // Recalculate layover rest periods with saved flight duties (which have IDs)
+    console.log('Upload Processor - Recalculating layover periods with saved flight IDs...');
+    const updatedLayoverRestPeriods = calculateLayoverRestPeriods(savedFlightDuties, userId, position);
+    console.log('Upload Processor - Updated layover calculation complete:', updatedLayoverRestPeriods.length, 'periods');
+
     // Save layover rest periods
-    if (layoverRestPeriods.length > 0) {
-      const restSaveResult = await createLayoverRestPeriods(layoverRestPeriods, userId);
+    if (updatedLayoverRestPeriods.length > 0) {
+      console.log('Upload Processor - Starting rest periods save...');
+      const restSaveResult = await createLayoverRestPeriods(updatedLayoverRestPeriods, userId);
+      console.log('Upload Processor - Rest periods save result:', restSaveResult);
       if (restSaveResult.error) {
+        console.log('Upload Processor - Rest periods save failed:', restSaveResult.error);
         warnings.push(`Warning: Failed to save rest periods: ${restSaveResult.error}`);
       }
     }
 
+    // Step 6: Calculate monthly totals with saved data
+    onProgress?.({
+      step: 'calculating',
+      progress: 85,
+      message: 'Calculating monthly totals...',
+      details: 'Computing final salary breakdown'
+    });
+
+    console.log('Upload Processor - Starting monthly calculation for:', month, year);
+    const monthlyCalculation = calculateMonthlySalary(
+      savedFlightDuties,
+      updatedLayoverRestPeriods,
+      position,
+      month,
+      year,
+      userId
+    );
+    console.log('Upload Processor - Monthly calculation complete:', monthlyCalculation);
+
     // Save monthly calculation
-    const calculationSaveResult = await upsertMonthlyCalculation(monthlyCalculation.calculation, userId);
+    console.log('Upload Processor - Starting monthly calculation save...');
+    const calculationSaveResult = await upsertMonthlyCalculation(monthlyCalculation.monthlyCalculation, userId);
+    console.log('Upload Processor - Monthly calculation save result:', calculationSaveResult);
     if (calculationSaveResult.error) {
+      console.log('Upload Processor - Monthly calculation save failed:', calculationSaveResult.error);
       return {
         success: false,
         errors: [`Failed to save monthly calculation: ${calculationSaveResult.error}`],
@@ -173,7 +246,7 @@ export async function processCSVUpload(
       };
     }
 
-    // Step 6: Complete
+    // Step 7: Complete
     onProgress?.({
       step: 'complete',
       progress: 100,
@@ -184,8 +257,8 @@ export async function processCSVUpload(
     return {
       success: true,
       monthlyCalculation,
-      flightDuties,
-      layoverRestPeriods,
+      flightDuties: savedFlightDuties,
+      layoverRestPeriods: updatedLayoverRestPeriods,
       warnings: warnings.length > 0 ? warnings : undefined
     };
 

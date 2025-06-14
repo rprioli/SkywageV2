@@ -28,13 +28,23 @@ interface UploadResultsProps {
   className?: string;
 }
 
-export function UploadResults({ 
-  result, 
-  fileName, 
-  onStartOver, 
+export function UploadResults({
+  result,
+  fileName,
+  onStartOver,
   onDownloadReport,
-  className 
+  className
 }: UploadResultsProps) {
+  // Debug logging to see what we're getting
+  console.log('UploadResults - Processing result:', result);
+  console.log('UploadResults - Errors array:', result.errors);
+  console.log('UploadResults - Warnings array:', result.warnings);
+  if (result.errors) {
+    result.errors.forEach((error, index) => {
+      console.log(`UploadResults - Error ${index}:`, error);
+    });
+  }
+
   if (!result.success) {
     return (
       <Card className={className}>
@@ -181,8 +191,8 @@ export function UploadResults({
             <Calculator className="h-5 w-5 text-primary" />
             Salary Breakdown
           </h2>
-          <SalaryBreakdown 
-            calculation={monthlyCalculation.calculation}
+          <SalaryBreakdown
+            calculation={monthlyCalculation.monthlyCalculation}
             variant="detailed"
           />
         </div>
@@ -221,13 +231,13 @@ export function UploadResults({
               </div>
               <div>
                 <p className="text-2xl font-bold text-primary">
-                  {monthlyCalculation.calculation.totalDutyHours.toFixed(1)}
+                  {monthlyCalculation.monthlyCalculation.totalDutyHours.toFixed(1)}
                 </p>
                 <p className="text-sm text-muted-foreground">Duty Hours</p>
               </div>
               <div>
                 <p className="text-2xl font-bold text-accent">
-                  {monthlyCalculation.calculation.totalSalary.toLocaleString()} AED
+                  {monthlyCalculation.monthlyCalculation.totalSalary.toLocaleString()} AED
                 </p>
                 <p className="text-sm text-muted-foreground">Total Salary</p>
               </div>

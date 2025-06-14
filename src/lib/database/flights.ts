@@ -15,11 +15,14 @@ type FlightUpdate = Database['public']['Tables']['flights']['Update'];
 
 /**
  * Converts FlightDuty to database insert format
+ * Populates both old and new schema columns for backward compatibility
  */
 function flightDutyToInsert(flightDuty: FlightDuty, userId: string): FlightInsert {
-  return {
+  const insertData = {
     user_id: userId,
     date: flightDuty.date.toISOString().split('T')[0], // YYYY-MM-DD format
+
+    // Salary calculator schema columns
     flight_numbers: flightDuty.flightNumbers,
     sectors: flightDuty.sectors,
     duty_type: flightDuty.dutyType,
@@ -35,10 +38,13 @@ function flightDutyToInsert(flightDuty: FlightDuty, userId: string): FlightInser
     month: flightDuty.month,
     year: flightDuty.year
   };
+
+  return insertData;
 }
 
 /**
  * Converts database row to FlightDuty
+ * Handles both old and new schema columns
  */
 function rowToFlightDuty(row: FlightRow): FlightDuty {
   return {
@@ -62,8 +68,8 @@ function rowToFlightDuty(row: FlightRow): FlightDuty {
     },
     dutyHours: row.duty_hours,
     flightPay: row.flight_pay,
-    isCrossDay: row.is_cross_day,
-    dataSource: row.data_source,
+    isCrossDay: row.is_cross_day || false,
+    dataSource: row.data_source || 'csv',
     originalData: row.original_data,
     lastEditedAt: row.last_edited_at ? new Date(row.last_edited_at) : undefined,
     lastEditedBy: row.last_edited_by || undefined,
@@ -110,22 +116,32 @@ export async function createFlightDuties(
   userId: string
 ): Promise<{ data: FlightDuty[] | null; error: string | null }> {
   try {
+    console.log('Database - Creating flight duties for user:', userId);
+    console.log('Database - Number of duties to insert:', flightDuties.length);
+
     const insertData = flightDuties.map(duty => flightDutyToInsert(duty, userId));
-    
+    console.log('Database - Sample insert data:', insertData[0]);
+
+    console.log('Database - Starting Supabase insert...');
     const { data, error } = await supabase
       .from('flights')
       .insert(insertData)
       .select();
 
     if (error) {
-      console.error('Error creating flight duties:', error);
+      console.error('Database - Supabase insert error:', error);
+      console.error('Database - Error details:', error.details);
+      console.error('Database - Error hint:', error.hint);
+      console.error('Database - Error code:', error.code);
       return { data: null, error: error.message };
     }
 
+    console.log('Database - Insert successful, converting results...');
     const flightDutiesResult = data.map(rowToFlightDuty);
+    console.log('Database - Conversion complete, returning', flightDutiesResult.length, 'duties');
     return { data: flightDutiesResult, error: null };
   } catch (error) {
-    console.error('Error creating flight duties:', error);
+    console.error('Database - Unexpected error creating flight duties:', error);
     return { data: null, error: (error as Error).message };
   }
 }

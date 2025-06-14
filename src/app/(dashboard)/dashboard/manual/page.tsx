@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * Manual Flight Entry Page for Skywage Salary Calculator
- * Phase 4: Complete manual entry workflow page
- * Following existing page patterns from Phase 3
+ * Manual Flight Entry Page for Skywage Dashboard - Salary Calculator
+ * Moved from salary-calculator section to main dashboard
+ * Following existing page patterns
  */
 
 import { useState, useEffect } from 'react';
@@ -63,9 +63,9 @@ export default function ManualEntryPage() {
     }
   }, [user, authLoading]);
 
-  // Handle navigation back to calculator
-  const handleBackToCalculator = () => {
-    router.push('/salary-calculator');
+  // Handle navigation back to dashboard
+  const handleBackToDashboard = () => {
+    router.push('/dashboard');
   };
 
   // Handle navigation to profile
@@ -144,9 +144,9 @@ export default function ManualEntryPage() {
               </Button>
             )}
             
-            <Button variant="outline" onClick={handleBackToCalculator} className="w-full">
+            <Button variant="outline" onClick={handleBackToDashboard} className="w-full">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Calculator
+              Back to Dashboard
             </Button>
           </div>
         </div>
@@ -172,9 +172,9 @@ export default function ManualEntryPage() {
               Update Profile
             </Button>
             
-            <Button variant="outline" onClick={handleBackToCalculator} className="w-full">
+            <Button variant="outline" onClick={handleBackToDashboard} className="w-full">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Calculator
+              Back to Dashboard
             </Button>
           </div>
         </div>
@@ -187,7 +187,7 @@ export default function ManualEntryPage() {
     <div className="container mx-auto px-4 py-8">
       <ManualFlightEntry 
         position={position}
-        onBack={handleBackToCalculator}
+        onBack={handleBackToDashboard}
       />
     </div>
   );

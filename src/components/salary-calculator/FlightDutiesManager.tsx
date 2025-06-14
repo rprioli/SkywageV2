@@ -13,6 +13,7 @@ import { handleFlightEdit } from '@/lib/salary-calculator/recalculation-engine';
 import { FlightDutiesTable } from './FlightDutiesTable';
 import { EditFlightModal } from './EditFlightModal';
 import { AuditTrailModal } from './AuditTrailDisplay';
+import { useToast } from '@/hooks/use-toast';
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -46,13 +47,14 @@ export function FlightDutiesManager({
   onFlightDeleted,
   onRecalculationComplete
 }: FlightDutiesManagerProps) {
+  const { salaryCalculator } = useToast();
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedFlight, setSelectedFlight] = useState<FlightDuty | null>(null);
   const [deleteReason, setDeleteReason] = useState('');
   const [processing, setProcessing] = useState(false);
   const [lastOperation, setLastOperation] = useState<{
-    type: 'edit' | 'delete';
+    type: 'edit' | 'delete' | 'bulk-delete';
     success: boolean;
     message: string;
   } | null>(null);
@@ -83,29 +85,36 @@ export function FlightDutiesManager({
     try {
       // Trigger recalculation
       const recalcResult = await handleFlightEdit(updatedFlight, userId, position);
-      
+
       if (recalcResult.success) {
         setLastOperation({
           type: 'edit',
           success: true,
           message: 'Flight updated successfully and calculations refreshed'
         });
-        
+
+        // Show success toast
+        salaryCalculator.flightUpdated(updatedFlight.flightNumbers);
+
         onFlightUpdated?.(updatedFlight);
         onRecalculationComplete?.();
       } else {
+        const errorMsg = `Flight updated but recalculation failed: ${recalcResult.errors.join(', ')}`;
         setLastOperation({
           type: 'edit',
           success: false,
-          message: `Flight updated but recalculation failed: ${recalcResult.errors.join(', ')}`
+          message: errorMsg
         });
+        salaryCalculator.calculationError(errorMsg);
       }
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error during recalculation';
       setLastOperation({
         type: 'edit',
         success: false,
-        message: error instanceof Error ? error.message : 'Unknown error during recalculation'
+        message: errorMsg
       });
+      salaryCalculator.calculationError(errorMsg);
     } finally {
       setProcessing(false);
     }
@@ -118,6 +127,7 @@ export function FlightDutiesManager({
       success: false,
       message: error
     });
+    salaryCalculator.calculationError(error);
   };
 
   // Handle flight deletion
@@ -138,12 +148,16 @@ export function FlightDutiesManager({
           success: false,
           message: result.error
         });
+        salaryCalculator.calculationError(result.error);
       } else {
         setLastOperation({
           type: 'delete',
           success: true,
           message: 'Flight deleted successfully'
         });
+
+        // Show success toast
+        salaryCalculator.flightDeleted(selectedFlight.flightNumbers);
 
         onFlightDeleted?.(selectedFlight.id);
         onRecalculationComplete?.();
@@ -155,11 +169,63 @@ export function FlightDutiesManager({
         success: false,
         message: errorMessage
       });
+      salaryCalculator.calculationError(errorMessage);
     } finally {
       setProcessing(false);
       setDeleteDialogOpen(false);
       setSelectedFlight(null);
       setDeleteReason('');
+    }
+  };
+
+  // Handle bulk delete
+  const handleBulkDelete = async (flightDuties: FlightDuty[]) => {
+    if (flightDuties.length === 0) return;
+
+    setProcessing(true);
+    try {
+      const deletePromises = flightDuties.map(flight =>
+        deleteFlightDuty(
+          flight.id,
+          userId,
+          `Bulk delete operation - ${flightDuties.length} flights`
+        )
+      );
+
+      const results = await Promise.all(deletePromises);
+      const errors = results.filter(result => result.error).map(result => result.error);
+
+      if (errors.length > 0) {
+        setLastOperation({
+          type: 'bulk-delete',
+          success: false,
+          message: `Failed to delete ${errors.length} of ${flightDuties.length} flights: ${errors.join(', ')}`
+        });
+        salaryCalculator.calculationError(`Failed to delete ${errors.length} flights`);
+      } else {
+        setLastOperation({
+          type: 'bulk-delete',
+          success: true,
+          message: `Successfully deleted ${flightDuties.length} flights`
+        });
+
+        // Show success toast
+        salaryCalculator.bulkDeleteSuccess(flightDuties.length);
+
+        // Notify parent components
+        flightDuties.forEach(flight => onFlightDeleted?.(flight.id));
+        onRecalculationComplete?.();
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error during bulk delete';
+      setLastOperation({
+        type: 'bulk-delete',
+        success: false,
+        message: errorMessage
+      });
+      salaryCalculator.calculationError(errorMessage);
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -193,6 +259,7 @@ export function FlightDutiesManager({
         loading={loading}
         onEdit={handleEditClick}
         onDelete={handleDeleteClick}
+        onBulkDelete={handleBulkDelete}
         showActions={true}
       />
 

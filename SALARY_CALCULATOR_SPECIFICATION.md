@@ -2,10 +2,12 @@
 
 ## Document Information
 
-- **Version**: 1.0
-- **Date**: January 2025
+- **Version**: 1.1
+- **Date**: January 2025 (Updated: January 2025)
 - **Project**: Skywage V2
 - **Scope**: Multi-Airline Cabin Crew Salary Calculator (Starting with Flydubai)
+- **Implementation Status**: Phase 6 Completed - Enhanced UI/UX with Toast Notifications
+- **Current Status**: Restructured as Main Dashboard (January 2025)
 
 ---
 
@@ -38,12 +40,22 @@ This document defines the complete technical specification for implementing the 
 - Real-time recalculation engine
 - Integration with existing Skywage infrastructure
 
-### 1.3 Key Principles
+### 1.3 Typical Dataset Size
+
+**Important Context**: Airline CSV roster files typically contain **13-14 flights maximum** per month. This small dataset size significantly impacts system design decisions:
+
+- **Performance optimization**: Virtual scrolling, lazy loading, and advanced caching are unnecessary
+- **UI design**: Card-based layouts can display all flights without pagination
+- **User experience**: Focus on clean, intuitive interfaces rather than performance for large datasets
+- **Testing scope**: Performance testing focuses on calculation accuracy rather than large dataset handling
+
+### 1.4 Key Principles
 
 - **Precision**: No rounding - maintain full decimal accuracy
 - **Reliability**: Robust error handling and data validation
 - **Consistency**: Follow established Skywage design patterns
 - **Scalability**: Support for multiple airlines and future expansion
+- **User Experience**: Clean, intuitive interfaces optimized for small datasets (13-14 flights)
 
 ---
 
@@ -247,10 +259,11 @@ Per Diem: 23.5 × 8.82 = 207.27 AED
 
 - **Framework**: Next.js 15.3.2 with App Router
 - **Language**: TypeScript
-- **UI Library**: ShadCN UI components
+- **UI Library**: ShadCN UI components with Sonner for toast notifications
 - **Styling**: Tailwind CSS with Skywage brand colors
 - **State Management**: React Context API
 - **File Handling**: Browser File API
+- **User Feedback**: Toast notification system with comprehensive user action feedback
 
 #### 3.1.2 Backend Integration
 
@@ -401,6 +414,31 @@ CREATE POLICY "Users can only access their own data" ON monthly_calculations
 - **Database Level**: Constraint violations, duplicate entries
 
 ---
+
+## Implementation Status Update (January 2025)
+
+**Phase 6 Completed**: Enhanced UI & User Experience with Toast Notifications
+
+The Skywage Salary Calculator system has successfully completed Phase 6 implementation, which included:
+
+- ✅ **Modern Card Design System**: Complete UI redesign with floating icons and brand colors
+- ✅ **Advanced Filtering**: Filter by duty type, date range, and pay amount
+- ✅ **Bulk Operations**: Select multiple flights for batch actions
+- ✅ **Toast Notification System**: Comprehensive user feedback for all actions
+- ✅ **Enhanced Loading States**: Progress indicators and smooth animations
+- ✅ **Error Handling**: Improved error messages and confirmation dialogs
+
+**Restructuring Completed (January 2025)**: Main Dashboard Integration
+
+The salary calculator has been restructured to serve as the main dashboard page:
+
+- ✅ **Main Dashboard**: Salary calculator is now the primary dashboard experience at `/dashboard`
+- ✅ **Simplified Navigation**: Removed separate "Salary Calculator" menu item
+- ✅ **Updated Routing**: Upload (`/dashboard/upload`) and Manual Entry (`/dashboard/manual`)
+- ✅ **Preserved Functionality**: All Phase 1-6 features maintained without changes
+- ✅ **Test Pages Preserved**: All test pages remain accessible for validation
+
+**Current Status**: Ready for Phase 7 (Testing & Quality Assurance)
 
 ## Note: Complete Specification Content
 

@@ -34,11 +34,12 @@ export function parseTimeString(timeStr: string): TimeParseResult {
     };
   }
 
-  // Clean the time string - remove special characters
-  const cleanedTime = timeStr.replace(/[?¹²³⁴⁵⁶⁷⁸⁹⁰]/g, '');
-  
-  // Check for cross-day indicator
-  const isCrossDay = /[¹²³⁴⁵⁶⁷⁸⁹]/.test(timeStr);
+  // Clean the time string - remove special characters including all suffix patterns
+  // Note: � is Unicode replacement character (U+FFFD) that appears in CSV files
+  const cleanedTime = timeStr.replace(/[?¹²³⁴⁵⁶⁷⁸⁹⁰♦◆�]/g, '').trim();
+
+  // Check for cross-day indicator (¹ or ?¹ patterns, but not ♦ which is same-day)
+  const isCrossDay = /[¹²³⁴⁵⁶⁷⁸⁹]/.test(timeStr) || timeStr.includes('?¹');
   
   // Parse HH:MM format
   const timeMatch = cleanedTime.match(/^(\d{1,2}):(\d{2})$/);
