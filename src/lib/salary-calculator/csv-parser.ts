@@ -106,31 +106,60 @@ export function extractMonthFromCSV(content: string): { month: number; year: num
     }
   }
 
-  // Try numeric month format (MM/YYYY or MM-YYYY)
+  // Try numeric month format - handle both DD/MM/YYYY and MM/DD/YYYY patterns
   if (!month) {
-    const monthMatch = text.match(/\b(\d{1,2})[\/\-](\d{2,4})\b/);
-    if (monthMatch) {
-      month = parseInt(monthMatch[1]);
-      year = parseInt(monthMatch[2]);
-      if (year < 100) {
-        year += 2000;
+    // Look for date range patterns like "01/04/2025 - 30/04/2025"
+    const dateRangeMatch = text.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s*-\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if (dateRangeMatch) {
+      const startDay = parseInt(dateRangeMatch[1]);
+      const startMonth = parseInt(dateRangeMatch[2]);
+      const startYear = parseInt(dateRangeMatch[3]);
+      const endDay = parseInt(dateRangeMatch[4]);
+      const endMonth = parseInt(dateRangeMatch[5]);
+      const endYear = parseInt(dateRangeMatch[6]);
+
+      // For Flydubai (international format), assume DD/MM/YYYY
+      // If start day is 01 and end day is 30/31, and start month equals end month,
+      // then it's likely DD/MM format showing a full month
+      if (startDay === 1 && endDay >= 28 && startMonth === endMonth) {
+        month = startMonth;
+        year = startYear < 100 ? startYear + 2000 : startYear;
+
+        console.log('CSV Parser - Date range extraction (DD/MM/YYYY):', {
+          originalText: text,
+          startDay, startMonth, startYear,
+          endDay, endMonth, endYear,
+          parsedMonth: month,
+          parsedYear: year
+        });
       }
+    }
 
-      // Debug: Log the numeric month/year extraction
-      console.log('CSV Parser - Numeric month/year extraction:', {
-        originalText: text,
-        monthMatch: monthMatch[1],
-        yearMatch: monthMatch[2],
-        parsedMonth: month,
-        parsedYear: year
-      });
+    // Fallback to simple MM/YYYY or MM-YYYY pattern
+    if (!month) {
+      const monthMatch = text.match(/\b(\d{1,2})[\/\-](\d{2,4})\b/);
+      if (monthMatch) {
+        month = parseInt(monthMatch[1]);
+        year = parseInt(monthMatch[2]);
+        if (year < 100) {
+          year += 2000;
+        }
 
-      // Handle year parsing issues for numeric format too
-      if (year < 2020) {
-        console.log('CSV Parser - Numeric year too old, attempting to fix:', year);
-        if (year >= 2000 && year <= 2010) {
-          year = year + 21; // Convert 2004 -> 2025
-          console.log('CSV Parser - Adjusted numeric year to:', year);
+        console.log('CSV Parser - Simple numeric month/year extraction:', {
+          originalText: text,
+          monthMatch: monthMatch[1],
+          yearMatch: monthMatch[2],
+          parsedMonth: month,
+          parsedYear: year
+        });
+
+        // Handle year parsing issues for numeric format too
+        if (year < 2020) {
+          console.log('CSV Parser - Numeric year too old, attempting to fix:', year);
+          if (year >= 2000 && year <= 2010) {
+            year = year + 21; // Convert 2004 -> 2025
+            console.log('CSV Parser - Adjusted numeric year to:', year);
+          }
         }
       }
     }

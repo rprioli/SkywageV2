@@ -36,6 +36,7 @@ import {
 interface ManualFlightEntryProps {
   position: Position;
   onBack?: () => void;
+  onSuccess?: () => void;
   className?: string;
 }
 
@@ -44,6 +45,7 @@ type EntryState = 'form' | 'processing' | 'success' | 'error';
 export function ManualFlightEntry({
   position,
   onBack,
+  onSuccess,
   className
 }: ManualFlightEntryProps) {
   const { user } = useAuth();
@@ -78,6 +80,11 @@ export function ManualFlightEntry({
         // Show success toast
         if (processingResult.flightDuty) {
           salaryCalculator.flightSaved(processingResult.flightDuty.flightNumbers);
+        }
+
+        // Call success callback if provided
+        if (onSuccess) {
+          onSuccess();
         }
       } else {
         const errorMsg = processingResult.errors?.join(', ') || 'Failed to save flight duty';

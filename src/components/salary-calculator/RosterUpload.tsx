@@ -28,12 +28,12 @@ export function RosterUpload({ onFileSelect, disabled = false, className }: Rost
   // Handle file selection
   const handleFileSelect = useCallback((file: File) => {
     setSelectedFile(file);
-    
+
     // Quick validation
     const validationResult = validateCSVFileQuick(file);
     setValidation(validationResult);
-    
-    // If valid, notify parent
+
+    // If valid, automatically start processing (no extra button needed)
     if (validationResult.valid) {
       onFileSelect(file);
     }
@@ -187,24 +187,15 @@ export function RosterUpload({ onFileSelect, disabled = false, className }: Rost
 
           {/* Actions */}
           {selectedFile && (
-            <div className="flex gap-2">
+            <div className="flex justify-center">
               <Button
                 variant="outline"
                 onClick={clearSelection}
                 disabled={disabled}
-                className="flex-1"
+                size="sm"
               >
                 Clear Selection
               </Button>
-              {validation?.valid && (
-                <Button
-                  onClick={() => onFileSelect(selectedFile)}
-                  disabled={disabled}
-                  className="flex-1"
-                >
-                  Process File
-                </Button>
-              )}
             </div>
           )}
         </div>
