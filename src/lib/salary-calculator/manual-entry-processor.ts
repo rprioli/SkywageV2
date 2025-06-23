@@ -23,11 +23,15 @@ import {
   createLayoverRestPeriods, 
   upsertMonthlyCalculation 
 } from '@/lib/database/calculations';
-import { 
+import {
   ManualFlightEntryData,
   validateManualEntry,
   FormValidationResult
 } from './manual-entry-validation';
+import {
+  transformFlightNumbers,
+  transformSectors
+} from './input-transformers';
 
 // Processing result for manual entry
 export interface ManualEntryResult {
@@ -73,14 +77,9 @@ export function convertToFlightDuty(
     // Calculate duty hours
     const dutyHours = calculateDuration(reportTimeObj, debriefTimeObj, data.isCrossDay);
 
-    // Clean and prepare flight numbers and sectors
-    const flightNumbers = data.flightNumbers
-      .filter(num => num.trim() !== '')
-      .map(num => num.toUpperCase().trim());
-    
-    const sectors = data.sectors
-      .filter(sector => sector.trim() !== '')
-      .map(sector => sector.toUpperCase().trim());
+    // Transform simplified input to expected format
+    const flightNumbers = transformFlightNumbers(data.flightNumbers);
+    const sectors = transformSectors(data.sectors);
 
     // Create flight duty object
     const flightDuty: FlightDuty = {

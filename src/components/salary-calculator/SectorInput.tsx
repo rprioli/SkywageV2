@@ -66,19 +66,14 @@ export function SectorInput({
 
   // Format sector input
   const formatSectorInput = (input: string): string => {
-    // Convert to uppercase and remove invalid characters
-    let formatted = input.toUpperCase().replace(/[^A-Z-]/g, '');
-    
-    // Auto-add dash if user types 3 letters
-    if (formatted.length === 3 && !formatted.includes('-')) {
-      formatted += '-';
+    // Only allow letters, convert to uppercase, limit to 3 characters for airport codes
+    let formatted = input.toUpperCase().replace(/[^A-Z]/g, '');
+
+    // Limit to 3 characters for airport codes
+    if (formatted.length > 3) {
+      formatted = formatted.substring(0, 3);
     }
-    
-    // Limit to XXX-XXX format
-    if (formatted.length > 7) {
-      formatted = formatted.substring(0, 7);
-    }
-    
+
     return formatted;
   };
 
@@ -196,7 +191,7 @@ export function SectorInput({
     if (!isValid) {
       return { 
         isValid: false, 
-        message: 'Invalid format. Use XXX-XXX (e.g., DXB-CMB)' 
+        message: 'Invalid format. Use 3-letter airport code (e.g., DXB)'
       };
     }
 
@@ -244,14 +239,14 @@ export function SectorInput({
                     onFocus={() => handleFocus(index)}
                     onBlur={() => handleBlur(index)}
                     onKeyDown={e => handleKeyDown(e, index)}
-                    placeholder={index === 0 ? 'DXB-CMB' : 'CMB-DXB'}
+                    placeholder={index === 0 ? 'DXB' : 'KHI'}
                     disabled={disabled}
                     className={cn(
                       'pl-10',
                       !validation.isValid && 'border-destructive focus-visible:border-destructive',
                       sectors.length > 1 && 'pr-10'
                     )}
-                    maxLength={7}
+                    maxLength={3}
                   />
 
                   {/* Remove button for multiple sectors */}
@@ -336,8 +331,8 @@ export function SectorInput({
       {/* Help text */}
       {!error && !warning && (
         <p className="text-muted-foreground text-xs">
-          Enter sectors in XXX-XXX format (e.g., DXB-CMB). 
-          {allowMultiple && ' Add multiple sectors for turnarounds.'}
+          Enter airport codes (e.g., DXB, KHI).
+          {allowMultiple && ' Add multiple airports for turnarounds.'}
         </p>
       )}
     </div>

@@ -225,11 +225,21 @@ export default function Phase6TestPage() {
     setUploadResults(null);
 
     try {
+      // Use current month/year as target for testing
+      const currentDate = new Date();
+      const targetMonth = currentDate.getMonth() + 1; // Convert to 1-based month
+      const targetYear = currentDate.getFullYear();
+
+      console.log(`🧪 Test Page - Using target month/year: ${targetMonth}/${targetYear}`);
+
       const result = await processCSVUpload(
         file,
         TEST_USER_ID, // Using valid UUID format for testing
         position, // User position for salary calculation
-        (status: ProcessingStatusType) => setProcessingStatus(status)
+        (status: ProcessingStatusType) => setProcessingStatus(status),
+        false, // Not a dry run
+        targetMonth, // Target month (current month for testing)
+        targetYear // Target year (current year for testing)
       );
 
       setUploadResults(result);
@@ -380,6 +390,84 @@ Total Hours and Statistics,,,,,,,`;
     }
   };
 
+  // Test function for month assignment override
+  const testMonthAssignmentOverride = async () => {
+    console.log('🧪 Testing month assignment override functionality...');
+
+    // Create test CSV with May 2025 data
+    const testCSVContent = `flydubai,,,,,,,
+,,,,,,,
+May 2025,,,,,,,
+,,,,,,,
+Date,Duties,Details,Report times,Actual times/Delays,Debrief times,Indicators,Crew
+15/05/2025,FZ549 FZ550,DXB - CMB CMB - DXB,9:20,,21:15,,
+31/05/2025,FZ967,DXB - VKO,22:30,,05:45,,
+Total Hours and Statistics,,,,,,,`;
+
+    try {
+      // Create a test file from the CSV content
+      const testFile = new File([testCSVContent], 'test_may_2025.csv', { type: 'text/csv' });
+
+      // Test with January as target month (should override May from CSV)
+      const targetMonth = 1; // January
+      const targetYear = 2025;
+
+      console.log(`🎯 Testing: CSV contains May 2025 data, but targeting ${targetMonth}/${targetYear}`);
+
+      const result = await processCSVUpload(
+        testFile,
+        TEST_USER_ID,
+        position,
+        undefined, // No progress callback for test
+        true, // Dry run to avoid database writes
+        targetMonth,
+        targetYear
+      );
+
+      if (result.success && result.flightDuties) {
+        const allFlightsInTargetMonth = result.flightDuties.every(flight =>
+          flight.month === targetMonth && flight.year === targetYear
+        );
+
+        const sampleFlight = result.flightDuties[0];
+        const originalCSVDate = new Date(2025, 4, 15); // May 15, 2025 (from CSV)
+        const preservedDisplayDate = sampleFlight?.date;
+        const assignedMonth = sampleFlight?.month;
+        const assignedYear = sampleFlight?.year;
+
+        console.log('📊 Month Override Test Results:', {
+          totalFlights: result.flightDuties.length,
+          allFlightsInTargetMonth,
+          originalCSVDate: originalCSVDate.toDateString(),
+          preservedDisplayDate: preservedDisplayDate?.toDateString(),
+          assignedMonth,
+          assignedYear,
+          targetMonth,
+          targetYear,
+          datePreserved: preservedDisplayDate?.toDateString() === originalCSVDate.toDateString()
+        });
+
+        if (allFlightsInTargetMonth) {
+          showSuccess('Month Assignment Override Test Passed!', {
+            description: `✅ Flights assigned to target month (${targetMonth}) for calculations while preserving original dates (${preservedDisplayDate?.toDateString()}) for display.`
+          });
+        } else {
+          showError('Month Assignment Override Test Failed!', {
+            description: 'Some flights were not assigned to the target month.'
+          });
+        }
+      } else {
+        showError('Month Assignment Override Test Failed!', {
+          description: `Processing failed: ${result.errors?.join(', ') || 'Unknown error'}`
+        });
+      }
+
+    } catch (error) {
+      console.error('❌ Month assignment override test failed:', error);
+      showError('Month Assignment Test Error', { description: (error as Error).message });
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
       {/* Page Header */}
@@ -402,8 +490,9 @@ Total Hours and Statistics,,,,,,,`;
       <Alert className="border-green-200 bg-green-50">
         <Palette className="h-4 w-4 text-green-600" />
         <AlertDescription className="text-green-800">
-          <strong>🎯 NEW: Filtering + Bulk Operations + Toast Notifications!</strong> Filter by duty type, date range, and pay amount.
-          Use &quot;Bulk Select&quot; to manage multiple flights at once. Toast notifications provide instant feedback for all actions!
+          <strong>🎯 NEW: Month Assignment Override Fix!</strong> The critical data loss bug has been fixed!
+          Flights are now assigned to the user-selected month for calculations while preserving original flight dates for display.
+          Test the &quot;Month Override Fix&quot; button below to verify the fix works correctly.
         </AlertDescription>
       </Alert>
 
@@ -457,6 +546,9 @@ Total Hours and Statistics,,,,,,,`;
                   </Button>
                   <Button onClick={testTimeFormatFixes} variant="outline" size="sm" className="bg-blue-50 border-blue-300 text-blue-700">
                     Test Time Format Fix
+                  </Button>
+                  <Button onClick={testMonthAssignmentOverride} variant="outline" size="sm" className="bg-purple-50 border-purple-300 text-purple-700">
+                    Test Month Override Fix
                   </Button>
                 </div>
               </div>

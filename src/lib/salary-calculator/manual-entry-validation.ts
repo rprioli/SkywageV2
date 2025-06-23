@@ -4,19 +4,24 @@
  * Following existing validation patterns and using Flydubai config
  */
 
-import { 
-  FlightDuty, 
-  DutyType, 
+import {
+  FlightDuty,
+  DutyType,
   ValidationResult,
-  Position 
+  Position
 } from '@/types/salary-calculator';
-import { 
+import {
   FLYDUBAI_CONFIG,
   isValidFlydubaiFlightNumber,
   isValidFlydubaiSector,
   parseTimeString,
   calculateDuration
 } from '@/lib/salary-calculator';
+import {
+  transformFlightNumbers,
+  transformSectors,
+  validateAndTransformInput
+} from './input-transformers';
 
 // Manual entry form data
 export interface ManualFlightEntryData {
@@ -104,15 +109,39 @@ export function validateFlightNumbers(
     return { valid: false, error: 'At least one flight number is required' };
   }
 
-  // Validate each flight number
-  for (const flightNumber of validNumbers) {
-    if (!isValidFlydubaiFlightNumber(flightNumber)) {
-      return { 
-        valid: false, 
-        error: `Invalid flight number: ${flightNumber}`,
-        suggestion: 'Flight numbers should be in format FZ123 or FZ1234'
-      };
+  // Transform simplified input to expected format and validate
+  try {
+    const transformedNumbers = transformFlightNumbers(validNumbers);
+
+    // Validate each number (original format should be 3-4 digits)
+    for (let i = 0; i < validNumbers.length; i++) {
+      const originalNumber = validNumbers[i];
+      const transformedNumber = transformedNumbers[i];
+
+      // Check if original is valid number format (3-4 digits)
+      if (!/^\d{3,4}$/.test(originalNumber.trim())) {
+        return {
+          valid: false,
+          error: `Invalid flight number: ${originalNumber}`,
+          suggestion: 'Flight numbers should be 3-4 digits (e.g., 123, 1234)'
+        };
+      }
+
+      // Validate transformed number
+      if (!isValidFlydubaiFlightNumber(transformedNumber)) {
+        return {
+          valid: false,
+          error: `Invalid flight number: ${originalNumber}`,
+          suggestion: 'Flight numbers should be 3-4 digits'
+        };
+      }
     }
+  } catch (error) {
+    return {
+      valid: false,
+      error: 'Error validating flight numbers',
+      suggestion: 'Please check flight number format'
+    };
   }
 
   // Check for duplicates
@@ -142,9 +171,10 @@ export function validateFlightNumbers(
 
 /**
  * Validates sectors based on duty type
+ * Now supports individual airport codes (e.g., ['DXB', 'KHI'] instead of ['DXB-KHI'])
  */
 export function validateSectors(
-  sectors: string[], 
+  airportCodes: string[],
   dutyType: DutyType
 ): FieldValidationResult {
   if (dutyType === 'asby' || dutyType === 'sby' || dutyType === 'off') {
@@ -152,34 +182,63 @@ export function validateSectors(
     return { valid: true };
   }
 
-  if (!sectors || sectors.length === 0) {
-    return { valid: false, error: 'At least one sector is required' };
+  if (!airportCodes || airportCodes.length === 0) {
+    return { valid: false, error: 'At least one airport is required' };
   }
 
   // Remove empty entries
-  const validSectors = sectors.filter(sector => sector.trim() !== '');
-  
-  if (validSectors.length === 0) {
-    return { valid: false, error: 'At least one sector is required' };
+  const validCodes = airportCodes.filter(code => code.trim() !== '');
+
+  if (validCodes.length === 0) {
+    return { valid: false, error: 'At least one airport is required' };
   }
 
-  // Validate each sector
-  for (const sector of validSectors) {
-    if (!isValidFlydubaiSector(sector)) {
-      return { 
-        valid: false, 
-        error: `Invalid sector format: ${sector}`,
-        suggestion: 'Sectors should be in format DXB-CMB'
+  // Validate each airport code (should be 3 letters)
+  for (const code of validCodes) {
+    if (!/^[A-Z]{3}$/.test(code.trim().toUpperCase())) {
+      return {
+        valid: false,
+        error: `Invalid airport code: ${code}`,
+        suggestion: 'Airport codes should be 3 letters (e.g., DXB, KHI)'
       };
     }
   }
 
+  // Transform to sectors and validate
+  try {
+    const transformedSectors = transformSectors(validCodes);
+
+    // Validate transformed sectors
+    for (const sector of transformedSectors) {
+      if (!isValidFlydubaiSector(sector)) {
+        return {
+          valid: false,
+          error: `Invalid route: ${sector}`,
+          suggestion: 'Please check airport codes'
+        };
+      }
+    }
+  } catch (error) {
+    return {
+      valid: false,
+      error: 'Error validating route',
+      suggestion: 'Please check airport codes'
+    };
+  }
+
   // Validate based on duty type
-  if (dutyType === 'layover' && validSectors.length > 1) {
-    return { 
-      valid: false, 
-      error: 'Layover duties should have only one sector',
-      suggestion: 'Use turnaround type for multiple sectors'
+  if (dutyType === 'layover' && validCodes.length > 2) {
+    return {
+      valid: false,
+      error: 'Layover duties should have only 2 airports (origin and destination)',
+      suggestion: 'Use turnaround type for multiple stops'
+    };
+  }
+
+  if (dutyType === 'layover' && validCodes.length < 2) {
+    return {
+      valid: false,
+      error: 'Layover duties require both origin and destination airports'
     };
   }
 

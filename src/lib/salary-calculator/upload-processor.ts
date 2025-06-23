@@ -4,24 +4,30 @@
  * Following existing patterns and using Phase 1 & 2 utilities
  */
 
-import { 
-  FlightDuty, 
-  LayoverRestPeriod, 
+import {
+  FlightDuty,
+  LayoverRestPeriod,
   MonthlyCalculationResult,
   Position,
-  ValidationResult 
+  ValidationResult
 } from '@/types/salary-calculator';
-import { 
+import {
   validateCompleteCSV,
   FlydubaiCSVParser,
   calculateMonthlySalary,
-  calculateLayoverRestPeriods 
+  calculateLayoverRestPeriods
 } from '@/lib/salary-calculator';
 import { createFlightDuties } from '@/lib/database/flights';
 import {
   createLayoverRestPeriods,
   upsertMonthlyCalculation
 } from '@/lib/database/calculations';
+import {
+  checkExistingRosterData,
+  replaceRosterData,
+  type ExistingDataCheck,
+  type ReplacementResult
+} from './roster-replacement';
 
 // Processing status for real-time feedback
 export interface ProcessingStatus {
@@ -39,6 +45,8 @@ export interface ProcessingResult {
   layoverRestPeriods?: LayoverRestPeriod[];
   errors?: string[];
   warnings?: string[];
+  replacementPerformed?: boolean;
+  replacementResult?: ReplacementResult;
 }
 
 // Progress callback type
@@ -46,12 +54,18 @@ export type ProgressCallback = (status: ProcessingStatus) => void;
 
 /**
  * Processes uploaded CSV file through complete workflow
+ * @param dryRun - If true, validates and processes data without saving to database
+ * @param targetMonth - Optional user-selected month (1-12) to override CSV-detected month
+ * @param targetYear - Optional user-selected year to override CSV-detected year
  */
 export async function processCSVUpload(
   file: File,
   userId: string,
   position: Position,
-  onProgress?: ProgressCallback
+  onProgress?: ProgressCallback,
+  dryRun: boolean = false,
+  targetMonth?: number,
+  targetYear?: number
 ): Promise<ProcessingResult> {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -159,19 +173,60 @@ export async function processCSVUpload(
         warnings
       };
     }
-    const month = firstFlight.month;
-    const year = firstFlight.year;
+
+    // Use target month/year if provided, otherwise use CSV-detected values
+    let month: number;
+    let year: number;
+
+    if (targetMonth && targetYear) {
+      console.log('Upload Processor - Using user-selected target month/year:', targetMonth, '/', targetYear);
+      month = targetMonth;
+      year = targetYear;
+
+      // Override month/year for all flight duties (preserve original dates for display)
+      flightDuties.forEach((duty, index) => {
+        const originalDate = new Date(duty.date);
+
+        console.log(`Upload Processor - Assigning flight ${index + 1} to target month/year: ${originalDate.toDateString()} → month ${month}, year ${year} (date preserved for display)`);
+
+        // Keep original date for display purposes, only change month/year for calculations and database organization
+        duty.month = month;
+        duty.year = year;
+      });
+    } else {
+      console.log('Upload Processor - Using CSV-detected month/year from first flight');
+      month = firstFlight.month;
+      year = firstFlight.year;
+    }
 
     // Validate month and year before proceeding
     if (!month || !year || month < 1 || month > 12 || year < 2020 || year > 2100) {
       return {
         success: false,
-        errors: [`Invalid month/year extracted from CSV: ${month}/${year}. Expected month 1-12 and year 2020-2100.`],
+        errors: [`Invalid month/year: ${month}/${year}. Expected month 1-12 and year 2020-2100.`],
         warnings
       };
     }
 
-    // Step 5: Save to database
+    // Step 5: Save to database (skip if dry run)
+    if (dryRun) {
+      // For dry run, just validate that we got this far successfully
+      onProgress?.({
+        step: 'complete',
+        progress: 100,
+        message: 'Validation complete!',
+        details: `Successfully validated ${flightDuties.length} flight duties`
+      });
+
+      return {
+        success: true,
+        monthlyCalculation: undefined, // Don't calculate for dry run
+        flightDuties,
+        layoverRestPeriods,
+        warnings: warnings.length > 0 ? warnings : undefined
+      };
+    }
+
     onProgress?.({
       step: 'saving',
       progress: 70,
@@ -328,4 +383,152 @@ export function validateCSVFileQuick(file: File): ValidationResult {
     errors,
     warnings
   };
+}
+
+/**
+ * Checks for existing roster data before processing
+ */
+export async function checkForExistingData(
+  userId: string,
+  month: number,
+  year: number
+): Promise<ExistingDataCheck> {
+  return await checkExistingRosterData(userId, month, year);
+}
+
+/**
+ * Processes CSV upload with roster replacement if needed
+ * SAFE VERSION: Validates and processes new data BEFORE deleting existing data
+ */
+export async function processCSVUploadWithReplacement(
+  file: File,
+  userId: string,
+  position: Position,
+  month: number,
+  year: number,
+  onProgress?: ProgressCallback,
+  performReplacement: boolean = false
+): Promise<ProcessingResult> {
+  let replacementResult: ReplacementResult | undefined;
+
+  try {
+    if (performReplacement) {
+      console.log('🔄 ROSTER REPLACEMENT: Starting safe replacement workflow');
+      console.log('📁 File:', file.name, 'Size:', file.size, 'bytes');
+      console.log('👤 User:', userId, 'Month:', month, 'Year:', year);
+
+      // CRITICAL FIX: Process new data FIRST to ensure it's valid
+      onProgress?.({
+        step: 'validating',
+        progress: 5,
+        message: 'Validating new roster data...',
+        details: 'Processing new CSV file before replacement'
+      });
+
+      console.log('✅ STEP 1: Validating new CSV data (dry run)...');
+      // Step 1: Process the new CSV data first (without saving to database yet)
+      const newDataResult = await processCSVUpload(file, userId, position, onProgress, true, month, year); // dry run with target month/year
+
+      if (!newDataResult.success) {
+        console.error('❌ STEP 1 FAILED: New CSV validation failed');
+        console.error('Errors:', newDataResult.errors);
+        console.error('Warnings:', newDataResult.warnings);
+        return {
+          success: false,
+          errors: [`Cannot replace data - new CSV processing failed: ${newDataResult.errors?.join(', ')}`],
+          replacementPerformed: false,
+          replacementResult: undefined
+        };
+      }
+
+      console.log('✅ STEP 1 SUCCESS: New CSV data is valid');
+      console.log('Flight duties found:', newDataResult.flightDuties?.length || 0);
+      console.log('Layover periods found:', newDataResult.layoverRestPeriods?.length || 0);
+
+      // Step 2: Only if new data is valid, then delete existing data
+      console.log('🗑️ STEP 2: Deleting existing data...');
+      onProgress?.({
+        step: 'validating',
+        progress: 50,
+        message: 'Replacing existing data...',
+        details: 'New data validated - removing existing flights and calculations'
+      });
+
+      replacementResult = await replaceRosterData(
+        userId,
+        month,
+        year,
+        `Roster replacement via CSV upload - ${file.name}`
+      );
+
+      if (!replacementResult.success) {
+        console.error('❌ STEP 2 FAILED: Failed to delete existing data');
+        console.error('Errors:', replacementResult.errors);
+        return {
+          success: false,
+          errors: [`Failed to replace existing data: ${replacementResult.errors.join(', ')}`],
+          replacementPerformed: false,
+          replacementResult
+        };
+      }
+
+      console.log('✅ STEP 2 SUCCESS: Existing data deleted');
+      console.log('Deleted flights:', replacementResult.deletedFlights);
+      console.log('Deleted rest periods:', replacementResult.deletedRestPeriods);
+      console.log('Deleted calculation:', replacementResult.deletedCalculation);
+
+      // Step 3: Now process and save the new data (for real this time)
+      console.log('💾 STEP 3: Saving new data to database...');
+      onProgress?.({
+        step: 'processing',
+        progress: 75,
+        message: 'Saving new roster data...',
+        details: 'Creating new flights and calculations'
+      });
+
+      const finalResult = await processCSVUpload(file, userId, position, onProgress, false, month, year); // real save with target month/year
+
+      if (!finalResult.success) {
+        console.error('❌ STEP 3 FAILED: Failed to save new data');
+        console.error('Errors:', finalResult.errors);
+        console.error('⚠️ CRITICAL: Data has been deleted but new data failed to save!');
+        return {
+          success: false,
+          errors: [`CRITICAL: Existing data was deleted but new data failed to save: ${finalResult.errors?.join(', ')}`],
+          replacementPerformed: true,
+          replacementResult
+        };
+      }
+
+      console.log('✅ STEP 3 SUCCESS: New data saved successfully');
+      console.log('🎉 ROSTER REPLACEMENT COMPLETED SUCCESSFULLY');
+
+      return {
+        ...finalResult,
+        replacementPerformed: performReplacement,
+        replacementResult
+      };
+    } else {
+      // Normal processing without replacement
+      const result = await processCSVUpload(file, userId, position, onProgress, false, month, year);
+
+      return {
+        ...result,
+        replacementPerformed: false,
+        replacementResult: undefined
+      };
+    }
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('💥 ROSTER REPLACEMENT FAILED WITH EXCEPTION');
+    console.error('Error:', error);
+    console.error('Stack:', error instanceof Error ? error.stack : 'No stack trace');
+    return {
+      success: false,
+      errors: [`Roster replacement failed with exception: ${errorMessage}`],
+      replacementPerformed: false,
+      replacementResult
+    };
+  }
 }

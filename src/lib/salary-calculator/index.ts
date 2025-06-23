@@ -88,11 +88,24 @@ export { FlydubaiCSVParser } from './airlines/flydubai-parser';
 // Phase 3: Upload processing
 export {
   processCSVUpload,
+  processCSVUploadWithReplacement,
   validateCSVFileQuick,
+  checkForExistingData,
   type ProcessingStatus,
   type ProcessingResult,
   type ProgressCallback
 } from './upload-processor';
+
+// Roster replacement utilities
+export {
+  checkExistingRosterData,
+  replaceRosterData,
+  validateMonthYear,
+  getMonthName,
+  createReplacementSummary,
+  type ExistingDataCheck,
+  type ReplacementResult
+} from './roster-replacement';
 
 // Phase 4: Manual entry processing
 export {

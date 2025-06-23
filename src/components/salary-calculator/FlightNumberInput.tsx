@@ -67,20 +67,21 @@ export function FlightNumberInput({
   // Handle input change for a specific flight number
   const handleInputChange = (index: number, inputValue: string) => {
     const newFlightNumbers = [...flightNumbers];
-    const formattedValue = inputValue.toUpperCase().trim();
-    newFlightNumbers[index] = formattedValue;
-    
-    setCurrentInput(formattedValue);
-    
+    // Only allow numbers, automatically add FZ prefix when saving
+    const numbersOnly = inputValue.replace(/[^0-9]/g, '');
+    newFlightNumbers[index] = numbersOnly;
+
+    setCurrentInput(numbersOnly);
+
     // Remove empty entries from the end, but keep at least one
-    const cleanedNumbers = newFlightNumbers.filter((num, i) => 
+    const cleanedNumbers = newFlightNumbers.filter((num, i) =>
       num !== '' || i === 0 || i < newFlightNumbers.length - 1
     );
-    
+
     if (cleanedNumbers.length === 0) {
       cleanedNumbers.push('');
     }
-    
+
     onChange(cleanedNumbers);
   };
 
@@ -226,7 +227,7 @@ export function FlightNumberInput({
                     onFocus={() => handleFocus(index)}
                     onBlur={() => handleBlur(index)}
                     onKeyDown={e => handleKeyDown(e, index)}
-                    placeholder={index === 0 ? 'FZ123' : 'FZ124'}
+                    placeholder={index === 0 ? '123' : '124'}
                     disabled={disabled}
                     className={cn(
                       'pl-10',

@@ -37,10 +37,14 @@ import { ManualFlightEntry } from '@/components/salary-calculator/ManualFlightEn
 import { useToast } from '@/hooks/use-toast';
 import {
   processCSVUpload,
+  processCSVUploadWithReplacement,
+  checkForExistingData,
   ProcessingStatus as ProcessingStatusType,
-  validateCSVFileQuick
+  validateCSVFileQuick,
+  type ExistingDataCheck
 } from '@/lib/salary-calculator/upload-processor';
 import { recalculateMonthlyTotals } from '@/lib/salary-calculator/recalculation-engine';
+import { RosterReplacementDialog } from '@/components/salary-calculator/RosterReplacementDialog';
 import { cn } from '@/lib/utils';
 
 export default function DashboardPage() {
@@ -96,6 +100,12 @@ export default function DashboardPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadState, setUploadState] = useState<'month' | 'upload' | 'processing'>('month');
   const [processingStatus, setProcessingStatus] = useState<ProcessingStatusType | null>(null);
+
+  // Roster replacement state
+  const [replacementDialogOpen, setReplacementDialogOpen] = useState(false);
+  const [existingDataCheck, setExistingDataCheck] = useState<ExistingDataCheck | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [replacementProcessing, setReplacementProcessing] = useState(false);
 
   // Get user position for display
   const userPosition = user?.user_metadata?.position || 'CCM';
@@ -280,6 +290,37 @@ export default function DashboardPage() {
     }
 
     const effectiveUserId = user.id;
+    const currentYear = new Date().getFullYear();
+
+    // Check for existing data before processing
+    try {
+      const existingCheck = await checkForExistingData(effectiveUserId, selectedUploadMonth, currentYear);
+
+      if (existingCheck.error) {
+        salaryCalculator.csvUploadError(`Error checking existing data: ${existingCheck.error}`);
+        return;
+      }
+
+      // If data exists, show replacement confirmation dialog
+      if (existingCheck.exists) {
+        setExistingDataCheck(existingCheck);
+        setPendingFile(file);
+        setReplacementDialogOpen(true);
+        return;
+      }
+
+      // No existing data, proceed with normal upload
+      await processFileUpload(file, effectiveUserId, false);
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      salaryCalculator.csvUploadError(`Error during upload: ${errorMessage}`);
+    }
+  };
+
+  // Process file upload (with or without replacement)
+  const processFileUpload = async (file: File, userId: string, performReplacement: boolean) => {
+    if (!selectedUploadMonth) return;
 
     setSelectedFile(file);
     setUploadState('processing');
@@ -288,23 +329,36 @@ export default function DashboardPage() {
     const loadingToast = salaryCalculator.processingStarted(file.name);
 
     try {
-      const result = await processCSVUpload(
+      const currentYear = new Date().getFullYear();
+
+      const result = await processCSVUploadWithReplacement(
         file,
-        effectiveUserId,
+        userId,
         userPosition as Position,
+        selectedUploadMonth,
+        currentYear,
         (status) => {
           setProcessingStatus(status);
-        }
+        },
+        performReplacement
       );
 
       // Dismiss loading toast
       salaryCalculator.dismiss(loadingToast);
 
       if (result.success && result.flightDuties) {
-        salaryCalculator.csvUploadSuccess(file.name, result.flightDuties.length);
+        if (performReplacement && result.replacementPerformed) {
+          salaryCalculator.csvUploadSuccess(
+            file.name,
+            result.flightDuties.length,
+            `Replaced existing data and processed ${result.flightDuties.length} flights`
+          );
+        } else {
+          salaryCalculator.csvUploadSuccess(file.name, result.flightDuties.length);
+        }
 
         // Refresh dashboard data
-        await refreshDashboardData(effectiveUserId, selectedUploadMonth);
+        await refreshDashboardData(userId, selectedUploadMonth);
 
         // Close modal - user will see results on dashboard
         handleUploadModalClose();
@@ -327,6 +381,38 @@ export default function DashboardPage() {
     setSelectedUploadMonth(null);
     setSelectedFile(null);
     setProcessingStatus(null);
+    // Reset replacement state
+    setReplacementDialogOpen(false);
+    setExistingDataCheck(null);
+    setPendingFile(null);
+    setReplacementProcessing(false);
+  };
+
+  // Handle replacement confirmation
+  const handleReplacementConfirm = async () => {
+    if (!pendingFile || !user?.id || !selectedUploadMonth) return;
+
+    setReplacementProcessing(true);
+    setReplacementDialogOpen(false);
+
+    try {
+      await processFileUpload(pendingFile, user.id, true);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      salaryCalculator.csvUploadError(`Replacement failed: ${errorMessage}`);
+    } finally {
+      setReplacementProcessing(false);
+      setPendingFile(null);
+      setExistingDataCheck(null);
+    }
+  };
+
+  // Handle replacement cancellation
+  const handleReplacementCancel = () => {
+    setReplacementDialogOpen(false);
+    setPendingFile(null);
+    setExistingDataCheck(null);
+    setUploadState('month'); // Go back to month selection
   };
 
   // Handle manual entry modal
@@ -919,6 +1005,20 @@ export default function DashboardPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Roster Replacement Confirmation Dialog */}
+      {existingDataCheck && selectedUploadMonth && (
+        <RosterReplacementDialog
+          open={replacementDialogOpen}
+          onOpenChange={setReplacementDialogOpen}
+          month={selectedUploadMonth}
+          year={new Date().getFullYear()}
+          existingFlightCount={existingDataCheck.flightCount}
+          onConfirm={handleReplacementConfirm}
+          onCancel={handleReplacementCancel}
+          isProcessing={replacementProcessing}
+        />
+      )}
     </div>
   );
 }

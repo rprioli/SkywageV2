@@ -2,23 +2,21 @@
 
 /**
  * Flight Entry Form Component for Skywage Salary Calculator
- * Phase 4: Complete form for manual flight entry
- * Following existing form patterns and integrating all input components
+ * Phase 7: Redesigned with clean, minimal UI matching Upload Roster design
+ * Following ultra-streamlined workflow principles
  */
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { 
-  Calendar, 
-  Save, 
-  Calculator, 
+import {
+  Save,
   AlertCircle,
-  CheckCircle,
-  Loader2
+  Loader2,
+  Plane,
+  MapPin
 } from 'lucide-react';
 
 import { FlightTypeSelector } from './FlightTypeSelector';
@@ -61,6 +59,9 @@ export function FlightEntryForm({
     isCrossDay: initialData?.isCrossDay || false
   });
 
+  // Track which fields have been touched by the user
+  const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
+
   // Validation state
   const [validation, setValidation] = useState<FormValidationResult>({
     valid: false,
@@ -80,6 +81,9 @@ export function FlightEntryForm({
     field: K,
     value: ManualFlightEntryData[K]
   ) => {
+    // Mark field as touched
+    setTouchedFields(prev => new Set(prev).add(field));
+
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -88,9 +92,12 @@ export function FlightEntryForm({
 
   // Handle duty type change - adjust form fields accordingly
   const handleDutyTypeChange = (dutyType: DutyType) => {
+    // Mark duty type as touched
+    setTouchedFields(prev => new Set(prev).add('dutyType'));
+
     setFormData(prev => {
       const newData = { ...prev, dutyType };
-      
+
       // Clear flight numbers and sectors for ASBY
       if (dutyType === 'asby' || dutyType === 'sby' || dutyType === 'off') {
         newData.flightNumbers = [];
@@ -108,7 +115,7 @@ export function FlightEntryForm({
           newData.sectors = [prev.sectors[0] || '', ''];
         }
       }
-      
+
       return newData;
     });
   };
@@ -138,18 +145,7 @@ export function FlightEntryForm({
   const showFlightFields = formData.dutyType !== 'asby' && formData.dutyType !== 'sby' && formData.dutyType !== 'off';
 
   return (
-    <Card className={cn('w-full', className)}>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-primary" />
-          Manual Flight Entry
-        </CardTitle>
-        <CardDescription>
-          Enter flight duty details manually for salary calculation
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className={cn('space-y-6', className)}>
           {/* Date */}
           <div className="space-y-2">
             <label htmlFor="date" className="block text-sm font-medium">
@@ -163,7 +159,7 @@ export function FlightEntryForm({
                 onChange={e => handleFieldChange('date', e.target.value)}
                 disabled={isFormDisabled}
                 className={cn(
-                  validation.fieldErrors.date && 'border-destructive focus-visible:border-destructive'
+                  validation.fieldErrors.date && touchedFields.has('date') && 'border-destructive focus-visible:border-destructive'
                 )}
                 max={getTodayDate()} // Prevent future dates beyond today
               />
@@ -178,7 +174,7 @@ export function FlightEntryForm({
                 </button>
               )}
             </div>
-            {validation.fieldErrors.date && (
+            {validation.fieldErrors.date && touchedFields.has('date') && (
               <p className="text-destructive text-sm">{validation.fieldErrors.date}</p>
             )}
           </div>
@@ -192,51 +188,102 @@ export function FlightEntryForm({
             required
           />
 
-          {/* Flight Numbers - only for flight duties */}
+          {/* Flight Details Grid - only for flight duties */}
           {showFlightFields && (
-            <FlightNumberInput
-              value={formData.flightNumbers}
-              onChange={value => handleFieldChange('flightNumbers', value)}
-              disabled={isFormDisabled}
-              error={validation.fieldErrors.flightNumbers}
-              label="Flight Numbers"
-              required
-              allowMultiple={formData.dutyType === 'turnaround'}
-              maxFlights={formData.dutyType === 'layover' ? 1 : 4}
-            />
-          )}
+            <div className="space-y-6">
+              {/* Flight Numbers */}
+              <div className="space-y-3">
+                <label className="block text-sm font-medium">
+                  Flight Numbers <span className="text-destructive">*</span>
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {formData.flightNumbers.slice(0, formData.dutyType === 'layover' ? 1 : 4).map((flightNumber, index) => (
+                    <div key={index} className="relative">
+                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                        <Plane className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <Input
+                        type="text"
+                        value={flightNumber}
+                        onChange={e => {
+                          const newNumbers = [...formData.flightNumbers];
+                          newNumbers[index] = e.target.value.replace(/[^0-9]/g, '');
+                          handleFieldChange('flightNumbers', newNumbers);
+                        }}
+                        placeholder={index === 0 ? '123' : '124'}
+                        disabled={isFormDisabled}
+                        className="pl-10"
+                        maxLength={4}
+                      />
+                    </div>
+                  ))}
+                </div>
+                {validation.fieldErrors.flightNumbers && touchedFields.has('flightNumbers') && (
+                  <p className="text-destructive text-sm">{validation.fieldErrors.flightNumbers}</p>
+                )}
+              </div>
 
-          {/* Sectors - only for flight duties */}
-          {showFlightFields && (
-            <SectorInput
-              value={formData.sectors}
-              onChange={value => handleFieldChange('sectors', value)}
-              disabled={isFormDisabled}
-              error={validation.fieldErrors.sectors}
-              label="Sectors"
-              required
-              allowMultiple={formData.dutyType === 'turnaround'}
-              maxSectors={formData.dutyType === 'layover' ? 1 : 4}
-            />
+              {/* Sectors */}
+              <div className="space-y-3">
+                <label className="block text-sm font-medium">
+                  Sectors <span className="text-destructive">*</span>
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Ensure we have the right number of sector inputs based on duty type */}
+                  {Array.from({ length: formData.dutyType === 'layover' ? 2 : 4 }, (_, index) => {
+                    const sector = formData.sectors[index] || '';
+                    const placeholders = ['DXB', 'KHI', 'KHI', 'DXB'];
+
+                    return (
+                      <div key={index} className="relative">
+                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <Input
+                          type="text"
+                          value={sector}
+                          onChange={e => {
+                            const newSectors = [...formData.sectors];
+                            // Ensure array is long enough
+                            while (newSectors.length <= index) {
+                              newSectors.push('');
+                            }
+                            newSectors[index] = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 3);
+                            handleFieldChange('sectors', newSectors);
+                          }}
+                          placeholder={placeholders[index]}
+                          disabled={isFormDisabled}
+                          className="pl-10"
+                          maxLength={3}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                {validation.fieldErrors.sectors && touchedFields.has('sectors') && (
+                  <p className="text-destructive text-sm">{validation.fieldErrors.sectors}</p>
+                )}
+              </div>
+            </div>
           )}
 
           {/* Times */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <TimeInput
               value={formData.reportTime}
               onChange={value => handleFieldChange('reportTime', value)}
               disabled={isFormDisabled}
-              error={validation.fieldErrors.reportTime}
-              label="Report Time"
+              error={validation.fieldErrors.reportTime && touchedFields.has('reportTime') ? validation.fieldErrors.reportTime : undefined}
+              label="Reporting"
               required
             />
-            
+
             <TimeInput
               value={formData.debriefTime}
               onChange={value => handleFieldChange('debriefTime', value)}
               disabled={isFormDisabled}
-              error={validation.fieldErrors.debriefTime}
-              label="Debrief Time"
+              error={validation.fieldErrors.debriefTime && touchedFields.has('debriefTime') ? validation.fieldErrors.debriefTime : undefined}
+              label="Debriefing"
               required
             />
           </div>
@@ -258,7 +305,7 @@ export function FlightEntryForm({
           </div>
 
           {/* Time sequence error */}
-          {validation.fieldErrors.timeSequence && (
+          {validation.fieldErrors.timeSequence && (touchedFields.has('reportTime') || touchedFields.has('debriefTime')) && (
             <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
               <p className="text-destructive text-sm flex items-center gap-2">
                 <AlertCircle className="h-4 w-4" />
@@ -267,39 +314,7 @@ export function FlightEntryForm({
             </div>
           )}
 
-          {/* Calculation Preview */}
-          {validation.valid && validation.calculatedDutyHours && validation.estimatedPay && (
-            <div className="p-4 bg-accent/10 border border-accent/20 rounded-md">
-              <div className="flex items-center gap-2 mb-2">
-                <Calculator className="h-4 w-4 text-accent" />
-                <span className="text-sm font-medium text-accent">Calculation Preview</span>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Duty Hours:</span>
-                  <span className="ml-2 font-medium">{validation.calculatedDutyHours.toFixed(2)}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Estimated Pay:</span>
-                  <span className="ml-2 font-medium text-accent">{validation.estimatedPay.toFixed(2)} AED</span>
-                </div>
-              </div>
-            </div>
-          )}
 
-          {/* Warnings */}
-          {validation.warnings.length > 0 && (
-            <div className="p-3 bg-orange-50 border border-orange-200 rounded-md">
-              <div className="space-y-1">
-                {validation.warnings.map((warning, index) => (
-                  <p key={index} className="text-orange-700 text-sm flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    {warning}
-                  </p>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Submit Button */}
           <Button
@@ -320,16 +335,7 @@ export function FlightEntryForm({
             )}
           </Button>
 
-          {/* Form validation summary */}
-          {!validation.valid && validation.errors.length > 0 && (
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">
-                Please fix the errors above to save the flight duty
-              </p>
-            </div>
-          )}
-        </form>
-      </CardContent>
-    </Card>
+
+    </form>
   );
 }

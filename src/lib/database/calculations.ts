@@ -285,6 +285,34 @@ export async function deleteLayoverRestPeriods(
 }
 
 /**
+ * Deletes monthly calculation for a specific month and year
+ */
+export async function deleteMonthlyCalculation(
+  userId: string,
+  month: number,
+  year: number
+): Promise<{ deleted: boolean; error: string | null }> {
+  try {
+    const { error } = await supabase
+      .from('monthly_calculations')
+      .delete()
+      .eq('user_id', userId)
+      .eq('month', month)
+      .eq('year', year);
+
+    if (error) {
+      console.error('Error deleting monthly calculation:', error);
+      return { deleted: false, error: error.message };
+    }
+
+    return { deleted: true, error: null };
+  } catch (error) {
+    console.error('Error deleting monthly calculation:', error);
+    return { deleted: false, error: (error as Error).message };
+  }
+}
+
+/**
  * Gets calculation summary for multiple months
  */
 export async function getCalculationSummary(
@@ -312,11 +340,11 @@ export async function getCalculationSummary(
     // Filter by month range if within the same year
     let filteredData = data;
     if (startYear === endYear) {
-      filteredData = data.filter(calc => 
+      filteredData = data.filter(calc =>
         calc.month >= startMonth && calc.month <= endMonth
       );
     } else {
-      filteredData = data.filter(calc => 
+      filteredData = data.filter(calc =>
         (calc.year === startYear && calc.month >= startMonth) ||
         (calc.year === endYear && calc.month <= endMonth) ||
         (calc.year > startYear && calc.year < endYear)

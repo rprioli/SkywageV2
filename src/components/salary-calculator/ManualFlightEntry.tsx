@@ -2,24 +2,20 @@
 
 /**
  * Manual Flight Entry Component for Skywage Salary Calculator
- * Phase 4: Main container for manual flight entry workflow
- * Following existing patterns from Phase 3 upload components
+ * Phase 7: Redesigned with clean, minimal UI matching Upload Roster design
+ * Following ultra-streamlined workflow principles
  */
 
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  FileText, 
-  CheckCircle, 
-  AlertCircle, 
-  RefreshCw,
-  ArrowLeft,
-  Plus
+import {
+  CheckCircle,
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 
 import { FlightEntryForm } from './FlightEntryForm';
@@ -27,7 +23,7 @@ import { SalaryBreakdown } from './SalaryBreakdown';
 import { FlightDutiesTable } from './FlightDutiesTable';
 
 import { Position } from '@/types/salary-calculator';
-import { 
+import {
   ManualFlightEntryData,
   processManualEntry,
   ManualEntryResult
@@ -129,21 +125,17 @@ export function ManualFlightEntry({
 
       case 'processing':
         return (
-          <Card>
-            <CardContent className="p-8">
-              <div className="text-center space-y-4">
-                <div className="flex justify-center">
-                  <RefreshCw className="h-8 w-8 text-primary animate-spin" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium">Processing Flight Entry</h3>
-                  <p className="text-muted-foreground">
-                    Saving flight duty and calculating salary...
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="text-center space-y-4 py-8">
+            <div className="flex justify-center">
+              <RefreshCw className="h-8 w-8 text-primary animate-spin" />
+            </div>
+            <div>
+              <h3 className="text-lg font-medium">Processing Flight Entry</h3>
+              <p className="text-muted-foreground">
+                Saving flight duty and calculating salary...
+              </p>
+            </div>
+          </div>
         );
 
       case 'success':
@@ -230,53 +222,9 @@ export function ManualFlightEntry({
   };
 
   return (
-    <div className={cn('w-full max-w-4xl mx-auto', className)}>
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          {onBack && entryState === 'form' && (
-            <Button variant="ghost" size="sm" onClick={onBack}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          )}
-          <div>
-            <h1 className="text-2xl font-bold">Manual Flight Entry</h1>
-            <p className="text-muted-foreground">
-              Enter flight duties manually for salary calculation
-            </p>
-          </div>
-        </div>
-
-        {/* Progress indicator */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <FileText className="h-4 w-4" />
-          <span>Position: {position}</span>
-          {user?.email && (
-            <>
-              <span>•</span>
-              <span>{user.email}</span>
-            </>
-          )}
-        </div>
-      </div>
-
+    <div className={cn('w-full', className)}>
       {/* Main content */}
       {renderContent()}
-
-      {/* Help text */}
-      {entryState === 'form' && (
-        <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-          <h3 className="text-sm font-medium mb-2">Manual Entry Tips:</h3>
-          <ul className="text-sm text-muted-foreground space-y-1">
-            <li>• Choose the correct flight type (Turnaround, Layover, or Airport Standby)</li>
-            <li>• Flight numbers should be in format FZ123 or FZ1234</li>
-            <li>• Sectors should be in format DXB-CMB</li>
-            <li>• Use 24-hour time format (e.g., 09:30, 17:45)</li>
-            <li>• Enable "Cross-day flight" if debrief time is the next day</li>
-            <li>• The system will calculate duty hours and estimated pay automatically</li>
-          </ul>
-        </div>
-      )}
     </div>
   );
 }

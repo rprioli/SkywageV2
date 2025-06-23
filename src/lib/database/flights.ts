@@ -308,6 +308,102 @@ export async function deleteFlightDuty(
 }
 
 /**
+ * Checks if flight data exists for a specific month and year
+ */
+export async function checkExistingFlightData(
+  userId: string,
+  month: number,
+  year: number
+): Promise<{ exists: boolean; count: number; error: string | null }> {
+  try {
+    const { data, error, count } = await supabase
+      .from('flights')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('month', month)
+      .eq('year', year);
+
+    if (error) {
+      console.error('Error checking existing flight data:', error);
+      return { exists: false, count: 0, error: error.message };
+    }
+
+    return {
+      exists: (count || 0) > 0,
+      count: count || 0,
+      error: null
+    };
+  } catch (error) {
+    console.error('Error checking existing flight data:', error);
+    return {
+      exists: false,
+      count: 0,
+      error: (error as Error).message
+    };
+  }
+}
+
+/**
+ * Deletes all flight data for a specific month and year
+ */
+export async function deleteFlightDataByMonth(
+  userId: string,
+  month: number,
+  year: number,
+  changeReason?: string
+): Promise<{ deletedCount: number; error: string | null }> {
+  try {
+    // First get all flights for audit trail
+    const { data: existingFlights } = await supabase
+      .from('flights')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('month', month)
+      .eq('year', year);
+
+    // Delete all flights for the month
+    const { data, error } = await supabase
+      .from('flights')
+      .delete()
+      .eq('user_id', userId)
+      .eq('month', month)
+      .eq('year', year)
+      .select('id');
+
+    if (error) {
+      console.error('Error deleting flight data by month:', error);
+      return { deletedCount: 0, error: error.message };
+    }
+
+    // Create audit trail entries for deleted flights
+    if (existingFlights && existingFlights.length > 0) {
+      const auditPromises = existingFlights.map(flight =>
+        createAuditTrailEntry({
+          flightId: flight.id,
+          userId,
+          action: 'deleted',
+          oldData: rowToFlightDuty(flight),
+          changeReason: changeReason || `Monthly roster replacement - ${month}/${year}`
+        })
+      );
+
+      await Promise.all(auditPromises);
+    }
+
+    return {
+      deletedCount: data?.length || 0,
+      error: null
+    };
+  } catch (error) {
+    console.error('Error deleting flight data by month:', error);
+    return {
+      deletedCount: 0,
+      error: (error as Error).message
+    };
+  }
+}
+
+/**
  * Creates an audit trail entry
  */
 async function createAuditTrailEntry(entry: {

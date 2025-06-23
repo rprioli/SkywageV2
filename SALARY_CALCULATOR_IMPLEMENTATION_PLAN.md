@@ -1176,13 +1176,6 @@ The Skywage Salary Calculator is now complete and ready for production deploymen
 - 🚧 **Per Diem Logic**: Validate layover rest period calculations
 - 🚧 **ASBY Detection**: Ensure airport standby duties are properly identified
 
-**🔧 Testing Pages for Validation:**
-
-- **Primary Test Page**: `src/app/salary-calculator-phase6-test/page.tsx`
-- **CSV Upload Page**: `src/app/(dashboard)/salary-calculator/upload/page.tsx`
-- **Usage**: Use these pages to test all salary calculator fixes and functionality
-- **Status**: Ready for flight detection and calculation accuracy testing
-
 #### **Dependencies from Previous Phases:**
 
 - Phase 1: ✅ Unit tests and validation framework
