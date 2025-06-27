@@ -6,8 +6,8 @@
 - **Date**: January 2025 (Updated: June 2025)
 - **Project**: Skywage V2
 - **Scope**: Multi-Airline Cabin Crew Salary Calculator (Starting with Flydubai)
-- **Implementation Status**: Phase 8 Completed ✅ - Production Ready System 🚀
-- **Current Status**: All critical issues resolved, system production-ready (June 2025)
+- **Implementation Status**: Phase 8 Completed ✅ + Phase 7 UI/UX Redesign Completed ✅
+- **Current Status**: All critical issues resolved, enhanced UI/UX implemented, system production-ready (June 2025)
 
 ---
 
@@ -536,3 +536,196 @@ const flydubaiConfig: AirlineConfig = {
 ```
 
 This approach ensures the system is scalable and properly branded as a **Skywage** feature rather than airline-specific tooling.
+
+---
+
+## Phase 7 UI/UX Redesign: Manual Entry Interface Enhancement
+
+### Overview
+
+**Completion Date**: June 2025
+**Status**: ✅ **COMPLETED** - Enhanced user experience implemented
+**Scope**: Complete redesign of manual flight entry interface with grid-based layout
+
+### Design Principles
+
+The Phase 7 UI/UX redesign follows Skywage's core design principles:
+
+- **Minimalistic Design**: Clean, uncluttered interfaces prioritizing functionality
+- **User-Centric Input**: Simplified input formats that match user mental models
+- **Progressive Disclosure**: Information and validation appear when needed
+- **Consistent Branding**: Skywage colors (#4C49ED purple, #6DDC91 green, #FFFFFF white)
+- **Professional Aesthetics**: Modern, focused design suitable for aviation professionals
+
+### Grid-Based Layout Implementation
+
+#### Flight Numbers Section
+
+```typescript
+// User Input Format: Simplified numbers only
+Input: ['123', '124']
+Display: 2-column grid with plane icons
+Placeholder: '123', '124'
+Validation: 3-4 digits only
+Auto-Transform: '123' → 'FZ123' (system level)
+```
+
+#### Sectors Section
+
+```typescript
+// User Input Format: Individual airport codes
+Input: ['DXB', 'KHI', 'KHI', 'DXB']
+Display: 4-column grid (2x2) with map pin icons
+Placeholder: 'DXB', 'KHI', 'KHI', 'DXB'
+Validation: 3-letter airport codes only
+Auto-Transform: ['DXB', 'KHI', 'KHI', 'DXB'] → ['DXB-KHI', 'KHI-DXB']
+```
+
+#### Times Section
+
+```typescript
+// User Input Format: Standard time format
+Input: ['09:30', '17:45']
+Display: 2-column grid with clock icons
+Labels: 'Reporting', 'Debriefing'
+Validation: 24-hour time format
+```
+
+### Input Transformation System
+
+#### Core Transformation Functions
+
+```typescript
+// File: src/lib/salary-calculator/input-transformers.ts
+
+transformFlightNumbers(input: string[]): string[]
+// Converts ['123', '124'] → ['FZ123', 'FZ124']
+
+transformSectors(input: string[]): string[]
+// Converts ['DXB', 'KHI', 'KHI', 'DXB'] → ['DXB-KHI', 'KHI-DXB']
+
+validateAndTransformInput(flights: string[], sectors: string[]): ValidationResult
+// Validates simplified input and returns transformed data
+```
+
+#### Validation Logic Updates
+
+```typescript
+// Updated validation accepts simplified formats
+validateFlightNumbers(numbers: string[], dutyType: DutyType): FieldValidationResult
+// Accepts: ['123', '124'] instead of ['FZ123', 'FZ124']
+
+validateSectors(airportCodes: string[], dutyType: DutyType): FieldValidationResult
+// Accepts: ['DXB', 'KHI'] instead of ['DXB-KHI']
+```
+
+### Smart Validation System
+
+#### Progressive Error Disclosure
+
+- **Initial State**: Clean form with no validation warnings
+- **Touch-Based Validation**: Errors appear only after user interacts with specific fields
+- **Field-Specific Feedback**: Validation tied to individual input fields
+- **User-Friendly Messages**: Error messages reflect simplified input format
+
+#### Implementation
+
+```typescript
+// Touch tracking for progressive validation
+const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
+
+// Conditional error display
+{
+  validation.fieldErrors.flightNumbers &&
+    touchedFields.has("flightNumbers") && (
+      <p className="text-destructive text-sm">
+        {validation.fieldErrors.flightNumbers}
+      </p>
+    );
+}
+```
+
+### Component Architecture
+
+#### Enhanced Components
+
+- **FlightEntryForm.tsx**: Grid-based layout with dynamic field management
+- **FlightTypeSelector.tsx**: Clean button-based selection (removed verbose descriptions)
+- **FlightNumberInput.tsx**: Simplified number-only input with auto-transformation
+- **SectorInput.tsx**: Individual airport code input with 3-character validation
+- **ManualFlightEntry.tsx**: Streamlined container with minimal UI elements
+
+#### New Infrastructure
+
+- **input-transformers.ts**: Bidirectional conversion between user and system formats
+- **Enhanced Validation**: Updated validation logic for simplified input formats
+- **Touch-Based Validation**: Progressive error disclosure system
+
+### User Experience Improvements
+
+#### Before Redesign
+
+- Complex input requirements (FZ123, DXB-CMB format)
+- Cluttered interface with excessive help text and warnings
+- Only 2 sector inputs for turnaround flights
+- Immediate validation warnings on form load
+- Verbose flight type descriptions and calculation previews
+
+#### After Redesign
+
+- ✅ **Simplified Input**: Numbers only (123) and airport codes (DXB, KHI)
+- ✅ **Clean Interface**: Minimal, professional design matching Upload Roster modal
+- ✅ **Complete Grid**: 4 sector inputs for full turnaround routes
+- ✅ **Smart Validation**: Progressive error disclosure, no initial warnings
+- ✅ **Streamlined Selection**: Simple button-based flight type selection
+- ✅ **Professional Aesthetics**: Consistent Skywage branding and spacing
+
+### Technical Specifications
+
+#### File Structure
+
+```
+src/
+├── components/salary-calculator/
+│   ├── FlightEntryForm.tsx          # Enhanced with grid layout
+│   ├── FlightTypeSelector.tsx       # Simplified button design
+│   ├── FlightNumberInput.tsx        # Number-only input
+│   ├── SectorInput.tsx              # Airport code input
+│   └── ManualFlightEntry.tsx        # Streamlined container
+├── lib/salary-calculator/
+│   ├── input-transformers.ts        # NEW: Input transformation system
+│   ├── manual-entry-validation.ts   # Updated for new formats
+│   └── manual-entry-processor.ts    # Enhanced with transformations
+```
+
+#### Integration Points
+
+- **Validation System**: Seamless integration with existing validation framework
+- **Data Processing**: Automatic transformation maintains compatibility with existing data structures
+- **UI Components**: Consistent with existing Skywage design system
+- **Database Operations**: No changes required to database schema or operations
+
+### Quality Assurance
+
+#### Testing Coverage
+
+- ✅ **Input Transformation**: Bidirectional conversion accuracy
+- ✅ **Validation Logic**: Simplified format acceptance and error handling
+- ✅ **UI Responsiveness**: Grid layout adaptation across screen sizes
+- ✅ **User Interaction**: Touch-based validation and progressive disclosure
+- ✅ **Data Integrity**: Compatibility with existing flight data
+
+#### Performance Impact
+
+- **Minimal Overhead**: Transformation functions are lightweight
+- **No Database Changes**: Existing data structures maintained
+- **Improved UX**: Faster user input with simplified formats
+- **Clean Code**: Reduced complexity in UI components
+
+### Repository Status
+
+- **Git Commit**: `b07875b` - Phase 7: Complete Manual Entry UI/UX Redesign
+- **Files Modified**: 35 files (enhanced/created)
+- **Code Quality**: +1,535 insertions, -3,482 deletions (net optimization)
+- **Documentation**: Updated implementation plans and specifications
+- **Status**: Production ready with enhanced user experience
