@@ -25,13 +25,19 @@ import {
 
 // Manual entry form data
 export interface ManualFlightEntryData {
-  date: string; // YYYY-MM-DD format
+  date: string; // YYYY-MM-DD format - outbound flight date
   dutyType: DutyType;
-  flightNumbers: string[]; // Multiple for turnarounds
-  sectors: string[]; // Multiple for turnarounds
-  reportTime: string; // HH:MM format
-  debriefTime: string; // HH:MM format
-  isCrossDay: boolean; // Whether debrief is next day
+  flightNumbers: string[]; // Multiple for turnarounds and layovers (2 flights)
+  sectors: string[]; // Multiple for turnarounds and layovers
+  reportTime: string; // HH:MM format - for turnaround/asby, or outbound report for layover
+  debriefTime: string; // HH:MM format - for turnaround/asby, or inbound debrief for layover
+  isCrossDay: boolean; // Whether debrief is next day (auto-detected)
+  // Layover-specific fields
+  inboundDate?: string; // YYYY-MM-DD format - inbound flight date for layover
+  reportTimeInbound?: string; // HH:MM format - inbound report time for layover
+  debriefTimeOutbound?: string; // HH:MM format - outbound debrief time for layover
+  isCrossDayOutbound?: boolean; // Whether outbound debrief is next day (auto-detected)
+  isCrossDayInbound?: boolean; // Whether inbound debrief is next day (auto-detected)
 }
 
 // Field-level validation result
@@ -64,22 +70,23 @@ export function validateDate(date: string): FieldValidationResult {
     return { valid: false, error: 'Invalid date format' };
   }
 
-  // Check if date is too far in the past or future
+  // Check if date is within current year only
   const now = new Date();
-  const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-  const oneYearFromNow = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+  const currentYear = now.getFullYear();
+  const startOfCurrentYear = new Date(currentYear, 0, 1); // January 1st of current year
+  const endOfCurrentYear = new Date(currentYear, 11, 31); // December 31st of current year
 
-  if (dateObj < oneYearAgo) {
-    return { 
-      valid: false, 
-      error: 'Date cannot be more than 1 year in the past' 
+  if (dateObj < startOfCurrentYear) {
+    return {
+      valid: false,
+      error: 'Date must be within the current year'
     };
   }
 
-  if (dateObj > oneYearFromNow) {
-    return { 
-      valid: false, 
-      error: 'Date cannot be more than 1 year in the future' 
+  if (dateObj > endOfCurrentYear) {
+    return {
+      valid: false,
+      error: 'Date must be within the current year'
     };
   }
 
@@ -93,8 +100,8 @@ export function validateFlightNumbers(
   flightNumbers: string[], 
   dutyType: DutyType
 ): FieldValidationResult {
-  if (dutyType === 'asby' || dutyType === 'sby' || dutyType === 'off') {
-    // ASBY/SBY/OFF duties don't require flight numbers
+  if (dutyType === 'asby' || dutyType === 'recurrent' || dutyType === 'sby' || dutyType === 'off') {
+    // ASBY/Recurrent/SBY/OFF duties don't require flight numbers
     return { valid: true };
   }
 
@@ -151,11 +158,11 @@ export function validateFlightNumbers(
   }
 
   // Validate based on duty type
-  if (dutyType === 'layover' && validNumbers.length > 1) {
-    return { 
-      valid: false, 
-      error: 'Layover duties should have only one flight number',
-      suggestion: 'Use turnaround type for multiple flights'
+  if (dutyType === 'layover' && validNumbers.length !== 2) {
+    return {
+      valid: false,
+      error: 'Layover duties require exactly two flight numbers (outbound and inbound)',
+      suggestion: 'Enter both outbound and inbound flight numbers'
     };
   }
 
@@ -177,8 +184,8 @@ export function validateSectors(
   airportCodes: string[],
   dutyType: DutyType
 ): FieldValidationResult {
-  if (dutyType === 'asby' || dutyType === 'sby' || dutyType === 'off') {
-    // ASBY/SBY/OFF duties don't require sectors
+  if (dutyType === 'asby' || dutyType === 'recurrent' || dutyType === 'sby' || dutyType === 'off') {
+    // ASBY/Recurrent/SBY/OFF duties don't require sectors
     return { valid: true };
   }
 
@@ -227,18 +234,11 @@ export function validateSectors(
   }
 
   // Validate based on duty type
-  if (dutyType === 'layover' && validCodes.length > 2) {
+  if (dutyType === 'layover' && validCodes.length !== 4) {
     return {
       valid: false,
-      error: 'Layover duties should have only 2 airports (origin and destination)',
-      suggestion: 'Use turnaround type for multiple stops'
-    };
-  }
-
-  if (dutyType === 'layover' && validCodes.length < 2) {
-    return {
-      valid: false,
-      error: 'Layover duties require both origin and destination airports'
+      error: 'Layover duties require 4 airports (outbound: origin-destination, inbound: origin-destination)',
+      suggestion: 'Enter all 4 airports for the layover route'
     };
   }
 
@@ -349,6 +349,23 @@ export function validateManualEntry(
   if (!dateValidation.valid) {
     fieldErrors.date = dateValidation.error!;
     errors.push(dateValidation.error!);
+  }
+
+  // Validate inbound date for layover duties
+  if (data.dutyType === 'layover') {
+    if (!data.inboundDate) {
+      fieldErrors.inboundDate = 'Inbound date is required for layover duties';
+      errors.push('Inbound date is required for layover duties');
+    } else {
+      const inboundDateValidation = validateDate(data.inboundDate);
+      if (!inboundDateValidation.valid) {
+        fieldErrors.inboundDate = inboundDateValidation.error!;
+        errors.push(inboundDateValidation.error!);
+      } else if (data.date && new Date(data.inboundDate) < new Date(data.date)) {
+        fieldErrors.inboundDate = 'Inbound date cannot be before outbound date';
+        errors.push('Inbound date cannot be before outbound date');
+      }
+    }
   }
 
   // Validate flight numbers

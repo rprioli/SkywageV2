@@ -11,12 +11,13 @@ import {
   Position,
   DutyType
 } from '@/types/salary-calculator';
-import { 
+import {
   calculateMonthlySalary,
   calculateLayoverRestPeriods,
   classifyFlightDuty,
   parseTimeString,
-  calculateDuration
+  calculateDuration,
+  calculateFlightPay
 } from '@/lib/salary-calculator';
 import { createFlightDuties } from '@/lib/database/flights';
 import { 
@@ -67,15 +68,31 @@ export function convertToFlightDuty(
     const year = flightDate.getFullYear();
 
     // Parse times
-    const reportTimeObj = parseTimeString(data.reportTime);
-    const debriefTimeObj = parseTimeString(data.debriefTime);
+    const reportTimeResult = parseTimeString(data.reportTime);
+    const debriefTimeResult = parseTimeString(data.debriefTime);
 
-    if (!reportTimeObj || !debriefTimeObj) {
-      throw new Error('Invalid time format');
+    if (!reportTimeResult.success || !debriefTimeResult.success || !reportTimeResult.timeValue || !debriefTimeResult.timeValue) {
+      throw new Error(`Invalid time format: ${reportTimeResult.error || debriefTimeResult.error || 'Unknown time parsing error'}`);
     }
 
     // Calculate duty hours
-    const dutyHours = calculateDuration(reportTimeObj, debriefTimeObj, data.isCrossDay);
+    const dutyHours = calculateDuration(reportTimeResult.timeValue, debriefTimeResult.timeValue, data.isCrossDay);
+
+    // Calculate flight pay based on duty type and position
+    let flightPay = 0;
+    if (data.dutyType === 'asby') {
+      // ASBY is paid at fixed 4 hours at hourly rate
+      const rates = { CCM: { hourlyRate: 50, asbyHours: 4 }, SCCM: { hourlyRate: 62, asbyHours: 4 } };
+      flightPay = rates[position].asbyHours * rates[position].hourlyRate;
+    } else if (data.dutyType === 'recurrent') {
+      // Recurrent is paid at fixed 4 hours at hourly rate
+      const rates = { CCM: { hourlyRate: 50 }, SCCM: { hourlyRate: 62 } };
+      flightPay = 4 * rates[position].hourlyRate;
+    } else if (data.dutyType === 'turnaround' || data.dutyType === 'layover') {
+      // Regular flight duties are paid at hourly rate for actual duty hours
+      flightPay = calculateFlightPay(dutyHours, position);
+    }
+    // No pay for 'sby' or 'off' duty types
 
     // Transform simplified input to expected format
     const flightNumbers = transformFlightNumbers(data.flightNumbers);
@@ -91,19 +108,27 @@ export function convertToFlightDuty(
       flightNumbers,
       sectors,
       dutyType: data.dutyType,
-      reportTime: data.reportTime,
-      debriefTime: data.debriefTime,
+      reportTime: reportTimeResult.timeValue,
+      debriefTime: debriefTimeResult.timeValue,
       dutyHours,
+      flightPay,
       isCrossDay: data.isCrossDay,
       dataSource: 'manual',
       createdAt: new Date(),
       updatedAt: new Date()
     };
 
-    // Classify the flight duty (this will set additional properties)
-    const classifiedDuty = classifyFlightDuty(flightDuty, position);
+    // Classify the flight duty based on flight numbers and sectors
+    const dutiesString = flightNumbers.join(' ');
+    const sectorsString = sectors.join(' ');
+    const classification = classifyFlightDuty(dutiesString, sectorsString, data.reportTime, data.debriefTime);
 
-    return classifiedDuty;
+    // Update duty type based on classification if needed
+    if (classification.dutyType !== flightDuty.dutyType) {
+      flightDuty.dutyType = classification.dutyType;
+    }
+
+    return flightDuty;
   } catch (error) {
     console.error('Error converting manual entry to flight duty:', error);
     return null;
@@ -154,17 +179,20 @@ export async function processManualEntry(
       };
     }
 
-    // Calculate monthly totals (this will include the new flight)
-    // Note: In a real implementation, you might want to fetch all flights for the month
-    // For now, we'll create a basic monthly calculation
-    const monthlyCalculation = calculateMonthlySalary(
-      [flightDuty],
-      [], // No layover rest periods for single entry
-      position,
+    // Recalculate monthly totals for the entire month (not just the new flight)
+    const { recalculateMonthlyTotals } = await import('@/lib/salary-calculator/recalculation-engine');
+    const recalcResult = await recalculateMonthlyTotals(
+      userId,
       flightDuty.month,
       flightDuty.year,
-      userId
+      position
     );
+
+    if (!recalcResult.success) {
+      warnings.push('Flight saved but monthly calculation update failed');
+    }
+
+    const monthlyCalculation = recalcResult.monthlyCalculation;
 
     return {
       success: true,
@@ -291,6 +319,116 @@ export async function processBatchManualEntries(
       processedCount: 0,
       errors: [errorMessage],
       warnings
+    };
+  }
+}
+
+/**
+ * Processes multiple manual flight entries as a batch
+ */
+export async function processManualEntryBatch(
+  entries: ManualFlightEntryData[],
+  userId: string,
+  position: Position
+): Promise<BatchManualEntryResult> {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const flightDuties: FlightDuty[] = [];
+
+  try {
+    // Validate and convert all entries
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+
+      // Validate the entry
+      const validation = validateManualEntry(entry, position);
+      if (!validation.valid) {
+        errors.push(`Entry ${i + 1}: ${validation.errors.join(', ')}`);
+        continue;
+      }
+
+      warnings.push(...validation.warnings.map(w => `Entry ${i + 1}: ${w}`));
+
+      // Convert to FlightDuty
+      const flightDuty = convertToFlightDuty(entry, userId, position);
+      if (!flightDuty) {
+        errors.push(`Entry ${i + 1}: Failed to convert entry to flight duty`);
+        continue;
+      }
+
+      flightDuties.push(flightDuty);
+    }
+
+    // If no valid flight duties, return error
+    if (flightDuties.length === 0) {
+      return {
+        success: false,
+        processedCount: 0,
+        errors: errors.length > 0 ? errors : ['No valid flight duties to process'],
+        warnings: warnings.length > 0 ? warnings : undefined
+      };
+    }
+
+    // Save all flight duties to database
+    const saveResult = await createFlightDuties(flightDuties, userId);
+    if (saveResult.error) {
+      return {
+        success: false,
+        processedCount: 0,
+        errors: [`Failed to save flight duties: ${saveResult.error}`],
+        warnings: warnings.length > 0 ? warnings : undefined
+      };
+    }
+
+    // Recalculate monthly totals for all affected months
+    const monthlyGroups = new Map<string, FlightDuty[]>();
+    flightDuties.forEach(duty => {
+      const key = `${duty.year}-${duty.month}`;
+      if (!monthlyGroups.has(key)) {
+        monthlyGroups.set(key, []);
+      }
+      monthlyGroups.get(key)!.push(duty);
+    });
+
+    // Recalculate for each affected month
+    const { recalculateMonthlyTotals } = await import('@/lib/salary-calculator/recalculation-engine');
+    let monthlyCalculation;
+
+    for (const [key, duties] of monthlyGroups) {
+      const firstDuty = duties[0];
+      const recalcResult = await recalculateMonthlyTotals(
+        userId,
+        firstDuty.month,
+        firstDuty.year,
+        position
+      );
+
+      if (!recalcResult.success) {
+        warnings.push(`Monthly calculation update failed for ${firstDuty.month}/${firstDuty.year}`);
+      }
+
+      // Return the calculation for the first month (most common case)
+      if (!monthlyCalculation) {
+        monthlyCalculation = recalcResult.monthlyCalculation;
+      }
+    }
+
+    return {
+      success: true,
+      processedCount: flightDuties.length,
+      flightDuties,
+      monthlyCalculation,
+      errors: errors.length > 0 ? errors : undefined,
+      warnings: warnings.length > 0 ? warnings : undefined
+    };
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    return {
+      success: false,
+      processedCount: 0,
+      errors: [errorMessage],
+      warnings: warnings.length > 0 ? warnings : undefined
     };
   }
 }

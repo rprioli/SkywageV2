@@ -14,6 +14,7 @@ import { Clock } from 'lucide-react';
 interface TimeInputProps {
   value: string;
   onChange: (value: string) => void;
+  onBlur?: () => void;
   placeholder?: string;
   disabled?: boolean;
   error?: string;
@@ -26,6 +27,7 @@ interface TimeInputProps {
 export function TimeInput({
   value,
   onChange,
+  onBlur,
   placeholder = 'HH:MM',
   disabled = false,
   error,
@@ -81,7 +83,7 @@ export function TimeInput({
   // Handle blur - final validation and formatting
   const handleBlur = () => {
     setIsFocused(false);
-    
+
     if (internalValue && !validateTime(internalValue)) {
       // Try to auto-correct common mistakes
       const digits = internalValue.replace(/\D/g, '');
@@ -89,12 +91,17 @@ export function TimeInput({
         const hours = digits.slice(0, 2);
         const minutes = digits.slice(2, 4);
         const correctedTime = `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`;
-        
+
         if (validateTime(correctedTime)) {
           setInternalValue(correctedTime);
           onChange(correctedTime);
         }
       }
+    }
+
+    // Call parent onBlur if provided
+    if (onBlur) {
+      onBlur();
     }
   };
 
@@ -121,20 +128,7 @@ export function TimeInput({
     }
   };
 
-  // Get current time for quick fill
-  const getCurrentTime = () => {
-    const now = new Date();
-    const hours = now.getHours().toString().padStart(2, '0');
-    const minutes = now.getMinutes().toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
-  };
 
-  // Handle quick fill with current time
-  const handleQuickFill = () => {
-    const currentTime = getCurrentTime();
-    setInternalValue(currentTime);
-    onChange(currentTime);
-  };
 
   return (
     <div className={cn('space-y-2', className)}>
@@ -160,24 +154,12 @@ export function TimeInput({
           placeholder={placeholder}
           disabled={disabled}
           className={cn(
-            'pl-10 pr-20',
+            'pl-10',
             error && 'border-destructive focus-visible:border-destructive',
             warning && !error && 'border-orange-500 focus-visible:border-orange-500'
           )}
           maxLength={5} // HH:MM format
         />
-        
-        {/* Quick fill button */}
-        {!disabled && (
-          <button
-            type="button"
-            onClick={handleQuickFill}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-primary hover:text-primary/80 transition-colors"
-            tabIndex={-1}
-          >
-            Now
-          </button>
-        )}
       </div>
 
       {/* Error message */}
@@ -196,12 +178,7 @@ export function TimeInput({
         </p>
       )}
 
-      {/* Help text */}
-      {!error && !warning && isFocused && (
-        <p className="text-muted-foreground text-xs">
-          Enter time in HH:MM format (24-hour). Click "Now" for current time.
-        </p>
-      )}
+
     </div>
   );
 }

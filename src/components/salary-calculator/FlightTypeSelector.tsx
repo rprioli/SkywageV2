@@ -10,13 +10,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { DutyType } from '@/types/salary-calculator';
-import { 
-  Plane, 
-  Clock, 
-  Users, 
+import {
+  Plane,
+  Clock,
+  Users,
   Coffee,
   ArrowRightLeft,
-  MapPin
+  MapPin,
+  BookOpen
 } from 'lucide-react';
 
 interface FlightTypeOption {
@@ -60,6 +61,14 @@ const flightTypeOptions: FlightTypeOption[] = [
     label: 'Airport Standby',
     description: '',
     icon: <Clock className="h-5 w-5" />,
+    examples: [],
+    characteristics: []
+  },
+  {
+    value: 'recurrent',
+    label: 'Recurrent',
+    description: '',
+    icon: <BookOpen className="h-5 w-5" />,
     examples: [],
     characteristics: []
   }

@@ -427,6 +427,19 @@ export default function DashboardPage() {
       const currentYear = new Date().getFullYear();
       const selectedMonth = selectedOverviewMonth + 1; // Convert from 0-based to 1-based
 
+      // Refresh flight duties for the currently selected month
+      const flightDutiesResult = await getFlightDutiesByMonth(
+        user.id,
+        selectedMonth,
+        currentYear
+      );
+
+      if (flightDutiesResult.data && !flightDutiesResult.error) {
+        setFlightDuties(flightDutiesResult.data);
+      } else {
+        setFlightDuties([]);
+      }
+
       // Refresh monthly calculation for the currently selected month
       const calculationResult = await getMonthlyCalculation(
         user.id,
@@ -443,8 +456,6 @@ export default function DashboardPage() {
       if (allCalculationsResult.data && !allCalculationsResult.error) {
         setAllMonthlyCalculations(allCalculationsResult.data);
       }
-
-      // Note: Flight duties will be refreshed automatically by the month-synchronized useEffect
     }
 
     // Close modal
@@ -483,8 +494,8 @@ export default function DashboardPage() {
         // Show success toast using the dedicated function
         salaryCalculator.flightDeleted(selectedFlightForDelete.flightNumbers);
 
-        // Refresh data and trigger recalculation
-        await refreshDataAfterDelete();
+        // Refresh data and trigger recalculation for the specific flight's month
+        await refreshDataAfterBulkDelete([selectedFlightForDelete]);
       }
     } catch (error) {
       showError("Delete Failed", {
@@ -503,6 +514,13 @@ export default function DashboardPage() {
 
     setDeleteProcessing(true);
     try {
+      // Get unique months/years from the flights being deleted
+      const affectedMonths = new Set(
+        selectedFlightsForBulkDelete.map(flight => `${flight.month}-${flight.year}`)
+      );
+
+
+
       const deletePromises = selectedFlightsForBulkDelete.map(flight =>
         deleteFlightDuty(
           flight.id,
@@ -522,8 +540,8 @@ export default function DashboardPage() {
         // Show success toast using the dedicated function
         salaryCalculator.bulkDeleteSuccess(selectedFlightsForBulkDelete.length);
 
-        // Refresh data and trigger recalculation
-        await refreshDataAfterDelete();
+        // Refresh data and trigger recalculation for affected months
+        await refreshDataAfterBulkDelete(selectedFlightsForBulkDelete);
       }
     } catch (error) {
       showError("Bulk Delete Failed", {
@@ -544,7 +562,17 @@ export default function DashboardPage() {
       const currentYear = new Date().getFullYear();
       const selectedMonth = selectedOverviewMonth + 1; // Convert from 0-based to 1-based
 
-      // Refresh monthly calculation for the currently selected month
+      // CRITICAL FIX: Trigger recalculation FIRST before fetching updated data
+      const recalcResult = await recalculateMonthlyTotals(user.id, selectedMonth, currentYear, userPosition as Position);
+
+      if (!recalcResult.success) {
+        showError("Recalculation Failed", {
+          description: `Failed to recalculate monthly totals: ${recalcResult.errors.join(', ')}`,
+        });
+        return;
+      }
+
+      // Now refresh monthly calculation for the currently selected month
       const calculationResult = await getMonthlyCalculation(
         user.id,
         selectedMonth,
@@ -563,13 +591,77 @@ export default function DashboardPage() {
         setAllMonthlyCalculations(allCalculationsResult.data);
       }
 
-      // Note: Flight duties will be refreshed automatically by the month-synchronized useEffect
-      // when allMonthlyCalculations updates
+      // Force refresh flight duties for the selected month
+      const flightDutiesResult = await getFlightDutiesByMonth(user.id, selectedMonth, currentYear);
+      if (flightDutiesResult.data && !flightDutiesResult.error) {
+        setFlightDuties(flightDutiesResult.data);
+      } else {
+        setFlightDuties([]);
+      }
 
-      // Trigger recalculation for the affected month
-      await recalculateMonthlyTotals(user.id, selectedMonth, currentYear, userPosition as Position);
     } catch (error) {
-      console.error('Error refreshing data after delete:', error);
+      showError("Refresh Failed", {
+        description: error instanceof Error ? error.message : 'Unknown error occurred during refresh',
+      });
+    }
+  };
+
+  // Refresh data after bulk deletion and trigger recalculation for affected months
+  const refreshDataAfterBulkDelete = async (deletedFlights: FlightDuty[]) => {
+    if (!user?.id) return;
+
+    try {
+      // Get unique months/years from deleted flights
+      const affectedMonths = new Map<string, { month: number; year: number }>();
+      deletedFlights.forEach(flight => {
+        const key = `${flight.month}-${flight.year}`;
+        affectedMonths.set(key, { month: flight.month, year: flight.year });
+      });
+
+      // Recalculate each affected month
+      for (const { month, year } of affectedMonths.values()) {
+        const recalcResult = await recalculateMonthlyTotals(user.id, month, year, userPosition as Position);
+
+        if (!recalcResult.success) {
+          showError("Recalculation Failed", {
+            description: `Failed to recalculate monthly totals for ${month}/${year}: ${recalcResult.errors.join(', ')}`,
+          });
+          continue; // Continue with other months
+        }
+      }
+
+      // Refresh all monthly calculations for chart data
+      const allCalculationsResult = await getAllMonthlyCalculations(user.id);
+      if (allCalculationsResult.data && !allCalculationsResult.error) {
+        setAllMonthlyCalculations(allCalculationsResult.data);
+      }
+
+      // Refresh current month calculation if it was affected
+      const currentYear = new Date().getFullYear();
+      const selectedMonth = selectedOverviewMonth + 1;
+      const currentMonthKey = `${selectedMonth}-${currentYear}`;
+
+      if (affectedMonths.has(currentMonthKey)) {
+        const calculationResult = await getMonthlyCalculation(user.id, selectedMonth, currentYear);
+        if (calculationResult.data && !calculationResult.error) {
+          setCurrentMonthCalculation(calculationResult.data);
+        } else {
+          setCurrentMonthCalculation(null);
+        }
+      }
+
+      // Force refresh flight duties for the currently selected month
+      const flightDutiesResult = await getFlightDutiesByMonth(user.id, selectedMonth, currentYear);
+      if (flightDutiesResult.data && !flightDutiesResult.error) {
+        setFlightDuties(flightDutiesResult.data);
+      } else {
+        setFlightDuties([]);
+      }
+
+    } catch (error) {
+      showError("Refresh Failed", {
+        description: error instanceof Error ? error.message : 'Unknown error occurred during refresh',
+      });
     }
   };
 

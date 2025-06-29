@@ -68,6 +68,14 @@ export function calculateAsbyPay(position: Position): number {
 }
 
 /**
+ * Calculates Recurrent pay (4 hours at flight rate)
+ */
+export function calculateRecurrentPay(position: Position): number {
+  const rates = FLYDUBAI_RATES[position];
+  return 4 * rates.hourlyRate; // 4 hours at hourly rate
+}
+
+/**
  * Calculates duty hours for a flight
  */
 export function calculateDutyHours(flightDuty: FlightDuty): number {
@@ -110,17 +118,21 @@ export function calculateFlightDuty(
       case 'layover':
         flightPay = calculateFlightPay(dutyHours, position);
         break;
-      
+
       case 'asby':
         asbyPay = calculateAsbyPay(position);
         flightPay = asbyPay; // ASBY is paid at flight rate for fixed hours
         break;
-      
+
+      case 'recurrent':
+        flightPay = calculateRecurrentPay(position); // Recurrent is paid at 4 hours at flight rate
+        break;
+
       case 'sby':
       case 'off':
         // No payment for standby or off days
         break;
-      
+
       default:
         errors.push(`Unknown duty type: ${flightDuty.dutyType}`);
     }
@@ -249,8 +261,8 @@ export function calculateMonthlySalary(
   const totalSalary = totalFixed + totalVariable;
 
   // Calculate summary statistics
-  const totalFlights = flightDuties.filter(flight => 
-    ['turnaround', 'layover', 'asby'].includes(flight.dutyType)
+  const totalFlights = flightDuties.filter(flight =>
+    ['turnaround', 'layover', 'asby', 'recurrent'].includes(flight.dutyType)
   ).length;
   
   const totalTurnarounds = flightDuties.filter(flight => flight.dutyType === 'turnaround').length;

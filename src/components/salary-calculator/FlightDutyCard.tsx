@@ -23,6 +23,7 @@ import {
   Timer,
   Clock,
   Calendar,
+  BookOpen,
   Edit,
   Trash2,
   ArrowRight
@@ -47,7 +48,7 @@ export function FlightDutyCard({
   isSelected = false,
   onToggleSelection
 }: FlightDutyCardProps) {
-  
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-AE', {
       style: 'currency',
@@ -148,6 +149,12 @@ export function FlightDutyCard({
           icon: Timer,
           label: 'Airport Standby'
         };
+      case 'recurrent':
+        return {
+          ...baseConfig,
+          icon: BookOpen,
+          label: 'Ground Duty'
+        };
       case 'sby':
         return {
           ...baseConfig,
@@ -158,7 +165,7 @@ export function FlightDutyCard({
         return {
           ...baseConfig,
           icon: Calendar,
-          label: 'Off Day'
+          label: 'Ground'
         };
       default:
         return {
@@ -261,11 +268,15 @@ export function FlightDutyCard({
 
           {/* Flight Numbers and Sectors - always reserve space for consistent card height */}
           <div className="text-center min-h-[3rem] flex flex-col justify-center">
-            {flightDuty.flightNumbers.length > 0 && (
+            {flightDuty.dutyType === 'recurrent' ? (
+              <h4 className="font-semibold text-base text-gray-800 mb-1">
+                Recurrent Training
+              </h4>
+            ) : flightDuty.flightNumbers.length > 0 ? (
               <h4 className="font-semibold text-base text-gray-800 mb-1">
                 {flightDuty.flightNumbers.join(' ')}
               </h4>
-            )}
+            ) : null}
             {flightDuty.sectors.length > 0 && (
               <div className="text-sm text-gray-500">
                 {renderSectorsWithIcons(flightDuty.sectors, flightDuty.dutyType)}

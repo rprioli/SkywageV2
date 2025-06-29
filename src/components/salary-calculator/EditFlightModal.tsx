@@ -107,7 +107,7 @@ export function EditFlightModal({
       const newData = { ...prev, dutyType };
       
       // Adjust form fields based on duty type
-      if (dutyType === 'asby') {
+      if (dutyType === 'asby' || dutyType === 'recurrent') {
         newData.flightNumbers = [];
         newData.sectors = [];
       } else if (dutyType === 'layover') {
@@ -209,6 +209,16 @@ export function EditFlightModal({
               value={formData.date}
               onChange={(e) => handleFieldChange('date', e.target.value)}
               className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              min={(() => {
+                const today = new Date();
+                const startOfYear = new Date(today.getFullYear(), 0, 1);
+                return startOfYear.toISOString().split('T')[0];
+              })()}
+              max={(() => {
+                const today = new Date();
+                const endOfYear = new Date(today.getFullYear(), 11, 31);
+                return endOfYear.toISOString().split('T')[0];
+              })()}
             />
             {validation.fieldErrors.date && (
               <p className="mt-1 text-sm text-destructive">{validation.fieldErrors.date}</p>

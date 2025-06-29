@@ -6,8 +6,8 @@
 - **Date**: January 2025 (Updated: June 2025)
 - **Project**: Skywage V2
 - **Scope**: Multi-Airline Cabin Crew Salary Calculator (Starting with Flydubai)
-- **Implementation Status**: Phase 8 Completed ✅ + Phase 7 UI/UX Redesign Completed ✅
-- **Current Status**: All critical issues resolved, enhanced UI/UX implemented, system production-ready (June 2025)
+- **Implementation Status**: Phase 8 Completed ✅ + Phase 7 UI/UX Redesign Completed ✅ + Form Layout Reorganization Completed ✅ + Recurrent Duty Type Added ✅
+- **Current Status**: All critical issues resolved, enhanced UI/UX implemented, reorganized form layout with separate date handling, Recurrent duty type fully integrated, system production-ready (January 2025)
 
 ---
 
@@ -184,7 +184,37 @@ Per Diem = Rest Hours × 8.82 AED/hour
 ASBY Pay = 4 hours × Position Rate
 ```
 
-#### 2.2.4 Unpaid Duties
+#### 2.2.4 Recurrent Training
+
+**Characteristics:**
+
+- "Recurrent" duty type for training activities (simulator training, safety training, etc.)
+- Fixed 4-hour duration (regardless of actual time spent)
+- Paid at flight hourly rate
+- No flight numbers or sectors required
+- Simplified form entry (Date, Reporting, Debriefing only)
+- Displays as "Ground Duty" with BookOpen icon
+- Shows "Recurrent Training" text instead of flight numbers
+
+**Example Pattern:**
+
+```
+Manual Entry Form:
+Date: 01 Jun 2025
+Duty Type: Recurrent
+Report Time: 08:00
+Debrief Time: 16:00
+```
+
+**Calculation:**
+
+```
+Recurrent Pay = 4 hours × Position Rate
+CCM: 4 × 50 = 200 AED
+SCCM: 4 × 62 = 248 AED
+```
+
+#### 2.2.5 Unpaid Duties
 
 **Home Standby (SBY):**
 
@@ -482,6 +512,18 @@ The entire interface has been redesigned for clarity and efficiency:
 - Bulk flight deletion with batch processing ✅
 - Real-time recalculation after deletion ✅
 - Proper toast notifications and error handling ✅
+- Dashboard overview cards update correctly after deletion ✅
+- Zero-value calculations created when all flights deleted ✅
+- Cross-month deletion support with proper recalculation ✅
+- Database consistency maintained across all deletion scenarios ✅
+
+**Recent Bug Fixes (June 2025)**: ✅ Critical deletion recalculation issues resolved
+
+- **Fixed bulk deletion recalculation bug**: Dashboard overview cards now update correctly after bulk deletion
+- **Fixed individual deletion recalculation bug**: Individual flight deletion now triggers proper recalculation
+- **Root cause**: Incorrect property access in recalculation engine (`calculation` vs `monthlyCalculation`)
+- **Impact**: Both deletion methods now maintain database consistency and real-time UI updates
+- **Zero calculation handling**: Proper zero-value calculations created when all flights deleted
 
 **Upload Display Bug**: ❌ Critical issue affecting user experience
 
@@ -491,7 +533,22 @@ The entire interface has been redesigned for clarity and efficiency:
 - **Technical Details**: `refreshDashboardData()` function hardcoded to fetch current month instead of uploaded month
 - **Status**: Issue identified, fix ready to implement
 
-**Next Priority**: Fix upload display issue to restore full functionality
+**Recurrent Duty Type Implementation (January 2025)**: ✅ Complete integration successful
+
+- **New Duty Type Added**: 'recurrent' duty type for training activities (simulator, safety, etc.)
+- **Database Schema Updated**: Added 'recurrent' to duty_type CHECK constraint, removed conflicting old constraint
+- **Payment Structure**: Fixed 4 hours at position rate (CCM: 200 AED, SCCM: 248 AED)
+- **Form Integration**: Simplified form like ASBY (Date, Reporting, Debriefing only)
+- **UI Components Updated**:
+  - FlightTypeSelector: Added Recurrent option with BookOpen icon
+  - FlightDutyCard: Displays "Ground Duty" label with "Recurrent Training" text
+  - FlightDutiesTable: Added Recurrent filter option
+- **Validation Logic**: Recurrent duties don't require flight numbers or sectors
+- **Calculation Engine**: Added calculateRecurrentPay() function and switch case handling
+- **Manual Entry**: Full integration with existing manual entry workflow
+- **Documentation**: Updated specifications and progress tracking
+
+**Status**: Production ready with full feature parity to other duty types
 
 ## Note: Complete Specification Content
 
@@ -546,6 +603,68 @@ This approach ensures the system is scalable and properly branded as a **Skywage
 **Completion Date**: June 2025
 **Status**: ✅ **COMPLETED** - Enhanced user experience implemented
 **Scope**: Complete redesign of manual flight entry interface with grid-based layout
+
+---
+
+## Form Layout Reorganization: Enhanced Layover Duty Support
+
+### Overview
+
+**Completion Date**: December 2024
+**Status**: ✅ **COMPLETED** - Reorganized form layout with separate date handling
+**Scope**: Complete restructuring of manual flight entry form for improved usability and layover duty support
+
+### Key Improvements
+
+#### **1. Logical Form Flow**
+
+- **Duty Type First**: Moved to top of form for immediate context
+- **Date Positioning**: Positioned logically after duty type selection
+- **Sector-Based Organization**: Layover duties organized by outbound/inbound sectors
+
+#### **2. Enhanced Layover Support**
+
+- **Separate Date Fields**: Independent date handling for outbound and inbound sectors
+- **Cross-Day Detection**: Separate logic for each sector using respective dates
+- **Visual Sector Separation**: Clear headers with brand colors (#4C49ED)
+- **Simplified Labels**: Removed redundant "Outbound"/"Inbound" text from time fields
+
+#### **3. Current Form Layout (Layover Duties)**
+
+```
+[Duty Type Selection: Turnaround | Layover | Airport Standby]
+
+🛩️ OUTBOUND SECTOR (brand purple #4C49ED)
+Date: [date field]
+Flight Number: [single field]
+Sector: [DXB] [KHI]
+Reporting: [time field]
+Debriefing: [time field] + cross-day indicator
+
+🛩️ INBOUND SECTOR (brand purple #4C49ED)
+Date: [date field]
+Flight Number: [single field]
+Sector: [KHI] [DXB]
+Reporting: [time field]
+Debriefing: [time field] + cross-day indicator
+
+[Add Another Duty button]
+[Save Flight Duty button]
+```
+
+#### **4. Technical Implementation**
+
+- **Data Structure**: Added `inboundDate?: string` field to `ManualFlightEntryData`
+- **Validation Logic**: Enhanced validation for inbound date requirements
+- **Cross-Day Logic**: Independent calculation for outbound/inbound sectors
+- **UI Components**: Reorganized FlightEntryForm.tsx with sector-based layout
+
+#### **5. User Experience Benefits**
+
+- **Intuitive Flow**: Duty type → Date → Flight details progression
+- **Clear Organization**: Sector-based grouping for layover duties
+- **Visual Clarity**: Brand-colored headers and clean separation
+- **Reduced Confusion**: Simplified labels and logical field placement
 
 ### Design Principles
 

@@ -354,6 +354,7 @@ export function FlightDutiesTable({
                   <SelectItem value="turnaround">Turnaround</SelectItem>
                   <SelectItem value="layover">Layover</SelectItem>
                   <SelectItem value="asby">Airport Standby</SelectItem>
+                  <SelectItem value="recurrent">Recurrent</SelectItem>
                   <SelectItem value="sby">Home Standby</SelectItem>
                 </SelectContent>
               </Select>

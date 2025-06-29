@@ -64,12 +64,37 @@ export async function recalculateMonthlyTotals(
 
     const flightDuties = flightsResult.data || [];
     if (flightDuties.length === 0) {
-      warnings.push('No flights found for the specified month');
+
+      // Delete existing layover rest periods for the month
+      const deleteResult = await deleteLayoverRestPeriods(userId, month, year);
+      if (deleteResult.error) {
+        warnings.push(`Warning: Could not delete old layover periods: ${deleteResult.error}`);
+      }
+
+      // Create zero calculation for empty month
+      const zeroCalculation = calculateMonthlySalary(
+        [], // empty flights array
+        [], // empty layover periods
+        position,
+        month,
+        year,
+        userId
+      );
+
+      // Save zero monthly calculation
+      const calculationResult = await upsertMonthlyCalculation(
+        zeroCalculation.monthlyCalculation,
+        userId
+      );
+      if (calculationResult.error) {
+        warnings.push(`Warning: Could not save zero monthly calculation: ${calculationResult.error}`);
+      }
+
       return {
         success: true,
         updatedFlights: [],
         updatedLayovers: [],
-        updatedCalculation: null,
+        updatedCalculation: zeroCalculation,
         errors,
         warnings
       };
@@ -119,7 +144,7 @@ export async function recalculateMonthlyTotals(
 
     // Save monthly calculation
     const calculationResult = await upsertMonthlyCalculation(
-      monthlyCalculation.calculation,
+      monthlyCalculation.monthlyCalculation,
       userId
     );
     if (calculationResult.error) {

@@ -6,7 +6,7 @@
  * Following ultra-streamlined workflow principles
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -19,14 +19,14 @@ import {
 } from 'lucide-react';
 
 import { FlightEntryForm } from './FlightEntryForm';
-import { SalaryBreakdown } from './SalaryBreakdown';
-import { FlightDutiesTable } from './FlightDutiesTable';
 
 import { Position } from '@/types/salary-calculator';
 import {
   ManualFlightEntryData,
   processManualEntry,
-  ManualEntryResult
+  processManualEntryBatch,
+  ManualEntryResult,
+  BatchManualEntryResult
 } from '@/lib/salary-calculator/manual-entry-processor';
 
 interface ManualFlightEntryProps {
@@ -50,10 +50,31 @@ export function ManualFlightEntry({
   // Component state
   const [entryState, setEntryState] = useState<EntryState>('form');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<ManualEntryResult | null>(null);
+  const [result, setResult] = useState<ManualEntryResult | BatchManualEntryResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Handle form submission
+  // Batch entry state
+  const [batchDuties, setBatchDuties] = useState<ManualFlightEntryData[]>([]);
+  const [isBatchMode, setIsBatchMode] = useState(false);
+
+  // Auto-close modal after successful submission
+  useEffect(() => {
+    if (entryState === 'success' && onSuccess) {
+      const timer = setTimeout(() => {
+        onSuccess();
+      }, 2000); // Close after 2 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [entryState, onSuccess]);
+
+  // Handle adding duty to batch
+  const handleAddToBatch = (data: ManualFlightEntryData) => {
+    setBatchDuties(prev => [...prev, data]);
+    setIsBatchMode(true);
+  };
+
+  // Handle form submission (single or batch)
   const handleFormSubmit = async (data: ManualFlightEntryData) => {
     if (!user?.id) {
       const errorMsg = 'User not authenticated';
@@ -67,16 +88,34 @@ export function ManualFlightEntry({
     setError(null);
 
     try {
-      const processingResult = await processManualEntry(data, user.id, position);
+      let processingResult: ManualEntryResult | BatchManualEntryResult;
+
+      if (isBatchMode || batchDuties.length > 0) {
+        // Process as batch (include current form data + batch)
+        const allDuties = [...batchDuties, data];
+        processingResult = await processManualEntryBatch(allDuties, user.id, position);
+      } else {
+        // Process single entry
+        processingResult = await processManualEntry(data, user.id, position);
+      }
 
       if (processingResult.success) {
         setResult(processingResult);
         setEntryState('success');
 
         // Show success toast
-        if (processingResult.flightDuty) {
+        if ('flightDuty' in processingResult && processingResult.flightDuty) {
+          // Single entry
           salaryCalculator.flightSaved(processingResult.flightDuty.flightNumbers);
+        } else if ('flightDuties' in processingResult && processingResult.flightDuties) {
+          // Batch entry
+          const totalFlights = processingResult.flightDuties.length;
+          salaryCalculator.flightSaved([`${totalFlights} flight duties`]);
         }
+
+        // Reset batch state
+        setBatchDuties([]);
+        setIsBatchMode(false);
 
         // Call success callback if provided
         if (onSuccess) {
@@ -98,12 +137,7 @@ export function ManualFlightEntry({
     }
   };
 
-  // Handle adding another flight
-  const handleAddAnother = () => {
-    setEntryState('form');
-    setResult(null);
-    setError(null);
-  };
+
 
   // Handle retry
   const handleRetry = () => {
@@ -118,8 +152,10 @@ export function ManualFlightEntry({
         return (
           <FlightEntryForm
             onSubmit={handleFormSubmit}
+            onAddToBatch={handleAddToBatch}
             loading={loading}
             position={position}
+            batchCount={batchDuties.length}
           />
         );
 
@@ -140,50 +176,21 @@ export function ManualFlightEntry({
 
       case 'success':
         return (
-          <div className="space-y-6">
+          <div className="text-center space-y-4 py-8">
             {/* Success message */}
-            <Alert className="border-accent bg-accent/10">
-              <CheckCircle className="h-4 w-4 text-accent" />
-              <AlertDescription className="text-accent">
-                Flight duty saved successfully! 
-                {result?.warnings && result.warnings.length > 0 && (
-                  <span className="block mt-1 text-sm">
-                    Note: {result.warnings.join(', ')}
-                  </span>
-                )}
-              </AlertDescription>
-            </Alert>
-
-            {/* Results display */}
-            {result?.monthlyCalculation && (
-              <div className="space-y-4">
-                <SalaryBreakdown 
-                  calculation={result.monthlyCalculation.calculation}
-                  variant="detailed"
-                />
-                
-                {result.flightDuty && (
-                  <FlightDutiesTable 
-                    flightDuties={[result.flightDuty]}
-                    showActions={false}
-                  />
-                )}
-              </div>
-            )}
-
-            {/* Action buttons */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button onClick={handleAddAnother} className="flex-1">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Another Flight
-              </Button>
-              
-              {onBack && (
-                <Button variant="outline" onClick={onBack} className="flex-1">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Calculator
-                </Button>
+            <div className="flex justify-center">
+              <CheckCircle className="h-12 w-12 text-accent" />
+            </div>
+            <div>
+              <h3 className="text-lg font-medium text-accent">Flight Duty Saved Successfully!</h3>
+              {result?.warnings && result.warnings.length > 0 && (
+                <p className="text-muted-foreground text-sm mt-2">
+                  Note: {result.warnings.join(', ')}
+                </p>
               )}
+              <p className="text-muted-foreground text-sm mt-2">
+                The dashboard will update automatically
+              </p>
             </div>
           </div>
         );

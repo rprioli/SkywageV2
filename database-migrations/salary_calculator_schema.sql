@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS flights (
   date DATE NOT NULL,
   flight_numbers TEXT[] NOT NULL DEFAULT '{}',
   sectors TEXT[] NOT NULL DEFAULT '{}',
-  duty_type VARCHAR(20) NOT NULL CHECK (duty_type IN ('turnaround', 'layover', 'asby', 'sby', 'off')),
+  duty_type VARCHAR(20) NOT NULL CHECK (duty_type IN ('turnaround', 'layover', 'asby', 'recurrent', 'sby', 'off')),
   report_time TIME NOT NULL,
   debrief_time TIME NOT NULL,
   duty_hours DECIMAL(5,2) NOT NULL DEFAULT 0,
@@ -185,7 +185,7 @@ COMMENT ON TABLE monthly_calculations IS 'Monthly salary calculations with detai
 
 COMMENT ON COLUMN flights.flight_numbers IS 'Array of flight numbers (multiple for turnarounds)';
 COMMENT ON COLUMN flights.sectors IS 'Array of sectors (e.g., ["DXB-CMB", "CMB-DXB"])';
-COMMENT ON COLUMN flights.duty_type IS 'Type of duty: turnaround, layover, asby, sby, off';
+COMMENT ON COLUMN flights.duty_type IS 'Type of duty: turnaround, layover, asby, recurrent, sby, off';
 COMMENT ON COLUMN flights.is_cross_day IS 'Whether debrief time is next day';
 COMMENT ON COLUMN flights.data_source IS 'Source of data: csv, manual, edited';
 COMMENT ON COLUMN flights.original_data IS 'Original CSV data for audit purposes';

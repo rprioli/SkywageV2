@@ -108,6 +108,14 @@ export async function upsertMonthlyCalculation(
   userId: string
 ): Promise<{ data: MonthlyCalculation | null; error: string | null }> {
   try {
+    if (!calculation) {
+      return { data: null, error: 'Calculation data is missing' };
+    }
+
+    if (!calculation.month || !calculation.year) {
+      return { data: null, error: 'Calculation missing required month/year data' };
+    }
+
     const insertData = monthlyCalculationToInsert(calculation, userId);
     
     const { data, error } = await supabase

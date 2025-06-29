@@ -11,12 +11,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 import {
   Save,
   AlertCircle,
   Loader2,
   Plane,
-  MapPin
+  MapPin,
+  Plus,
+  Sunrise,
+  Calendar
 } from 'lucide-react';
 
 import { FlightTypeSelector } from './FlightTypeSelector';
@@ -33,34 +37,44 @@ import { validateManualEntryRealTime } from '@/lib/salary-calculator/manual-entr
 
 interface FlightEntryFormProps {
   onSubmit: (data: ManualFlightEntryData) => Promise<void>;
+  onAddToBatch?: (data: ManualFlightEntryData) => void;
   loading?: boolean;
   disabled?: boolean;
   initialData?: Partial<ManualFlightEntryData>;
   position: Position;
+  batchCount?: number;
   className?: string;
 }
 
 export function FlightEntryForm({
   onSubmit,
+  onAddToBatch,
   loading = false,
   disabled = false,
   initialData,
   position,
+  batchCount = 0,
   className
 }: FlightEntryFormProps) {
+  const { toast } = useToast();
+
   // Form state
   const [formData, setFormData] = useState<ManualFlightEntryData>({
     date: initialData?.date || '',
-    dutyType: initialData?.dutyType || 'layover',
+    dutyType: initialData?.dutyType || 'turnaround',
     flightNumbers: initialData?.flightNumbers || [''],
     sectors: initialData?.sectors || [''],
     reportTime: initialData?.reportTime || '',
     debriefTime: initialData?.debriefTime || '',
-    isCrossDay: initialData?.isCrossDay || false
+    isCrossDay: initialData?.isCrossDay || false,
+    // Layover-specific fields
+    inboundDate: initialData?.inboundDate || '',
+    reportTimeInbound: initialData?.reportTimeInbound || '',
+    debriefTimeOutbound: initialData?.debriefTimeOutbound || ''
   });
 
-  // Track which fields have been touched by the user
-  const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
+  // Track whether form submission has been attempted
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   // Validation state
   const [validation, setValidation] = useState<FormValidationResult>({
@@ -70,20 +84,28 @@ export function FlightEntryForm({
     fieldErrors: {}
   });
 
-  // Real-time validation
+  // Real-time validation (for internal use, not display)
   useEffect(() => {
     const validationResult = validateManualEntryRealTime(formData, position);
     setValidation(validationResult);
   }, [formData, position]);
+
+  // Initialize form fields based on default duty type on mount
+  useEffect(() => {
+    if ((formData.dutyType === 'turnaround' || formData.dutyType === 'layover') && formData.flightNumbers.length < 2) {
+      setFormData(prev => ({
+        ...prev,
+        flightNumbers: ['', ''],
+        sectors: formData.dutyType === 'layover' ? ['', '', '', ''] : ['', '']
+      }));
+    }
+  }, []); // Only run on mount
 
   // Handle form field changes
   const handleFieldChange = <K extends keyof ManualFlightEntryData>(
     field: K,
     value: ManualFlightEntryData[K]
   ) => {
-    // Mark field as touched
-    setTouchedFields(prev => new Set(prev).add(field));
-
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -92,20 +114,24 @@ export function FlightEntryForm({
 
   // Handle duty type change - adjust form fields accordingly
   const handleDutyTypeChange = (dutyType: DutyType) => {
-    // Mark duty type as touched
-    setTouchedFields(prev => new Set(prev).add('dutyType'));
+    // Reset submit attempted state when duty type changes
+    setSubmitAttempted(false);
 
     setFormData(prev => {
       const newData = { ...prev, dutyType };
 
-      // Clear flight numbers and sectors for ASBY
-      if (dutyType === 'asby' || dutyType === 'sby' || dutyType === 'off') {
+      // Clear flight numbers and sectors for ASBY, Recurrent, SBY, OFF
+      if (dutyType === 'asby' || dutyType === 'recurrent' || dutyType === 'sby' || dutyType === 'off') {
         newData.flightNumbers = [];
         newData.sectors = [];
       } else if (dutyType === 'layover') {
-        // Ensure single flight/sector for layover
-        newData.flightNumbers = [prev.flightNumbers[0] || ''];
-        newData.sectors = [prev.sectors[0] || ''];
+        // Ensure two flights and four sectors for layover
+        newData.flightNumbers = [prev.flightNumbers[0] || '', prev.flightNumbers[1] || ''];
+        newData.sectors = [prev.sectors[0] || '', prev.sectors[1] || '', prev.sectors[2] || '', prev.sectors[3] || ''];
+        // Set default inbound date to same as outbound date if not already set
+        if (!newData.inboundDate && newData.date) {
+          newData.inboundDate = newData.date;
+        }
       } else if (dutyType === 'turnaround') {
         // Ensure at least two entries for turnaround
         if (prev.flightNumbers.length < 2) {
@@ -120,16 +146,104 @@ export function FlightEntryForm({
     });
   };
 
+  // Clear form while keeping duty type
+  const clearFormKeepDutyType = () => {
+    const currentDutyType = formData.dutyType;
+    setFormData({
+      date: '',
+      dutyType: currentDutyType,
+      flightNumbers: currentDutyType === 'turnaround' || currentDutyType === 'layover' ? ['', ''] : [''],
+      sectors: currentDutyType === 'turnaround' || currentDutyType === 'layover' ? ['', '', '', ''] : [''],
+      reportTime: '',
+      debriefTime: '',
+      isCrossDay: false,
+      inboundDate: '',
+      reportTimeInbound: '',
+      debriefTimeOutbound: ''
+    });
+    setSubmitAttempted(false);
+  };
+
+  // Handle adding to batch
+  const handleAddToBatch = () => {
+    // Mark that submission has been attempted for validation
+    setSubmitAttempted(true);
+
+    // Validate before adding to batch
+    if (!validation.valid) {
+      const errorCount = Object.keys(validation.fieldErrors).length;
+      const errorMessage = errorCount === 1
+        ? 'Please fix the validation error before adding to batch'
+        : `Please fix ${errorCount} validation errors before adding to batch`;
+
+      toast({
+        title: "Validation Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Add to batch and clear form
+    if (onAddToBatch) {
+      // Automatically set cross-day flags for batch entry too
+      const batchData = {
+        ...formData,
+        isCrossDay: formData.dutyType === 'layover' ? isInboundNextDay : isTurnaroundNextDay,
+        isCrossDayOutbound: isOutboundNextDay,
+        isCrossDayInbound: isInboundNextDay
+      };
+
+      onAddToBatch(batchData);
+      clearFormKeepDutyType();
+
+      toast({
+        title: "Added to Batch",
+        description: `Flight duty added to batch. Total: ${batchCount + 1}`,
+      });
+    }
+  };
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validation.valid || loading) {
+
+    // Mark that submission has been attempted
+    setSubmitAttempted(true);
+
+    // If validation fails, don't proceed but show errors
+    if (!validation.valid) {
+      // Show toast notification about validation errors
+      const errorCount = Object.keys(validation.fieldErrors).length;
+      const errorMessage = errorCount === 1
+        ? 'Please fix the validation error to continue'
+        : `Please fix ${errorCount} validation errors to continue`;
+
+      toast({
+        title: "Validation Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+
+      return;
+    }
+
+    if (loading) {
       return;
     }
 
     try {
-      await onSubmit(formData);
+      // Automatically set cross-day flags based on time detection
+      const submissionData = {
+        ...formData,
+        isCrossDay: formData.dutyType === 'layover' ? isInboundNextDay : isTurnaroundNextDay,
+        isCrossDayOutbound: isOutboundNextDay,
+        isCrossDayInbound: isInboundNextDay
+      };
+
+      await onSubmit(submissionData);
+      // Reset submit attempted state on successful submission
+      setSubmitAttempted(false);
     } catch (error) {
       console.error('Form submission error:', error);
     }
@@ -141,15 +255,83 @@ export function FlightEntryForm({
     return today.toISOString().split('T')[0];
   };
 
+  // Get start of current year for min date
+  const getStartOfCurrentYear = () => {
+    const today = new Date();
+    const startOfYear = new Date(today.getFullYear(), 0, 1); // January 1st of current year
+    return startOfYear.toISOString().split('T')[0];
+  };
+
+  // Get end of current year for max date
+  const getEndOfCurrentYear = () => {
+    const today = new Date();
+    const endOfYear = new Date(today.getFullYear(), 11, 31); // December 31st of current year
+    return endOfYear.toISOString().split('T')[0];
+  };
+
+  // Smart cross-day detection
+  const isNextDay = (reportTime: string, debriefTime: string): boolean => {
+    if (!reportTime || !debriefTime) return false;
+
+    const [reportHour, reportMin] = reportTime.split(':').map(Number);
+    const [debriefHour, debriefMin] = debriefTime.split(':').map(Number);
+
+    const reportMinutes = reportHour * 60 + reportMin;
+    const debriefMinutes = debriefHour * 60 + debriefMin;
+
+    return debriefMinutes < reportMinutes;
+  };
+
+  // Helper function to get next day date string in DD/MM/YY format
+  const getNextDayDate = (baseDate: string): string => {
+    if (!baseDate) return '';
+
+    const currentDate = new Date(baseDate);
+    const nextDay = new Date(currentDate);
+    nextDay.setDate(currentDate.getDate() + 1);
+
+    const day = nextDay.getDate().toString().padStart(2, '0');
+    const month = (nextDay.getMonth() + 1).toString().padStart(2, '0');
+    const year = nextDay.getFullYear().toString().slice(-2);
+
+    return `${day}/${month}/${year}`;
+  };
+
+  // Auto-detect cross-day for different time pairs using appropriate dates
+  const isOutboundNextDay = isNextDay(formData.reportTime, formData.debriefTimeOutbound || '');
+  const isInboundNextDay = isNextDay(formData.reportTimeInbound || '', formData.debriefTime);
+  const isTurnaroundNextDay = isNextDay(formData.reportTime, formData.debriefTime);
+
+  // Get next day dates for each sector
+  const outboundNextDayDate = getNextDayDate(formData.date);
+  const inboundNextDayDate = getNextDayDate(formData.inboundDate || formData.date);
+  const turnaroundNextDayDate = getNextDayDate(formData.date);
+
   const isFormDisabled = disabled || loading;
-  const showFlightFields = formData.dutyType !== 'asby' && formData.dutyType !== 'sby' && formData.dutyType !== 'off';
+  const showFlightFields = formData.dutyType !== 'asby' && formData.dutyType !== 'recurrent' && formData.dutyType !== 'sby' && formData.dutyType !== 'off';
 
   return (
     <form onSubmit={handleSubmit} className={cn('space-y-6', className)}>
-          {/* Date */}
+          {/* Flight Type - Moved to top */}
+          <FlightTypeSelector
+            value={formData.dutyType}
+            onChange={handleDutyTypeChange}
+            disabled={isFormDisabled}
+            label="Duty Type"
+          />
+
+          {/* Outbound Sector Header for Layover - Right below duty type */}
+          {formData.dutyType === 'layover' && (
+            <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: '#4C49ED' }}>
+              <Plane className="h-4 w-4" />
+              OUTBOUND SECTOR
+            </div>
+          )}
+
+          {/* Date - Below outbound header for layover, below duty type for others */}
           <div className="space-y-2">
             <label htmlFor="date" className="block text-sm font-medium">
-              Date <span className="text-destructive">*</span>
+              Date
             </label>
             <div className="relative">
               <Input
@@ -159,9 +341,10 @@ export function FlightEntryForm({
                 onChange={e => handleFieldChange('date', e.target.value)}
                 disabled={isFormDisabled}
                 className={cn(
-                  validation.fieldErrors.date && touchedFields.has('date') && 'border-destructive focus-visible:border-destructive'
+                  validation.fieldErrors.date && submitAttempted && 'border-destructive focus-visible:border-destructive'
                 )}
-                max={getTodayDate()} // Prevent future dates beyond today
+                min={getStartOfCurrentYear()} // Start from January 1st of current year
+                max={getEndOfCurrentYear()} // Limit to current year only
               />
               {!formData.date && (
                 <button
@@ -174,30 +357,219 @@ export function FlightEntryForm({
                 </button>
               )}
             </div>
-            {validation.fieldErrors.date && touchedFields.has('date') && (
+            {validation.fieldErrors.date && submitAttempted && (
               <p className="text-destructive text-sm">{validation.fieldErrors.date}</p>
             )}
           </div>
 
-          {/* Flight Type */}
-          <FlightTypeSelector
-            value={formData.dutyType}
-            onChange={handleDutyTypeChange}
-            disabled={isFormDisabled}
-            label="Flight Type"
-            required
-          />
+          {/* Flight Details - Different layouts for different duty types */}
+          {showFlightFields && formData.dutyType === 'layover' && (
+            <div className="space-y-6">
+              {/* Outbound Flight Details - No header since it's above */}
+              <div className="space-y-4">
+                {/* Outbound Flight Number */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium">Flight Number</label>
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                      <Plane className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <Input
+                      type="text"
+                      value={formData.flightNumbers[0] || ''}
+                      onChange={e => {
+                        const newNumbers = [...formData.flightNumbers];
+                        newNumbers[0] = e.target.value.replace(/[^0-9]/g, '');
+                        handleFieldChange('flightNumbers', newNumbers);
+                      }}
+                      placeholder="123"
+                      disabled={isFormDisabled}
+                      className="pl-10"
+                      maxLength={4}
+                    />
+                  </div>
+                </div>
 
-          {/* Flight Details Grid - only for flight duties */}
-          {showFlightFields && (
+                {/* Outbound Sector */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium">Sector</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[0, 1].map((index) => (
+                      <div key={index} className="relative">
+                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <Input
+                          type="text"
+                          value={formData.sectors[index] || ''}
+                          onChange={e => {
+                            const newSectors = [...formData.sectors];
+                            while (newSectors.length <= index) {
+                              newSectors.push('');
+                            }
+                            newSectors[index] = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 3);
+                            handleFieldChange('sectors', newSectors);
+                          }}
+                          placeholder={index === 0 ? 'DXB' : 'KHI'}
+                          disabled={isFormDisabled}
+                          className="pl-10"
+                          maxLength={3}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Outbound Times */}
+                <div className="grid grid-cols-2 gap-4">
+                  <TimeInput
+                    value={formData.reportTime}
+                    onChange={value => handleFieldChange('reportTime', value)}
+                    disabled={isFormDisabled}
+                    error={validation.fieldErrors.reportTime && submitAttempted ? validation.fieldErrors.reportTime : undefined}
+                    label="Reporting"
+                  />
+
+                  <div className="relative">
+                    <TimeInput
+                      value={formData.debriefTimeOutbound || ''}
+                      onChange={value => handleFieldChange('debriefTimeOutbound', value)}
+                      disabled={isFormDisabled}
+                      error={validation.fieldErrors.debriefTimeOutbound && submitAttempted ? validation.fieldErrors.debriefTimeOutbound : undefined}
+                      label="Debriefing"
+                    />
+                    {isOutboundNextDay && outboundNextDayDate && (
+                      <div className="absolute right-3 top-9 flex items-center gap-1 text-orange-500 pointer-events-none">
+                        <span className="text-sm font-medium">{outboundNextDayDate}</span>
+                        <Sunrise className="h-4 w-4" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* INBOUND SECTOR */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: '#4C49ED' }}>
+                  <Plane className="h-4 w-4" />
+                  INBOUND SECTOR
+                </div>
+
+                {/* Inbound Date */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium">Date</label>
+                  <Input
+                    type="date"
+                    value={formData.inboundDate}
+                    onChange={e => handleFieldChange('inboundDate', e.target.value)}
+                    disabled={isFormDisabled}
+                    className={cn(
+                      validation.fieldErrors.inboundDate && submitAttempted && 'border-destructive focus-visible:border-destructive'
+                    )}
+                    min={getStartOfCurrentYear()}
+                    max={getEndOfCurrentYear()}
+                  />
+                  {validation.fieldErrors.inboundDate && submitAttempted && (
+                    <p className="text-destructive text-sm">{validation.fieldErrors.inboundDate}</p>
+                  )}
+                </div>
+
+                {/* Inbound Flight Number */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium">Flight Number</label>
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                      <Plane className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <Input
+                      type="text"
+                      value={formData.flightNumbers[1] || ''}
+                      onChange={e => {
+                        const newNumbers = [...formData.flightNumbers];
+                        while (newNumbers.length <= 1) {
+                          newNumbers.push('');
+                        }
+                        newNumbers[1] = e.target.value.replace(/[^0-9]/g, '');
+                        handleFieldChange('flightNumbers', newNumbers);
+                      }}
+                      placeholder="124"
+                      disabled={isFormDisabled}
+                      className="pl-10"
+                      maxLength={4}
+                    />
+                  </div>
+                </div>
+
+                {/* Inbound Sector */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium">Sector</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[2, 3].map((index) => (
+                      <div key={index} className="relative">
+                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <Input
+                          type="text"
+                          value={formData.sectors[index] || ''}
+                          onChange={e => {
+                            const newSectors = [...formData.sectors];
+                            while (newSectors.length <= index) {
+                              newSectors.push('');
+                            }
+                            newSectors[index] = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 3);
+                            handleFieldChange('sectors', newSectors);
+                          }}
+                          placeholder={index === 2 ? 'KHI' : 'DXB'}
+                          disabled={isFormDisabled}
+                          className="pl-10"
+                          maxLength={3}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Inbound Times */}
+                <div className="grid grid-cols-2 gap-4">
+                  <TimeInput
+                    value={formData.reportTimeInbound || ''}
+                    onChange={value => handleFieldChange('reportTimeInbound', value)}
+                    disabled={isFormDisabled}
+                    error={validation.fieldErrors.reportTimeInbound && submitAttempted ? validation.fieldErrors.reportTimeInbound : undefined}
+                    label="Reporting"
+                  />
+
+                  <div className="relative">
+                    <TimeInput
+                      value={formData.debriefTime}
+                      onChange={value => handleFieldChange('debriefTime', value)}
+                      disabled={isFormDisabled}
+                      error={validation.fieldErrors.debriefTime && submitAttempted ? validation.fieldErrors.debriefTime : undefined}
+                      label="Debriefing"
+                    />
+                    {isInboundNextDay && inboundNextDayDate && (
+                      <div className="absolute right-3 top-9 flex items-center gap-1 text-orange-500 pointer-events-none">
+                        <span className="text-sm font-medium">{inboundNextDayDate}</span>
+                        <Sunrise className="h-4 w-4" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Flight Details for Non-Layover duties */}
+          {showFlightFields && formData.dutyType !== 'layover' && (
             <div className="space-y-6">
               {/* Flight Numbers */}
               <div className="space-y-3">
                 <label className="block text-sm font-medium">
-                  Flight Numbers <span className="text-destructive">*</span>
+                  Flight Numbers
                 </label>
                 <div className="grid grid-cols-2 gap-3">
-                  {formData.flightNumbers.slice(0, formData.dutyType === 'layover' ? 1 : 4).map((flightNumber, index) => (
+                  {formData.flightNumbers.slice(0, 4).map((flightNumber, index) => (
                     <div key={index} className="relative">
                       <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                         <Plane className="h-4 w-4 text-muted-foreground" />
@@ -218,7 +590,7 @@ export function FlightEntryForm({
                     </div>
                   ))}
                 </div>
-                {validation.fieldErrors.flightNumbers && touchedFields.has('flightNumbers') && (
+                {validation.fieldErrors.flightNumbers && submitAttempted && (
                   <p className="text-destructive text-sm">{validation.fieldErrors.flightNumbers}</p>
                 )}
               </div>
@@ -226,11 +598,10 @@ export function FlightEntryForm({
               {/* Sectors */}
               <div className="space-y-3">
                 <label className="block text-sm font-medium">
-                  Sectors <span className="text-destructive">*</span>
+                  Sectors
                 </label>
                 <div className="grid grid-cols-2 gap-3">
-                  {/* Ensure we have the right number of sector inputs based on duty type */}
-                  {Array.from({ length: formData.dutyType === 'layover' ? 2 : 4 }, (_, index) => {
+                  {Array.from({ length: 4 }, (_, index) => {
                     const sector = formData.sectors[index] || '';
                     const placeholders = ['DXB', 'KHI', 'KHI', 'DXB'];
 
@@ -244,7 +615,6 @@ export function FlightEntryForm({
                           value={sector}
                           onChange={e => {
                             const newSectors = [...formData.sectors];
-                            // Ensure array is long enough
                             while (newSectors.length <= index) {
                               newSectors.push('');
                             }
@@ -260,52 +630,49 @@ export function FlightEntryForm({
                     );
                   })}
                 </div>
-                {validation.fieldErrors.sectors && touchedFields.has('sectors') && (
+                {validation.fieldErrors.sectors && submitAttempted && (
                   <p className="text-destructive text-sm">{validation.fieldErrors.sectors}</p>
                 )}
               </div>
             </div>
           )}
 
-          {/* Times */}
-          <div className="grid grid-cols-2 gap-4">
-            <TimeInput
-              value={formData.reportTime}
-              onChange={value => handleFieldChange('reportTime', value)}
-              disabled={isFormDisabled}
-              error={validation.fieldErrors.reportTime && touchedFields.has('reportTime') ? validation.fieldErrors.reportTime : undefined}
-              label="Reporting"
-              required
-            />
+          {/* Times for Non-Layover duties */}
+          {formData.dutyType !== 'layover' && (
+            // Turnaround/ASBY: 2 time fields (report/debrief)
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <TimeInput
+                  value={formData.reportTime}
+                  onChange={value => handleFieldChange('reportTime', value)}
+                  disabled={isFormDisabled}
+                  error={validation.fieldErrors.reportTime && submitAttempted ? validation.fieldErrors.reportTime : undefined}
+                  label="Reporting"
+                />
 
-            <TimeInput
-              value={formData.debriefTime}
-              onChange={value => handleFieldChange('debriefTime', value)}
-              disabled={isFormDisabled}
-              error={validation.fieldErrors.debriefTime && touchedFields.has('debriefTime') ? validation.fieldErrors.debriefTime : undefined}
-              label="Debriefing"
-              required
-            />
-          </div>
+                <div className="relative">
+                  <TimeInput
+                    value={formData.debriefTime}
+                    onChange={value => handleFieldChange('debriefTime', value)}
+                    disabled={isFormDisabled}
+                    error={validation.fieldErrors.debriefTime && submitAttempted ? validation.fieldErrors.debriefTime : undefined}
+                    label="Debriefing"
+                  />
+                  {isTurnaroundNextDay && turnaroundNextDayDate && (
+                    <div className="absolute right-3 top-9 flex items-center gap-1 text-orange-500 pointer-events-none">
+                      <span className="text-sm font-medium">{turnaroundNextDayDate}</span>
+                      <Sunrise className="h-4 w-4" />
+                    </div>
+                  )}
+                </div>
+              </div>
 
-          {/* Cross-day checkbox */}
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="crossDay"
-              checked={formData.isCrossDay}
-              onCheckedChange={checked => handleFieldChange('isCrossDay', !!checked)}
-              disabled={isFormDisabled}
-            />
-            <label
-              htmlFor="crossDay"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              Cross-day flight (debrief time is next day)
-            </label>
-          </div>
+
+            </div>
+          )}
 
           {/* Time sequence error */}
-          {validation.fieldErrors.timeSequence && (touchedFields.has('reportTime') || touchedFields.has('debriefTime')) && (
+          {validation.fieldErrors.timeSequence && submitAttempted && (
             <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
               <p className="text-destructive text-sm flex items-center gap-2">
                 <AlertCircle className="h-4 w-4" />
@@ -314,26 +681,50 @@ export function FlightEntryForm({
             </div>
           )}
 
+          {/* Batch Counter */}
+          {batchCount > 0 && (
+            <div className="p-3 bg-primary/10 border border-primary/20 rounded-md">
+              <p className="text-primary text-sm font-medium">
+                {batchCount} flight {batchCount === 1 ? 'duty' : 'duties'} added to batch
+              </p>
+            </div>
+          )}
 
-
-          {/* Submit Button */}
-          <Button
-            type="submit"
-            disabled={!validation.valid || isFormDisabled}
-            className="w-full"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving Flight...
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Save Flight Duty
-              </>
+          {/* Buttons Container */}
+          <div className="space-y-3">
+            {/* Add Another Duty Button */}
+            {onAddToBatch && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAddToBatch}
+                disabled={isFormDisabled}
+                className="w-full"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Another Duty
+              </Button>
             )}
-          </Button>
+
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              disabled={isFormDisabled}
+              className="w-full"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving Flight...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  {batchCount > 0 ? `Save ${batchCount + 1} Flight Duties` : 'Save Flight Duty'}
+                </>
+              )}
+            </Button>
+          </div>
 
 
     </form>
