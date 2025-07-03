@@ -15,7 +15,8 @@ import { useToast } from '@/hooks/use-toast';
 import {
   CheckCircle,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  ArrowLeft
 } from 'lucide-react';
 
 import { FlightEntryForm } from './FlightEntryForm';
@@ -137,6 +138,60 @@ export function ManualFlightEntry({
     }
   };
 
+  // Handle saving batch only (without current form)
+  const handleSaveBatchOnly = async () => {
+    if (!user?.id) {
+      const errorMsg = 'User not authenticated';
+      setError(errorMsg);
+      salaryCalculator.csvUploadError(errorMsg);
+      return;
+    }
+
+    if (batchDuties.length === 0) {
+      salaryCalculator.csvUploadError('No duties in batch to save');
+      return;
+    }
+
+    setLoading(true);
+    setEntryState('processing');
+    setError(null);
+
+    try {
+      // Process only the batched duties (exclude current form)
+      const processingResult = await processManualEntryBatch(batchDuties, user.id, position);
+
+      if (processingResult.success) {
+        setResult(processingResult);
+        setEntryState('success');
+
+        // Show success toast
+        const totalFlights = processingResult.flightDuties?.length || batchDuties.length;
+        salaryCalculator.flightSaved([`${totalFlights} flight duties`]);
+
+        // Reset batch state
+        setBatchDuties([]);
+        setIsBatchMode(false);
+
+        // Call success callback if provided
+        if (onSuccess) {
+          onSuccess();
+        }
+      } else {
+        const errorMsg = processingResult.errors?.join(', ') || 'Failed to save batch duties';
+        setError(errorMsg);
+        setEntryState('error');
+        salaryCalculator.csvUploadError(errorMsg);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      setError(errorMessage);
+      setEntryState('error');
+      salaryCalculator.csvUploadError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
 
   // Handle retry
@@ -153,6 +208,7 @@ export function ManualFlightEntry({
           <FlightEntryForm
             onSubmit={handleFormSubmit}
             onAddToBatch={handleAddToBatch}
+            onSaveBatchOnly={handleSaveBatchOnly}
             loading={loading}
             position={position}
             batchCount={batchDuties.length}

@@ -38,6 +38,7 @@ import { validateManualEntryRealTime } from '@/lib/salary-calculator/manual-entr
 interface FlightEntryFormProps {
   onSubmit: (data: ManualFlightEntryData) => Promise<void>;
   onAddToBatch?: (data: ManualFlightEntryData) => void;
+  onSaveBatchOnly?: () => Promise<void>;
   loading?: boolean;
   disabled?: boolean;
   initialData?: Partial<ManualFlightEntryData>;
@@ -49,6 +50,7 @@ interface FlightEntryFormProps {
 export function FlightEntryForm({
   onSubmit,
   onAddToBatch,
+  onSaveBatchOnly,
   loading = false,
   disabled = false,
   initialData,
@@ -703,6 +705,29 @@ export function FlightEntryForm({
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Add Another Duty
+              </Button>
+            )}
+
+            {/* Save Batch Only Button - only show when there are items in batch */}
+            {batchCount > 0 && onSaveBatchOnly && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={onSaveBatchOnly}
+                disabled={loading}
+                className="w-full"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving Batch...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Save {batchCount} Flight {batchCount === 1 ? 'Duty' : 'Duties'} Only
+                  </>
+                )}
               </Button>
             )}
 

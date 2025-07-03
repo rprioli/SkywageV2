@@ -72,7 +72,7 @@ export default function DashboardSidebar() {
               <Link
                 href={item.href}
                 className={cn(
-                  "flex items-center px-6 py-3 rounded-lg text-sm font-medium uppercase tracking-wide transition-all duration-200",
+                  "flex items-center px-6 py-3 rounded-2xl text-sm font-medium uppercase tracking-wide transition-all duration-200",
                   pathname === item.href || pathname.startsWith(`${item.href}/`)
                     ? "bg-white text-primary"
                     : "text-white/80 hover:bg-white/5 hover:text-white"
@@ -100,7 +100,7 @@ export default function DashboardSidebar() {
         <button
           onClick={handleLogout}
           disabled={loading}
-          className="flex items-center w-full px-6 py-3 rounded-lg text-sm font-medium uppercase tracking-wide text-white/80 hover:bg-white/5 hover:text-white hover:border-l-4 hover:border-accent transition-all duration-200 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-white/50"
+          className="flex items-center w-full px-6 py-3 rounded-2xl text-sm font-medium uppercase tracking-wide text-white/80 hover:bg-white/5 hover:text-white hover:border-l-4 hover:border-accent transition-all duration-200 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-white/50"
           aria-label="Logout"
         >
           <LogOut className="mr-3 h-5 w-5" aria-hidden="true" />

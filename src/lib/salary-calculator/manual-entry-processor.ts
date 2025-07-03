@@ -60,8 +60,103 @@ export function convertToFlightDuty(
   data: ManualFlightEntryData,
   userId: string,
   position: Position
-): FlightDuty | null {
+): FlightDuty[] | null {
   try {
+    // Handle layover duties - create 2 separate duties
+    if (data.dutyType === 'layover') {
+      console.log('=== CREATING LAYOVER DUTIES ===');
+
+      // Validate layover data
+      if (!data.inboundDate || !data.reportTimeInbound || !data.debriefTimeOutbound) {
+        throw new Error('Missing required layover fields');
+      }
+
+      if (data.flightNumbers.length !== 2) {
+        throw new Error('Layover duties must have exactly 2 flight numbers');
+      }
+
+      if (data.sectors.length !== 4) {
+        throw new Error('Layover duties must have exactly 4 sectors');
+      }
+
+      // Create outbound duty
+      const outboundDate = new Date(data.date);
+      const outboundMonth = outboundDate.getMonth() + 1;
+      const outboundYear = outboundDate.getFullYear();
+
+      const outboundReportTime = parseTimeString(data.reportTime);
+      const outboundDebriefTime = parseTimeString(data.debriefTimeOutbound);
+
+      if (!outboundReportTime.success || !outboundDebriefTime.success || !outboundReportTime.timeValue || !outboundDebriefTime.timeValue) {
+        throw new Error(`Invalid outbound time format: ${outboundReportTime.error || outboundDebriefTime.error}`);
+      }
+
+      // Calculate outbound duty hours and pay
+      const outboundDutyHours = calculateDuration(outboundReportTime.timeValue, outboundDebriefTime.timeValue, data.isCrossDayOutbound);
+      const outboundFlightPay = calculateFlightPay(outboundDutyHours, position);
+
+      const outboundDuty: FlightDuty = {
+        id: `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        userId,
+        date: outboundDate,
+        month: outboundMonth,
+        year: outboundYear,
+        dutyType: 'layover',
+        flightNumbers: [data.flightNumbers[0]], // First flight number
+        sectors: [data.sectors[0], data.sectors[1]], // First 2 sectors
+        reportTime: outboundReportTime.timeValue,
+        debriefTime: outboundDebriefTime.timeValue,
+        dutyHours: outboundDutyHours,
+        flightPay: outboundFlightPay,
+        isCrossDay: data.isCrossDayOutbound || false,
+        dataSource: 'manual',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      // Create inbound duty
+      const inboundDate = new Date(data.inboundDate);
+      const inboundMonth = inboundDate.getMonth() + 1;
+      const inboundYear = inboundDate.getFullYear();
+
+      const inboundReportTime = parseTimeString(data.reportTimeInbound);
+      const inboundDebriefTime = parseTimeString(data.debriefTime);
+
+      if (!inboundReportTime.success || !inboundDebriefTime.success || !inboundReportTime.timeValue || !inboundDebriefTime.timeValue) {
+        throw new Error(`Invalid inbound time format: ${inboundReportTime.error || inboundDebriefTime.error}`);
+      }
+
+      // Calculate inbound duty hours and pay
+      const inboundDutyHours = calculateDuration(inboundReportTime.timeValue, inboundDebriefTime.timeValue, data.isCrossDayInbound);
+      const inboundFlightPay = calculateFlightPay(inboundDutyHours, position);
+
+      const inboundDuty: FlightDuty = {
+        id: `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        userId,
+        date: inboundDate,
+        month: inboundMonth,
+        year: inboundYear,
+        dutyType: 'layover',
+        flightNumbers: [data.flightNumbers[1]], // Second flight number
+        sectors: [data.sectors[2], data.sectors[3]], // Last 2 sectors
+        reportTime: inboundReportTime.timeValue,
+        debriefTime: inboundDebriefTime.timeValue,
+        dutyHours: inboundDutyHours,
+        flightPay: inboundFlightPay,
+        isCrossDay: data.isCrossDayInbound || false,
+        dataSource: 'manual',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      console.log('Created outbound duty:', outboundDuty);
+      console.log('Created inbound duty:', inboundDuty);
+      console.log('=== END LAYOVER CREATION ===');
+
+      return [outboundDuty, inboundDuty];
+    }
+
+    // Handle non-layover duties (existing logic)
     // Parse date
     const flightDate = new Date(data.date);
     const month = flightDate.getMonth() + 1; // 1-based month
@@ -128,7 +223,7 @@ export function convertToFlightDuty(
       flightDuty.dutyType = classification.dutyType;
     }
 
-    return flightDuty;
+    return [flightDuty];
   } catch (error) {
     console.error('Error converting manual entry to flight duty:', error);
     return null;
@@ -159,9 +254,9 @@ export async function processManualEntry(
 
     warnings.push(...validation.warnings);
 
-    // Convert to FlightDuty
-    const flightDuty = convertToFlightDuty(data, userId, position);
-    if (!flightDuty) {
+    // Convert to FlightDuty array
+    const flightDuties = convertToFlightDuty(data, userId, position);
+    if (!flightDuties || flightDuties.length === 0) {
       return {
         success: false,
         errors: ['Failed to convert entry to flight duty'],
@@ -170,7 +265,7 @@ export async function processManualEntry(
     }
 
     // Save to database
-    const saveResult = await createFlightDuties([flightDuty], userId);
+    const saveResult = await createFlightDuties(flightDuties, userId);
     if (saveResult.error) {
       return {
         success: false,
@@ -181,10 +276,11 @@ export async function processManualEntry(
 
     // Recalculate monthly totals for the entire month (not just the new flight)
     const { recalculateMonthlyTotals } = await import('@/lib/salary-calculator/recalculation-engine');
+    const firstDuty = flightDuties[0];
     const recalcResult = await recalculateMonthlyTotals(
       userId,
-      flightDuty.month,
-      flightDuty.year,
+      firstDuty.month,
+      firstDuty.year,
       position
     );
 
@@ -196,7 +292,7 @@ export async function processManualEntry(
 
     return {
       success: true,
-      flightDuty,
+      flightDuty: firstDuty, // Return first duty for backward compatibility
       monthlyCalculation,
       warnings: warnings.length > 0 ? warnings : undefined
     };
@@ -350,13 +446,13 @@ export async function processManualEntryBatch(
       warnings.push(...validation.warnings.map(w => `Entry ${i + 1}: ${w}`));
 
       // Convert to FlightDuty
-      const flightDuty = convertToFlightDuty(entry, userId, position);
-      if (!flightDuty) {
+      const entryFlightDuties = convertToFlightDuty(entry, userId, position);
+      if (!entryFlightDuties || entryFlightDuties.length === 0) {
         errors.push(`Entry ${i + 1}: Failed to convert entry to flight duty`);
         continue;
       }
 
-      flightDuties.push(flightDuty);
+      flightDuties.push(...entryFlightDuties); // Spread array to handle layovers
     }
 
     // If no valid flight duties, return error
@@ -448,7 +544,13 @@ export function validateManualEntryRealTime(
     sectors: data.sectors || [],
     reportTime: data.reportTime || '',
     debriefTime: data.debriefTime || '',
-    isCrossDay: data.isCrossDay || false
+    isCrossDay: data.isCrossDay || false,
+    // Include layover-specific fields
+    inboundDate: data.inboundDate || '',
+    reportTimeInbound: data.reportTimeInbound || '',
+    debriefTimeOutbound: data.debriefTimeOutbound || '',
+    isCrossDayOutbound: data.isCrossDayOutbound || false,
+    isCrossDayInbound: data.isCrossDayInbound || false
   };
 
   return validateManualEntry(completeData, position);

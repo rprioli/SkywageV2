@@ -24,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Upload, FileText, BarChart3, Plane, Calendar, Trash2 } from 'lucide-react';
+import { Upload, FileText, BarChart3, Plane, Calendar, Trash2, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { MonthlyCalculation, FlightDuty, Position } from '@/types/salary-calculator';
@@ -923,19 +923,19 @@ export default function DashboardPage() {
       {/* Action Buttons */}
       <div className="flex gap-4">
         <Button
-          className="bg-[#4C49ED] hover:bg-[#4C49ED]/90"
-          onClick={handleUploadClick}
+          className="bg-[#4C49ED] hover:bg-[#4C49ED]/90 cursor-pointer rounded-2xl"
+          onClick={handleManualEntryClick}
         >
-          <Upload className="mr-2 h-4 w-4" />
-          Upload Roster
+          <Plus className="mr-1 h-4 w-4" />
+          Add Flight
         </Button>
         <Button
           variant="outline"
-          className="border-[#4C49ED] text-[#4C49ED] hover:bg-[#4C49ED] hover:text-white"
-          onClick={handleManualEntryClick}
+          className="border-[#4C49ED] text-[#4C49ED] hover:bg-[#4C49ED] hover:text-white cursor-pointer rounded-2xl"
+          onClick={handleUploadClick}
         >
-          <FileText className="mr-2 h-4 w-4" />
-          Add Flight
+          <Upload className="mr-1 h-4 w-4" />
+          Upload Roster
         </Button>
       </div>
 

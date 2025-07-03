@@ -353,7 +353,7 @@ export function validateManualEntry(
 
   // Validate inbound date for layover duties
   if (data.dutyType === 'layover') {
-    if (!data.inboundDate) {
+    if (!data.inboundDate || data.inboundDate.trim() === '') {
       fieldErrors.inboundDate = 'Inbound date is required for layover duties';
       errors.push('Inbound date is required for layover duties');
     } else {
@@ -386,8 +386,8 @@ export function validateManualEntry(
 
   // Validate time sequence
   const timeValidation = validateTimeSequence(
-    data.reportTime, 
-    data.debriefTime, 
+    data.reportTime,
+    data.debriefTime,
     data.isCrossDay
   );
   if (!timeValidation.valid) {
