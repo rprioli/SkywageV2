@@ -6,6 +6,9 @@ import { PositionSelect } from '@/components/ui/PositionSelect';
 import { updateUserPosition } from '@/lib/userProfile';
 import { getProfile } from '@/lib/db';
 import { getPositionName } from '@/lib/positionUtils';
+import { recalculateMonthlyTotals } from '@/lib/salary-calculator/recalculation-engine';
+import { getAllMonthlyCalculations } from '@/lib/database/calculations';
+import { Position } from '@/types/salary-calculator';
 
 export function PositionUpdate() {
   const { user, loading: authLoading } = useAuth();
@@ -49,6 +52,41 @@ export function PositionUpdate() {
     setPosition(value);
   };
 
+  // Recalculate all existing data after position change
+  const recalculateAllData = async (newPosition: Position) => {
+    if (!user?.id) return;
+
+    try {
+      // Get all months with existing calculations
+      const { data: monthlyCalculations, error } = await getAllMonthlyCalculations(user.id);
+
+      if (error || !monthlyCalculations) {
+        console.warn('No existing calculations found to recalculate');
+        return;
+      }
+
+      // Recalculate each month with the new position
+      const recalculationPromises = monthlyCalculations.map(calc =>
+        recalculateMonthlyTotals(user.id, calc.month, calc.year, newPosition)
+      );
+
+      const results = await Promise.allSettled(recalculationPromises);
+
+      // Log any failures
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          const calc = monthlyCalculations[index];
+          console.error(`Failed to recalculate ${calc.month}/${calc.year}:`, result.reason);
+        }
+      });
+
+      console.log(`Recalculated ${results.length} months with new position: ${newPosition}`);
+
+    } catch (error) {
+      console.error('Error during bulk recalculation:', error);
+    }
+  };
+
   const handleSave = async () => {
     if (!position || (position !== 'CCM' && position !== 'SCCM')) {
       setError('Please select a valid position');
@@ -66,8 +104,14 @@ export function PositionUpdate() {
         throw new Error(error || 'Failed to update position');
       }
 
+      // Trigger recalculation of all existing data with new position
+      await recalculateAllData(position as Position);
+
       setUpdateSuccess(true);
       setIsEditing(false);
+
+      // Notify other components that position has been updated
+      window.dispatchEvent(new CustomEvent('userPositionUpdated'));
 
       // Auto-hide success message after 3 seconds
       if (successTimeoutRef.current) {

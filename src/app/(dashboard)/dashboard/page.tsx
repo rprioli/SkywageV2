@@ -46,6 +46,7 @@ import {
 import { recalculateMonthlyTotals } from '@/lib/salary-calculator/recalculation-engine';
 import { RosterReplacementDialog } from '@/components/salary-calculator/RosterReplacementDialog';
 import { cn } from '@/lib/utils';
+import { getProfile } from '@/lib/db';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -107,9 +108,69 @@ export default function DashboardPage() {
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [replacementProcessing, setReplacementProcessing] = useState(false);
 
-  // Get user position for display
-  const userPosition = user?.user_metadata?.position || 'CCM';
+  // User position state - load from database profile (source of truth)
+  const [userPosition, setUserPosition] = useState<Position>('CCM');
+  const [userPositionLoading, setUserPositionLoading] = useState(true);
   const userAirline = user?.user_metadata?.airline || 'Flydubai';
+
+  // Load user position from database profile (source of truth)
+  useEffect(() => {
+    const loadUserPosition = async () => {
+      if (!user?.id) return;
+
+      try {
+        setUserPositionLoading(true);
+        const { data: profile, error } = await getProfile(user.id);
+
+        if (profile && !error && profile.position) {
+          setUserPosition(profile.position as Position);
+        } else {
+          // Fallback to auth metadata if database fails
+          console.warn('Failed to load position from profile, using auth metadata fallback');
+          setUserPosition((user?.user_metadata?.position as Position) || 'CCM');
+        }
+      } catch (error) {
+        console.error('Error loading user position:', error);
+        // Fallback to auth metadata
+        setUserPosition((user?.user_metadata?.position as Position) || 'CCM');
+      } finally {
+        setUserPositionLoading(false);
+      }
+    };
+
+    loadUserPosition();
+  }, [user?.id, user?.user_metadata?.position]);
+
+  // Refresh user position (can be called when position is updated)
+  const refreshUserPosition = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data: profile, error } = await getProfile(user.id);
+
+      if (profile && !error && profile.position) {
+        setUserPosition(profile.position as Position);
+
+        // Refresh all data with new position
+        await refreshDataAfterDelete();
+      }
+    } catch (error) {
+      console.error('Error refreshing user position:', error);
+    }
+  };
+
+  // Listen for position updates from profile page
+  useEffect(() => {
+    const handlePositionUpdate = () => {
+      refreshUserPosition();
+    };
+
+    window.addEventListener('userPositionUpdated', handlePositionUpdate);
+
+    return () => {
+      window.removeEventListener('userPositionUpdated', handlePositionUpdate);
+    };
+  }, [user?.id]);
 
   // Fetch current month's salary calculation and all monthly data
   useEffect(() => {
@@ -286,6 +347,12 @@ export default function DashboardPage() {
     // Ensure user is authenticated before upload
     if (!user?.id) {
       salaryCalculator.csvUploadError('You must be logged in to upload roster files. Please sign in and try again.');
+      return;
+    }
+
+    // Wait for user position to be loaded
+    if (userPositionLoading) {
+      salaryCalculator.csvUploadError('Loading user profile... Please try again in a moment.');
       return;
     }
 
@@ -558,6 +625,14 @@ export default function DashboardPage() {
   const refreshDataAfterDelete = async () => {
     if (!user?.id) return;
 
+    // Wait for user position to be loaded
+    if (userPositionLoading) {
+      showError("Loading Profile", {
+        description: "Please wait for user profile to load before refreshing data.",
+      });
+      return;
+    }
+
     try {
       const currentYear = new Date().getFullYear();
       const selectedMonth = selectedOverviewMonth + 1; // Convert from 0-based to 1-based
@@ -609,6 +684,14 @@ export default function DashboardPage() {
   // Refresh data after bulk deletion and trigger recalculation for affected months
   const refreshDataAfterBulkDelete = async (deletedFlights: FlightDuty[]) => {
     if (!user?.id) return;
+
+    // Wait for user position to be loaded
+    if (userPositionLoading) {
+      showError("Loading Profile", {
+        description: "Please wait for user profile to load before refreshing data.",
+      });
+      return;
+    }
 
     try {
       // Get unique months/years from deleted flights
@@ -1032,11 +1115,20 @@ export default function DashboardPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <ManualFlightEntry
-            position={userPosition as Position}
-            onBack={() => setManualEntryModalOpen(false)}
-            onSuccess={handleManualEntrySuccess}
-          />
+          {userPositionLoading ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                <p className="text-sm text-gray-600">Loading user profile...</p>
+              </div>
+            </div>
+          ) : (
+            <ManualFlightEntry
+              position={userPosition as Position}
+              onBack={() => setManualEntryModalOpen(false)}
+              onSuccess={handleManualEntrySuccess}
+            />
+          )}
         </DialogContent>
       </Dialog>
 

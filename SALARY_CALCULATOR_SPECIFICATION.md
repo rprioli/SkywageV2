@@ -6,8 +6,8 @@
 - **Date**: January 2025 (Updated: June 2025)
 - **Project**: Skywage V2
 - **Scope**: Multi-Airline Cabin Crew Salary Calculator (Starting with Flydubai)
-- **Implementation Status**: Phase 8 Completed ✅ + Phase 7 UI/UX Redesign Completed ✅ + Form Layout Reorganization Completed ✅ + Recurrent Duty Type Added ✅ + Layover Duties Working ✅
-- **Current Status**: All critical issues resolved, enhanced UI/UX implemented, reorganized form layout with separate date handling, Recurrent duty type fully integrated, **LAYOVER DUTY CREATION FULLY WORKING**, system production-ready (January 2025)
+- **Implementation Status**: Phase 8 Completed ✅ + Phase 7 UI/UX Redesign Completed ✅ + Form Layout Reorganization Completed ✅ + Recurrent Duty Type Added ✅ + Layover Duties Working ✅ + **CRITICAL POSITION BUG FIXED** ✅
+- **Current Status**: All critical issues resolved, enhanced UI/UX implemented, reorganized form layout with separate date handling, Recurrent duty type fully integrated, **LAYOVER DUTY CREATION FULLY WORKING**, **USER POSITION SELECTION PROPERLY APPLIED TO CALCULATIONS**, system production-ready (January 2025)
 
 ---
 
@@ -910,11 +910,47 @@ src/
 
 ### **Recent Major Achievements:**
 
+- ✅ **CRITICAL POSITION BUG FIXED** - User position selection now properly applied to all salary calculations
+- ✅ **Automatic Recalculation System** - Position changes trigger automatic recalculation of all existing data
+- ✅ **Database Profile Integration** - Dashboard now reads position from database profile (source of truth)
+- ✅ **Event-Driven Updates** - Components automatically refresh when position changes
 - ✅ **Layover duty creation** - Successfully creates 2 separate FlightDuty objects for layover flights
 - ✅ **Database integration** - Proper saving to Supabase flights table with correct data types
 - ✅ **Date handling** - Fixed Date object conversion for database compatibility
 - ✅ **Function signatures** - Fixed calculateDutyHours/calculateDuration usage and imports
 - ✅ **Error resolution** - Resolved all "function is not defined" errors
+
+### **Critical Position Bug Fix (January 29, 2025):**
+
+**Problem**: User position selection (CCM/SCCM) was not being properly applied to salary calculations. Dashboard was using stale auth metadata instead of current database profile data.
+
+**Root Cause**:
+
+- Dashboard read position from `user?.user_metadata?.position` (auth metadata)
+- Profile updates only modified database profile table, not auth metadata
+- This caused calculations to use wrong position rates even after profile changes
+
+**Solution Implemented**:
+
+1. **Database Profile as Source of Truth**: Modified dashboard to read position from database profile
+2. **Automatic Recalculation**: Added system to recalculate all existing data when position changes
+3. **Event-Driven Updates**: Added communication between profile and dashboard components
+4. **Loading States**: Added proper loading states to prevent race conditions
+5. **Fallback Mechanism**: Maintained auth metadata as fallback for reliability
+
+**Technical Changes**:
+
+- `src/app/(dashboard)/dashboard/page.tsx`: Added database profile position loading
+- `src/components/profile/PositionUpdate.tsx`: Added bulk recalculation after position update
+- Added event system for cross-component communication
+- Created comprehensive test page for validation
+
+**Result**:
+
+- CCM users now get CCM rates (AED 50/hour, 3,275 basic salary)
+- SCCM users now get SCCM rates (AED 62/hour, 4,275 basic salary)
+- Position changes automatically recalculate ALL existing flight duties
+- Dashboard immediately reflects correct calculations
 
 ### **Technical Implementation Notes:**
 
@@ -922,3 +958,4 @@ src/
 - Each duty has proper date, time, and calculation handling
 - Database operations work correctly with proper data type conversion
 - Console shows successful creation and saving of layover duties
+- Position data flows: Database Profile → Dashboard → Calculations (with auth metadata fallback)

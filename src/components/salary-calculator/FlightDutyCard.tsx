@@ -28,6 +28,7 @@ import {
   Trash2,
   ArrowRight
 } from 'lucide-react';
+import { calculateRestPeriod } from '@/lib/salary-calculator/time-calculator';
 
 interface FlightDutyCardProps {
   flightDuty: FlightDuty;
@@ -109,13 +110,6 @@ export function FlightDutyCard({
       return null;
     }
 
-    // For now, return test data to verify the logic
-    return {
-      restHours: 23.5,
-      perDiemPay: 207.27,
-      matchingFlight: null
-    };
-
     // Find the matching inbound flight (next layover flight with same user)
     const currentDate = flightDuty.date.getTime();
     const matchingFlight = allFlightDuties.find(flight =>
@@ -130,32 +124,32 @@ export function FlightDutyCard({
       return { error: 'Could not find matching layover flight' };
     }
 
-    // Calculate rest period between debriefing of current flight and reporting of next flight
-    const debriefMinutes = flightDuty.debriefTime.totalMinutes + (flightDuty.isCrossDay ? 24 * 60 : 0);
-    const reportMinutes = matchingFlight.reportTime.totalMinutes;
+    try {
+      // Calculate days between flights
+      const daysBetween = Math.floor((matchingFlight.date.getTime() - flightDuty.date.getTime()) / (24 * 60 * 60 * 1000));
 
-    // Calculate days between flights
-    const daysBetween = Math.floor((matchingFlight.date.getTime() - flightDuty.date.getTime()) / (24 * 60 * 60 * 1000));
+      // Use the existing calculateRestPeriod utility function for accurate calculation
+      const restHours = calculateRestPeriod(
+        flightDuty.debriefTime,
+        flightDuty.isCrossDay,
+        matchingFlight.reportTime,
+        false, // Assuming inbound flight reporting is not cross-day
+        daysBetween
+      );
 
-    // Calculate total rest minutes
-    let restMinutes = (daysBetween * 24 * 60) + reportMinutes - debriefMinutes;
+      // Calculate per diem using the correct rate (8.82 AED per hour for both positions)
+      const perDiemRate = 8.82; // AED per hour
+      const perDiemPay = restHours * perDiemRate;
 
-    // If negative, add a day
-    if (restMinutes < 0) {
-      restMinutes += 24 * 60;
+      return {
+        restHours,
+        perDiemPay,
+        matchingFlight
+      };
+    } catch (error) {
+      console.warn('Error calculating layover rest period:', error);
+      return { error: 'Error calculating rest period' };
     }
-
-    const restHours = restMinutes / 60;
-
-    // Calculate per diem (using CCM rate as default - could be improved to use actual position)
-    const perDiemRate = 8.82; // AED per hour
-    const perDiemPay = restHours * perDiemRate;
-
-    return {
-      restHours,
-      perDiemPay,
-      matchingFlight
-    };
   };
 
   const renderSectorsWithIcons = (sectors: string[], dutyType: string) => {

@@ -2,7 +2,7 @@
 
 ## 📋 Current Status: **LAYOVER DUTIES FULLY WORKING** ✅
 
-The manual flight entry system is now fully functional with enhanced UI/UX, reorganized form layout, separate date handling for layover duties, complete Recurrent duty type integration, batch entry functionality, and **WORKING LAYOVER DUTY CREATION**. All major improvements completed as of December 28, 2024, with Recurrent duty type added January 29, 2025, batch entry feature completed February 2, 2025, and layover duties fully implemented and working January 29, 2025.
+The manual flight entry system is now fully functional with enhanced UI/UX, reorganized form layout, separate date handling for layover duties, complete Recurrent duty type integration, batch entry functionality, and **WORKING LAYOVER DUTY CREATION**. All major improvements completed as of December 28, 2024, with Recurrent duty type added January 29, 2025, batch entry feature completed February 2, 2025, layover duties fully implemented January 29, 2025, and **layover rest period display logic fixed July 8, 2025**.
 
 ---
 
@@ -100,6 +100,14 @@ The manual flight entry system is now fully functional with enhanced UI/UX, reor
 - [x] **Button Layout** - Organized button hierarchy (Add Another → Save Batch Only → Save All)
 - [x] **Loading States** - Proper loading indicators for all batch operations
 - [x] **TypeScript Integration** - Complete type safety for batch functionality
+
+### **Layover Rest Period Display Fix (Jul 8, 2025)**
+
+- [x] **Fixed Sector Parsing Logic** - Corrected identification of inbound flights returning to DXB
+- [x] **Improved Rest Period Display** - Only shows layover rest periods on outbound flights, not inbound
+- [x] **Cleaned Debug Output** - Removed excessive console logging for cleaner development experience
+- [x] **Enhanced Flight Logic** - Proper detection of last sector to determine flight direction
+- [x] **UI Consistency** - Layover cards now display rest periods correctly based on flight direction
 
 ---
 
@@ -364,18 +372,22 @@ Debriefing: [time field] + cross-day indicator
 
 ---
 
-## 🚨 **Known Issues & Next Steps (January 29, 2025)**
+## 🚨 **Known Issues & Next Steps (July 8, 2025)**
+
+### **✅ Recently Fixed Issues:**
+
+- [x] **Layover rest period display** - Fixed logic to correctly identify inbound vs outbound flights ✅ **FIXED**
+- [x] **Sector parsing logic** - Corrected to check last sector instead of splitting on hyphens ✅ **FIXED**
+- [x] **Debug console spam** - Cleaned up excessive logging for better development experience ✅ **FIXED**
 
 ### **Minor Issues to Address:**
 
 - [ ] **Per diem calculation** - Warning: "Cannot read properties of undefined (reading 'perDiemRate')" in layover rest period calculation
 - [ ] **Flight duty card formatting** - Fine-tuning needed for proper display of layover duties
-- [ ] **Layover rest period display** - Ensure proper formatting and calculation display
 
 ### **Technical Debt:**
 
-- Console warning about per diem rate in `calculation-engine.ts:222`
-- May need to review layover rest period calculation logic
+- Console warning about per diem rate in `calculation-engine.ts:222` (may be resolved with recent fixes)
 
 ### **Success Confirmation:**
 
@@ -385,5 +397,5 @@ Debriefing: [time field] + cross-day indicator
 
 ---
 
-**Last Updated:** January 29, 2025
-**Status:** Enhanced, reorganized, polished, Recurrent duty type fully integrated, batch entry feature completed, and **LAYOVER DUTIES FULLY WORKING** - fully functional manual flight entry system
+**Last Updated:** July 8, 2025
+**Status:** Enhanced, reorganized, polished, Recurrent duty type fully integrated, batch entry feature completed, layover rest period display logic fixed, and **LAYOVER DUTIES FULLY WORKING** - fully functional manual flight entry system
