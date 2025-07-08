@@ -8,6 +8,22 @@ Skywage is a salary calculator tailored for airline cabin crew and pilots. It pr
 - **Platform**: Desktop-first, mobile later
 - **Supported Airline**: Flydubai (expandable)
 
+## 🚨 Recent Critical Fix (January 29, 2025)
+
+**FIXED: User position selection now properly applied to salary calculations**
+
+- **Problem**: Dashboard was using stale auth metadata instead of database profile
+- **Impact**: CCM users were getting SCCM rates and vice versa
+- **Solution**: Database profile is now the source of truth with automatic recalculation
+- **Result**: Position changes immediately trigger recalculation of ALL existing data
+
+**Key Improvements:**
+
+- ✅ CCM users get correct rates: AED 50/hour, 3,275 basic salary
+- ✅ SCCM users get correct rates: AED 62/hour, 4,275 basic salary
+- ✅ Position changes automatically recalculate all flight duties
+- ✅ Real-time synchronization across all components
+
 ## Architecture
 
 - **Frontend**: HTML5, CSS3, React.js, Next.js, Shadcn
