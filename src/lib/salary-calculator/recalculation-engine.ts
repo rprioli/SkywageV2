@@ -113,7 +113,7 @@ export async function recalculateMonthlyTotals(
     });
 
     // Recalculate layover rest periods
-    const layoverRestPeriods = calculateLayoverRestPeriods(sortedFlights);
+    const layoverRestPeriods = calculateLayoverRestPeriods(sortedFlights, userId, position);
 
     // Delete existing layover rest periods for the month
     const deleteResult = await deleteLayoverRestPeriods(userId, month, year);

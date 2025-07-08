@@ -923,19 +923,19 @@ export default function DashboardPage() {
       {/* Action Buttons */}
       <div className="flex gap-4">
         <Button
-          className="bg-[#4C49ED] hover:bg-[#4C49ED]/90 cursor-pointer rounded-2xl"
+          className="bg-[#4C49ED] cursor-pointer rounded-2xl flex items-center gap-2 hover:opacity-90"
           onClick={handleManualEntryClick}
         >
-          <Plus className="mr-1 h-4 w-4" />
-          Add Flight
+          <Plus className="h-4 w-4" />
+          <span>Add Flight</span>
         </Button>
         <Button
           variant="outline"
-          className="border-[#4C49ED] text-[#4C49ED] hover:bg-[#4C49ED] hover:text-white cursor-pointer rounded-2xl"
+          className="border-[#4C49ED] text-[#4C49ED] cursor-pointer rounded-2xl flex items-center gap-2 hover:bg-transparent hover:opacity-80"
           onClick={handleUploadClick}
         >
-          <Upload className="mr-1 h-4 w-4" />
-          Upload Roster
+          <Upload className="h-4 w-4" />
+          <span>Upload Roster</span>
         </Button>
       </div>
 

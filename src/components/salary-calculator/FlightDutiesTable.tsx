@@ -255,7 +255,7 @@ export function FlightDutiesTable({
                 variant="outline"
                 size="sm"
                 onClick={clearFilters}
-                className="h-8 px-3 text-xs"
+                className="h-8 px-3 text-xs cursor-pointer hover:bg-transparent hover:opacity-80"
               >
                 <X className="h-3 w-3 mr-1" />
                 Clear Filters
@@ -272,7 +272,7 @@ export function FlightDutiesTable({
             <p className="text-gray-500 max-w-sm mx-auto mb-4">
               Try adjusting your filter settings or clear all filters to see all flight duties.
             </p>
-            <Button variant="outline" onClick={clearFilters} className="mt-2">
+            <Button variant="outline" onClick={clearFilters} className="mt-2 cursor-pointer hover:bg-transparent hover:opacity-80">
               <X className="h-4 w-4 mr-2" />
               Clear All Filters
             </Button>
@@ -306,7 +306,11 @@ export function FlightDutiesTable({
                 variant={bulkMode ? "default" : "outline"}
                 size="sm"
                 onClick={toggleBulkMode}
-                className="h-8 px-3 text-xs"
+                className={`h-8 px-3 text-xs cursor-pointer ${
+                  bulkMode
+                    ? 'hover:opacity-90'
+                    : 'hover:bg-transparent hover:opacity-80'
+                }`}
               >
                 {bulkMode ? (
                   <>
@@ -326,7 +330,7 @@ export function FlightDutiesTable({
                   variant="outline"
                   size="sm"
                   onClick={clearFilters}
-                  className="h-8 px-3 text-xs"
+                  className="h-8 px-3 text-xs cursor-pointer hover:bg-transparent hover:opacity-80"
                 >
                   <X className="h-3 w-3 mr-1" />
                   Clear Filters
@@ -393,7 +397,11 @@ export function FlightDutiesTable({
                 variant={sortBy === 'date' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => handleSort('date')}
-                className="h-8 px-3 text-xs"
+                className={`h-8 px-3 text-xs cursor-pointer ${
+                  sortBy === 'date'
+                    ? 'hover:opacity-90'
+                    : 'hover:bg-transparent hover:opacity-80'
+                }`}
               >
                 <Calendar className="h-3 w-3 mr-1" />
                 Date
@@ -405,7 +413,11 @@ export function FlightDutiesTable({
                 variant={sortBy === 'hours' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => handleSort('hours')}
-                className="h-8 px-3 text-xs"
+                className={`h-8 px-3 text-xs cursor-pointer ${
+                  sortBy === 'hours'
+                    ? 'hover:opacity-90'
+                    : 'hover:bg-transparent hover:opacity-80'
+                }`}
               >
                 <Clock className="h-3 w-3 mr-1" />
                 Hours
@@ -417,7 +429,11 @@ export function FlightDutiesTable({
                 variant={sortBy === 'pay' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => handleSort('pay')}
-                className="h-8 px-3 text-xs"
+                className={`h-8 px-3 text-xs cursor-pointer ${
+                  sortBy === 'pay'
+                    ? 'hover:opacity-90'
+                    : 'hover:bg-transparent hover:opacity-80'
+                }`}
               >
                 Pay
                 {sortBy === 'pay' && (
@@ -459,7 +475,7 @@ export function FlightDutiesTable({
                     variant="outline"
                     size="sm"
                     onClick={clearSelection}
-                    className="h-8 px-3 text-xs"
+                    className="h-8 px-3 text-xs cursor-pointer hover:bg-transparent hover:opacity-80"
                   >
                     Clear Selection
                   </Button>
@@ -468,7 +484,7 @@ export function FlightDutiesTable({
                       variant="destructive"
                       size="sm"
                       onClick={handleBulkDelete}
-                      className="h-8 px-3 text-xs"
+                      className="h-8 px-3 text-xs cursor-pointer hover:bg-transparent hover:opacity-80"
                     >
                       <Trash className="h-3 w-3 mr-1" />
                       Delete Selected ({selectedFlights.size})
@@ -490,6 +506,7 @@ export function FlightDutiesTable({
             >
               <FlightDutyCard
                 flightDuty={duty}
+                allFlightDuties={flightDuties}
                 onEdit={onEdit}
                 onDelete={onDelete}
                 showActions={showActions}

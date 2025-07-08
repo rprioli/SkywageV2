@@ -694,20 +694,6 @@ export function FlightEntryForm({
 
           {/* Buttons Container */}
           <div className="space-y-3">
-            {/* Add Another Duty Button */}
-            {onAddToBatch && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleAddToBatch}
-                disabled={isFormDisabled}
-                className="w-full"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Another Duty
-              </Button>
-            )}
-
             {/* Save Batch Only Button - only show when there are items in batch */}
             {batchCount > 0 && onSaveBatchOnly && (
               <Button
@@ -715,40 +701,57 @@ export function FlightEntryForm({
                 variant="secondary"
                 onClick={onSaveBatchOnly}
                 disabled={loading}
-                className="w-full"
+                className="w-full flex items-center justify-center gap-2 cursor-pointer hover:opacity-90"
               >
                 {loading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving Batch...
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Saving Batch...</span>
                   </>
                 ) : (
                   <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Save {batchCount} Flight {batchCount === 1 ? 'Duty' : 'Duties'} Only
+                    <Save className="h-4 w-4" />
+                    <span>Save {batchCount} Flight {batchCount === 1 ? 'Duty' : 'Duties'} Only</span>
                   </>
                 )}
               </Button>
             )}
 
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              disabled={isFormDisabled}
-              className="w-full"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving Flight...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  {batchCount > 0 ? `Save ${batchCount + 1} Flight Duties` : 'Save Flight Duty'}
-                </>
+            {/* Main Action Buttons - Side by Side */}
+            <div className="flex gap-3">
+              {/* Submit Button - Primary action comes first */}
+              <Button
+                type="submit"
+                disabled={isFormDisabled}
+                className="flex-1 flex items-center justify-center gap-2 cursor-pointer hover:opacity-90"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Saving Flight...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    <span>{batchCount > 0 ? `Save ${batchCount + 1} Flight Duties` : 'Save Flight Duty'}</span>
+                  </>
+                )}
+              </Button>
+
+              {/* Add Another Duty Button */}
+              {onAddToBatch && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleAddToBatch}
+                  disabled={isFormDisabled}
+                  className="flex-1 flex items-center justify-center gap-2 cursor-pointer hover:bg-transparent hover:opacity-80"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add Another Duty</span>
+                </Button>
               )}
-            </Button>
+            </div>
           </div>
 
 

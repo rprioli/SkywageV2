@@ -370,7 +370,7 @@ export async function processBatchManualEntries(
     }
 
     // Calculate layover rest periods
-    const layoverRestPeriods = calculateLayoverRestPeriods(flightDuties);
+    const layoverRestPeriods = calculateLayoverRestPeriods(flightDuties, userId, position);
 
     // Save layover rest periods if any
     if (layoverRestPeriods.length > 0) {

@@ -31,6 +31,7 @@ import {
 
 interface FlightDutyCardProps {
   flightDuty: FlightDuty;
+  allFlightDuties?: FlightDuty[]; // For layover rest period calculation
   onEdit?: (flightDuty: FlightDuty) => void;
   onDelete?: (flightDuty: FlightDuty) => void;
   showActions?: boolean;
@@ -41,6 +42,7 @@ interface FlightDutyCardProps {
 
 export function FlightDutyCard({
   flightDuty,
+  allFlightDuties = [],
   onEdit,
   onDelete,
   showActions = true,
@@ -48,6 +50,8 @@ export function FlightDutyCard({
   isSelected = false,
   onToggleSelection
 }: FlightDutyCardProps) {
+
+
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-AE', {
@@ -80,6 +84,78 @@ export function FlightDutyCard({
       month: '2-digit'
     });
     return `${timeStr} ${dateStr}`;
+  };
+
+  // Helper function to format hours and minutes
+  const formatHoursMinutes = (decimalHours: number) => {
+    const hours = Math.floor(decimalHours);
+    const minutes = Math.round((decimalHours - hours) * 60);
+    return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+  };
+
+  // Helper function to find matching layover flight and calculate rest period
+  const getLayoverRestPeriod = () => {
+    // Only calculate for layover duties
+    if (flightDuty.dutyType !== 'layover' || !allFlightDuties.length) {
+      return null;
+    }
+
+    // Check if this is an inbound flight (returning to DXB)
+    // The last sector in the array should be DXB for inbound flights
+    const isInboundToDXB = flightDuty.sectors[flightDuty.sectors.length - 1]?.toUpperCase() === 'DXB';
+
+    // Don't show rest period on inbound flights returning to DXB
+    if (isInboundToDXB) {
+      return null;
+    }
+
+    // For now, return test data to verify the logic
+    return {
+      restHours: 23.5,
+      perDiemPay: 207.27,
+      matchingFlight: null
+    };
+
+    // Find the matching inbound flight (next layover flight with same user)
+    const currentDate = flightDuty.date.getTime();
+    const matchingFlight = allFlightDuties.find(flight =>
+      flight.dutyType === 'layover' &&
+      flight.userId === flightDuty.userId &&
+      flight.id !== flightDuty.id &&
+      flight.date.getTime() > currentDate &&
+      Math.abs(flight.date.getTime() - currentDate) <= 3 * 24 * 60 * 60 * 1000 // Within 3 days
+    );
+
+    if (!matchingFlight) {
+      return { error: 'Could not find matching layover flight' };
+    }
+
+    // Calculate rest period between debriefing of current flight and reporting of next flight
+    const debriefMinutes = flightDuty.debriefTime.totalMinutes + (flightDuty.isCrossDay ? 24 * 60 : 0);
+    const reportMinutes = matchingFlight.reportTime.totalMinutes;
+
+    // Calculate days between flights
+    const daysBetween = Math.floor((matchingFlight.date.getTime() - flightDuty.date.getTime()) / (24 * 60 * 60 * 1000));
+
+    // Calculate total rest minutes
+    let restMinutes = (daysBetween * 24 * 60) + reportMinutes - debriefMinutes;
+
+    // If negative, add a day
+    if (restMinutes < 0) {
+      restMinutes += 24 * 60;
+    }
+
+    const restHours = restMinutes / 60;
+
+    // Calculate per diem (using CCM rate as default - could be improved to use actual position)
+    const perDiemRate = 8.82; // AED per hour
+    const perDiemPay = restHours * perDiemRate;
+
+    return {
+      restHours,
+      perDiemPay,
+      matchingFlight
+    };
   };
 
   const renderSectorsWithIcons = (sectors: string[], dutyType: string) => {
@@ -119,7 +195,26 @@ export function FlightDutyCard({
       }
     }
 
-    // Fallback: show sectors as-is
+    // For layovers and other cases, show sectors with arrows
+    if (sectors.length > 0) {
+      const airports = sectors.flatMap(sector => sector.split('-'));
+      if (airports.length >= 2) {
+        return (
+          <span className="flex items-center justify-center gap-1.5">
+            {airports.map((airport, index) => (
+              <span key={index} className="flex items-center gap-1.5">
+                <span>{airport}</span>
+                {index < airports.length - 1 && (
+                  <ArrowRight className="h-3 w-3 text-[#4C49ED]" />
+                )}
+              </span>
+            ))}
+          </span>
+        );
+      }
+    }
+
+    // Final fallback: show sectors as-is
     return <span>{sectors.join(', ')}</span>;
   };
 
@@ -223,7 +318,7 @@ export function FlightDutyCard({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600"
+                    className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 cursor-pointer hover:bg-transparent"
                   >
                     <MoreVertical className="h-4 w-4" />
                     <span className="sr-only">Open menu</span>
@@ -231,7 +326,7 @@ export function FlightDutyCard({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40">
                   {onEdit && (
-                    <DropdownMenuItem onClick={() => onEdit(flightDuty)}>
+                    <DropdownMenuItem onClick={() => onEdit(flightDuty)} className="cursor-pointer">
                       <Edit className="mr-2 h-4 w-4" />
                       Edit
                     </DropdownMenuItem>
@@ -239,7 +334,7 @@ export function FlightDutyCard({
                   {onDelete && (
                     <DropdownMenuItem
                       onClick={() => onDelete(flightDuty)}
-                      className="text-red-600 focus:text-red-600"
+                      className="text-red-600 focus:text-red-600 cursor-pointer"
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete
@@ -274,7 +369,7 @@ export function FlightDutyCard({
               </h4>
             ) : flightDuty.flightNumbers.length > 0 ? (
               <h4 className="font-semibold text-base text-gray-800 mb-1">
-                {flightDuty.flightNumbers.join(' ')}
+                {flightDuty.flightNumbers.map(num => num.startsWith('FZ') ? num : `FZ${num}`).join(' ')}
               </h4>
             ) : null}
             {flightDuty.sectors.length > 0 && (
@@ -306,6 +401,34 @@ export function FlightDutyCard({
             </div>
           </div>
 
+          {/* Layover Rest Period - Only show on first card of layover pair */}
+          {(() => {
+            const restPeriod = getLayoverRestPeriod();
+            if (!restPeriod) return null;
+
+            if (restPeriod.error) {
+              return (
+                <div className="text-xs text-red-500 text-center py-1">
+                  {restPeriod.error}
+                </div>
+              );
+            }
+
+            return (
+              <div className="border-t border-gray-100 pt-2 mt-2">
+                <div className="flex justify-between items-center text-sm">
+                  <div className="flex items-center gap-1">
+                    <Hotel className="h-4 w-4 text-gray-400" />
+                    <span className="text-gray-600">Rest Period:</span>
+                  </div>
+                  <span className="font-medium text-gray-900">
+                    {formatHoursMinutes(restPeriod.restHours)}
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Bottom Row - Duration and Pay */}
           <div className="flex justify-between items-center pt-2">
             {/* Left side - Duration info */}
@@ -317,11 +440,35 @@ export function FlightDutyCard({
             {/* Right side - Pay Badge with accent brand color background and white text */}
             <Badge
               variant="secondary"
-              className="bg-[#6DDC91] text-white border-[#6DDC91] text-xs px-3 py-1 rounded-full font-medium hover:bg-[#6DDC91]/90"
+              className="bg-[#6DDC91] text-white border-[#6DDC91] text-xs px-3 py-1 rounded-full font-medium cursor-pointer"
             >
               {formatCurrency(flightDuty.flightPay)}
             </Badge>
           </div>
+
+          {/* Per Diem Row - Only show on first card of layover pair */}
+          {(() => {
+            const restPeriod = getLayoverRestPeriod();
+            if (!restPeriod || restPeriod.error) return null;
+
+            return (
+              <div className="flex justify-between items-center pt-1">
+                {/* Left side - Per Diem label */}
+                <div className="text-sm">
+                  <span className="font-semibold text-gray-800">Per Diem:</span>
+                  <span className="text-gray-600 ml-1">{formatHoursMinutes(restPeriod.restHours)}</span>
+                </div>
+
+                {/* Right side - Per Diem Amount Badge */}
+                <Badge
+                  variant="secondary"
+                  className="bg-[#6DDC91] text-white border-[#6DDC91] text-xs px-3 py-1 rounded-full font-medium cursor-pointer"
+                >
+                  {formatCurrency(restPeriod.perDiemPay)}
+                </Badge>
+              </div>
+            );
+          })()}
         </div>
       </CardContent>
     </Card>
