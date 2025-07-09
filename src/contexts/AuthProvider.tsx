@@ -1,9 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { getSession, getUser } from '@/lib/auth';
 
 type AuthContextType = {
   session: Session | null;
@@ -27,6 +26,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  // Add refs to track auth state and prevent race conditions
+  const isUpdatingAuth = useRef(false);
+  const authTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const authListenerRef = useRef<{ subscription: { unsubscribe: () => void } } | null>(null);
+
   // Initialize theme
   useEffect(() => {
     // Check for saved theme preference or use light mode as default
@@ -46,53 +51,152 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
-    // Initial session and user fetch
-    const initializeAuth = async () => {
+    // Clear any existing timeouts
+    const clearAuthTimeout = () => {
+      if (authTimeoutRef.current) {
+        clearTimeout(authTimeoutRef.current);
+        authTimeoutRef.current = null;
+      }
+    };
+
+    const clearLoadingTimeout = () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+    };
+
+    // Set loading timeout to prevent indefinite loading states
+    const setLoadingTimeout = () => {
+      clearLoadingTimeout();
+      loadingTimeoutRef.current = setTimeout(() => {
+        console.warn('Loading timeout - forcing loading to false');
+        setLoading(false);
+        setError(new Error('Authentication timeout - please try refreshing the page'));
+      }, 15000); // 15 second loading timeout
+    };
+
+    // Atomic auth state update function with timeout protection
+    const updateAuthState = async (newSession: Session | null, source: string = 'unknown') => {
+      // Prevent concurrent updates
+      if (isUpdatingAuth.current) {
+        console.log(`Auth update skipped (${source}): already updating`);
+        return;
+      }
+
+      isUpdatingAuth.current = true;
+      clearAuthTimeout();
+
+      // Set timeout to prevent hanging auth updates
+      authTimeoutRef.current = setTimeout(() => {
+        console.warn('Auth update timeout - forcing completion');
+        setLoading(false);
+        isUpdatingAuth.current = false;
+      }, 10000); // 10 second timeout
+
       try {
-        setLoading(true);
+        setError(null);
 
-        // Get current session
-        const { session: currentSession, error: sessionError } = await getSession();
-        if (sessionError) throw sessionError;
-
-        setSession(currentSession);
-
-        // If we have a session, get the user
-        if (currentSession) {
-          const { user: currentUser, error: userError } = await getUser();
-          if (userError) throw userError;
-
-          setUser(currentUser);
+        if (newSession) {
+          // Session exists, extract user from session
+          const user = newSession.user;
+          console.log(`Auth state updated (${source}): user ${user.id}`);
+          setSession(newSession);
+          setUser(user);
+        } else {
+          // No session, clear everything
+          console.log(`Auth state cleared (${source}): no session`);
+          setSession(null);
+          setUser(null);
         }
       } catch (err) {
-        console.error('Error initializing auth:', err);
+        console.error(`Error updating auth state (${source}):`, err);
         setError(err as Error);
+        // On error, clear auth state
+        setSession(null);
+        setUser(null);
       } finally {
+        clearAuthTimeout();
+        clearLoadingTimeout();
+        setLoading(false);
+        isUpdatingAuth.current = false;
+      }
+    };
+
+    // Initialize auth state by getting current session with retry logic
+    const initializeAuth = async (retryCount = 0) => {
+      const maxRetries = 3;
+
+      try {
+        setLoading(true);
+        setLoadingTimeout(); // Set loading timeout
+        console.log(`Initializing auth (attempt ${retryCount + 1}/${maxRetries + 1})`);
+
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error('Error getting initial session:', error);
+
+          // Retry on network errors
+          if (retryCount < maxRetries && (error.message.includes('network') || error.message.includes('timeout'))) {
+            console.log(`Retrying auth initialization in ${(retryCount + 1) * 1000}ms...`);
+            setTimeout(() => initializeAuth(retryCount + 1), (retryCount + 1) * 1000);
+            return;
+          }
+
+          setError(error);
+          setLoading(false);
+          return;
+        }
+
+        await updateAuthState(session, 'initialization');
+      } catch (err) {
+        console.error('Error initializing auth:', err);
+
+        // Retry on unexpected errors
+        if (retryCount < maxRetries) {
+          console.log(`Retrying auth initialization in ${(retryCount + 1) * 1000}ms...`);
+          setTimeout(() => initializeAuth(retryCount + 1), (retryCount + 1) * 1000);
+          return;
+        }
+
+        setError(err as Error);
         setLoading(false);
       }
     };
 
     initializeAuth();
 
-    // Subscribe to auth changes
+    // Subscribe to auth changes with proper error handling
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
-        setSession(newSession);
+        console.log('Auth state change:', event, newSession ? 'session exists' : 'no session');
 
-        if (newSession) {
-          const { user: newUser } = await getUser();
-          setUser(newUser);
-        } else {
-          setUser(null);
+        try {
+          await updateAuthState(newSession, `auth-change-${event}`);
+        } catch (err) {
+          console.error('Error handling auth state change:', err);
+          setError(err as Error);
         }
-
-        setLoading(false);
       }
     );
 
-    // Cleanup subscription
+    // Store listener reference for cleanup
+    authListenerRef.current = authListener;
+
+    // Cleanup function with proper resource cleanup
     return () => {
-      authListener?.subscription.unsubscribe();
+      console.log('Cleaning up AuthProvider');
+      clearAuthTimeout();
+      clearLoadingTimeout();
+
+      if (authListenerRef.current?.subscription) {
+        authListenerRef.current.subscription.unsubscribe();
+        authListenerRef.current = null;
+      }
+
+      // Reset auth update flag
+      isUpdatingAuth.current = false;
     };
   }, []);
 

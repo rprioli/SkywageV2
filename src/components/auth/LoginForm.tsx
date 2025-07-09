@@ -5,7 +5,7 @@ import { useAuthentication } from '@/hooks/useAuthentication';
 import { cn } from '@/lib/utils';
 
 export function LoginForm() {
-  const { handleLogin, loading, error } = useAuthentication();
+  const { handleLogin, loading, error, isRetrying, retryCount } = useAuthentication();
   
   // Form state
   const [formData, setFormData] = useState({
@@ -117,10 +117,24 @@ export function LoginForm() {
         </a>
       </div>
       
-      {/* Error message from API */}
+      {/* Error message from API with retry status */}
       {error && (
         <div className="p-3 bg-destructive/10 border border-destructive rounded-md">
           <p className="text-destructive text-sm">{error}</p>
+          {isRetrying && retryCount > 0 && (
+            <p className="text-muted-foreground text-xs mt-1">
+              Retrying... (attempt {retryCount}/3)
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Retry status without error */}
+      {isRetrying && !error && (
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+          <p className="text-blue-700 text-sm">
+            Connection issue detected. Retrying... (attempt {retryCount}/3)
+          </p>
         </div>
       )}
       
@@ -136,7 +150,7 @@ export function LoginForm() {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            Signing in...
+            {isRetrying ? `Retrying... (${retryCount}/3)` : 'Signing in...'}
           </span>
         ) : (
           'Sign In'

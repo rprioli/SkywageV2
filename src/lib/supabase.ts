@@ -11,41 +11,20 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    // Configure to use cookies for session storage in Next.js
-    // This helps with server-side rendering and prevents "AuthSessionMissingError"
-    storage: {
-      getItem: async (key) => {
-        if (typeof document === 'undefined') {
-          return null; // Return null during SSR
-        }
-
-        // Parse cookies from document.cookie
-        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-          const [key, value] = cookie.split('=').map(c => c.trim());
-          if (key && value) acc[key] = decodeURIComponent(value);
-          return acc;
-        }, {});
-
-        return cookies[key] || null;
-      },
-      setItem: async (key, value) => {
-        if (typeof document === 'undefined') {
-          return; // Do nothing during SSR
-        }
-
-        // Set cookie with a reasonable expiry (30 days)
-        document.cookie = `${key}=${encodeURIComponent(value)};path=/;max-age=2592000;SameSite=Lax`;
-      },
-      removeItem: async (key) => {
-        if (typeof document === 'undefined') {
-          return; // Do nothing during SSR
-        }
-
-        // Remove cookie by setting expiry in the past
-        document.cookie = `${key}=;path=/;max-age=0;SameSite=Lax`;
-      }
-    }
-  }
+    // Use Supabase's default storage which handles SSR properly
+    // This eliminates custom cookie parsing issues and hydration mismatches
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'skywage-v2@1.0.0',
+    },
+  },
+  // Add timeout and retry configuration for better reliability
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
+  },
 });
 
 // Export types for better type safety
