@@ -36,11 +36,12 @@ import { ProcessingStatus } from '@/components/salary-calculator/ProcessingStatu
 import { ManualFlightEntry } from '@/components/salary-calculator/ManualFlightEntry';
 import { useToast } from '@/hooks/use-toast';
 import {
-  processCSVUpload,
-  processCSVUploadWithReplacement,
+  processFileUpload,
+  processFileUploadWithReplacement,
   checkForExistingData,
   ProcessingStatus as ProcessingStatusType,
-  validateCSVFileQuick,
+  validateFileQuick,
+  detectFileType,
   type ExistingDataCheck
 } from '@/lib/salary-calculator/upload-processor';
 import { recalculateMonthlyTotals } from '@/lib/salary-calculator/recalculation-engine';
@@ -61,10 +62,12 @@ export default function DashboardPage() {
 
   // Add state for overview month selection (lifted from MonthlyOverviewCard)
   const [selectedOverviewMonth, setSelectedOverviewMonth] = useState<number>(new Date().getMonth());
+  const [hasUserSelectedMonth, setHasUserSelectedMonth] = useState<boolean>(false);
 
-  // Initialize overview month based on available data
+  // Initialize overview month based on available data (only on first load)
   useEffect(() => {
-    if (!monthlyDataLoading && allMonthlyCalculations.length > 0) {
+    if (!monthlyDataLoading && allMonthlyCalculations.length > 0 && !hasUserSelectedMonth) {
+      console.log('🔄 Auto-initializing month selector (user has not made manual selection)');
       const currentMonthIndex = new Date().getMonth();
       const currentYear = new Date().getFullYear();
 
@@ -74,6 +77,7 @@ export default function DashboardPage() {
       );
 
       if (currentMonthData) {
+        console.log(`📅 Setting month to current month: ${currentMonthIndex + 1}`);
         setSelectedOverviewMonth(currentMonthIndex);
       } else {
         // Use the most recent month with data
@@ -81,10 +85,13 @@ export default function DashboardPage() {
           if (a.year !== b.year) return b.year - a.year;
           return b.month - a.month;
         });
+        console.log(`📅 Setting month to most recent with data: ${sortedCalculations[0].month}`);
         setSelectedOverviewMonth(sortedCalculations[0].month - 1); // Convert to 0-based index
       }
+    } else if (hasUserSelectedMonth) {
+      console.log('✋ Skipping auto month selection - user has made manual selection');
     }
-  }, [monthlyDataLoading, allMonthlyCalculations]);
+  }, [monthlyDataLoading, allMonthlyCalculations, hasUserSelectedMonth]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedFlightForDelete, setSelectedFlightForDelete] = useState<FlightDuty | null>(null);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
@@ -302,45 +309,64 @@ export default function DashboardPage() {
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
 
-    // Refresh flight duties for the uploaded month (not current month)
-    const flightDutiesResult = await getFlightDutiesByMonth(
-      effectiveUserId,
-      uploadMonth,
-      currentYear
-    );
-    if (flightDutiesResult.data && !flightDutiesResult.error) {
-      setFlightDuties(flightDutiesResult.data);
-    }
-
-    // Refresh monthly calculation for the uploaded month
-    const calculationResult = await getMonthlyCalculation(
-      effectiveUserId,
-      uploadMonth,
-      currentYear
-    );
-    if (calculationResult.data && !calculationResult.error) {
-      setCurrentMonthCalculation(calculationResult.data);
-    }
-
-    // Refresh all monthly calculations for chart data
+    // Refresh all monthly calculations for chart data first
     const allCalculationsResult = await getAllMonthlyCalculations(effectiveUserId);
     if (allCalculationsResult.data && !allCalculationsResult.error) {
       setAllMonthlyCalculations(allCalculationsResult.data);
     }
 
-    // IMPORTANT: Update the overview card to show the uploaded month
-    // This ensures the user sees the month they just uploaded
-    setSelectedOverviewMonth(uploadMonth - 1); // Convert to 0-based index for month selector
+    // Check if the uploaded month matches the currently selected month
+    const currentlySelectedMonth = selectedOverviewMonth + 1; // Convert from 0-based to 1-based
+    const shouldUpdateDisplayedData = uploadMonth === currentlySelectedMonth;
+
+    if (shouldUpdateDisplayedData) {
+      // Only refresh displayed data if the uploaded month matches the user's selected month
+      console.log(`Upload matches selected month (${uploadMonth}), refreshing displayed data`);
+
+      // Refresh flight duties for the uploaded month
+      const flightDutiesResult = await getFlightDutiesByMonth(
+        effectiveUserId,
+        uploadMonth,
+        currentYear
+      );
+      if (flightDutiesResult.data && !flightDutiesResult.error) {
+        setFlightDuties(flightDutiesResult.data);
+      }
+
+      // Refresh monthly calculation for the uploaded month
+      const calculationResult = await getMonthlyCalculation(
+        effectiveUserId,
+        uploadMonth,
+        currentYear
+      );
+      if (calculationResult.data && !calculationResult.error) {
+        setCurrentMonthCalculation(calculationResult.data);
+      }
+    } else {
+      // Upload was for a different month than currently selected
+      console.log(`Upload for month ${uploadMonth}, but user has month ${currentlySelectedMonth} selected. Preserving user's selection.`);
+
+      // Don't change the displayed data or month selector
+      // The user can manually switch to the uploaded month if they want to see it
+
+      // Optional: Show a subtle notification that data was uploaded to a different month
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                         'July', 'August', 'September', 'October', 'November', 'December'];
+      console.log(`Data uploaded to ${monthNames[uploadMonth - 1]}. Switch to ${monthNames[uploadMonth - 1]} to view the uploaded data.`);
+    }
+
+    // REMOVED: Automatic month switching that was overriding user selection
+    // The month selector will stay on the user's selected month
   };
 
   // Handle file selection and start processing
   const handleFileSelect = async (file: File) => {
     if (!selectedUploadMonth) return;
 
-    // Validate file first
-    const validation = validateCSVFileQuick(file);
+    // Validate file first (unified validation for both CSV and Excel)
+    const validation = validateFileQuick(file);
     if (!validation.valid) {
-      salaryCalculator.csvUploadError(validation.error || "Please select a valid CSV file.");
+      salaryCalculator.csvUploadError(validation.errors?.join(', ') || "Please select a valid roster file.");
       return;
     }
 
@@ -398,7 +424,7 @@ export default function DashboardPage() {
     try {
       const currentYear = new Date().getFullYear();
 
-      const result = await processCSVUploadWithReplacement(
+      const result = await processFileUploadWithReplacement(
         file,
         userId,
         userPosition as Position,
@@ -903,7 +929,11 @@ export default function DashboardPage() {
                 key={month}
                 variant={selectedOverviewMonth === index ? "secondary" : "ghost"}
                 size="sm"
-                onClick={() => setSelectedOverviewMonth(index)}
+                onClick={() => {
+                  console.log(`👤 User manually selected month: ${index + 1}`);
+                  setSelectedOverviewMonth(index);
+                  setHasUserSelectedMonth(true); // Mark that user has made a manual selection
+                }}
                 className={cn(
                   "h-8 px-3 text-xs font-medium transition-all",
                   selectedOverviewMonth === index
@@ -1083,7 +1113,7 @@ export default function DashboardPage() {
                 <input
                   id="roster-file-input"
                   type="file"
-                  accept=".csv"
+                  accept=".csv,.xlsx,.xlsm,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12"
                   style={{ display: 'none' }}
                   onChange={(e) => {
                     const file = e.target.files?.[0];

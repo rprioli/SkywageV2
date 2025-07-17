@@ -5,7 +5,7 @@
  */
 
 import { CSVParseResult, FlightDuty, ValidationResult } from '@/types/salary-calculator';
-import { parseTimeString, createTimeValue } from './time-calculator';
+import { parseTimeString, createTimeValue, parseTimeStringWithCrossDay } from './time-calculator';
 import { classifyFlightDuty, extractFlightNumbers, extractSectors } from './flight-classifier';
 import { validateCSVRow, validateFlightNumbers, validateSectors } from './csv-validator';
 import Papa from 'papaparse';
@@ -218,12 +218,14 @@ export function parseDate(dateStr: string, year?: number): Date | null {
 
       // Validate date components
       if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-        const date = new Date(yearValue, month - 1, day);
+        // Create date in UTC to avoid timezone shifting issues (consistent with Excel parser)
+        const date = new Date(Date.UTC(yearValue, month - 1, day));
 
         // Verify the date is valid (handles invalid dates like Feb 30)
-        if (date.getFullYear() === yearValue &&
-            date.getMonth() === month - 1 &&
-            date.getDate() === day) {
+        // Note: Using UTC methods for consistency
+        if (date.getUTCFullYear() === yearValue &&
+            date.getUTCMonth() === month - 1 &&
+            date.getUTCDate() === day) {
           return date;
         }
       }
@@ -528,21 +530,43 @@ export function parseFlightDutyRow(
   let reportTimeResult = null;
   let debriefTimeResult = null;
 
-  if (reportTimeStr && reportTimeStr.trim() !== '') {
-    console.log(`CSV Debug - Parsing report time: "${reportTimeStr}" (length: ${reportTimeStr.length}, chars: ${Array.from(reportTimeStr).map(c => c.charCodeAt(0)).join(',')})`);
-    reportTimeResult = parseTimeString(reportTimeStr);
+  // Use enhanced cross-day detection for both times
+  if (reportTimeStr && reportTimeStr.trim() !== '' && debriefTimeStr && debriefTimeStr.trim() !== '') {
+    console.log(`CSV Debug - Parsing times with cross-day detection: Report "${reportTimeStr}", Debrief "${debriefTimeStr}"`);
+
+    const timeParseResult = parseTimeStringWithCrossDay(reportTimeStr, debriefTimeStr);
+    reportTimeResult = timeParseResult.reportTime;
+    debriefTimeResult = timeParseResult.debriefTime;
+
     if (!reportTimeResult.success) {
       console.log(`CSV Debug - Report time parsing failed:`, reportTimeResult);
       errors.push(`Row ${rowIndex + 1}: Invalid report time "${reportTimeStr}": ${reportTimeResult.error}`);
     }
-  }
 
-  if (debriefTimeStr && debriefTimeStr.trim() !== '') {
-    console.log(`CSV Debug - Parsing debrief time: "${debriefTimeStr}" (length: ${debriefTimeStr.length}, chars: ${Array.from(debriefTimeStr).map(c => c.charCodeAt(0)).join(',')})`);
-    debriefTimeResult = parseTimeString(debriefTimeStr);
     if (!debriefTimeResult.success) {
       console.log(`CSV Debug - Debrief time parsing failed:`, debriefTimeResult);
       errors.push(`Row ${rowIndex + 1}: Invalid debrief time "${debriefTimeStr}": ${debriefTimeResult.error}`);
+    }
+
+    if (reportTimeResult.success && debriefTimeResult.success) {
+      console.log(`CSV Debug - Cross-day detection result: ${timeParseResult.isCrossDay ? 'NEXT DAY' : 'SAME DAY'}`);
+    }
+  } else {
+    // Fallback to individual parsing if one time is missing
+    if (reportTimeStr && reportTimeStr.trim() !== '') {
+      console.log(`CSV Debug - Parsing report time individually: "${reportTimeStr}"`);
+      reportTimeResult = parseTimeString(reportTimeStr);
+      if (!reportTimeResult.success) {
+        errors.push(`Row ${rowIndex + 1}: Invalid report time "${reportTimeStr}": ${reportTimeResult.error}`);
+      }
+    }
+
+    if (debriefTimeStr && debriefTimeStr.trim() !== '') {
+      console.log(`CSV Debug - Parsing debrief time individually: "${debriefTimeStr}"`);
+      debriefTimeResult = parseTimeString(debriefTimeStr);
+      if (!debriefTimeResult.success) {
+        errors.push(`Row ${rowIndex + 1}: Invalid debrief time "${debriefTimeStr}": ${debriefTimeResult.error}`);
+      }
     }
   }
 
@@ -592,14 +616,16 @@ export function parseFlightDutyRow(
  */
 export function parseFlightDutiesFromCSV(
   content: string,
-  userId: string
+  userId: string,
+  targetMonth?: number,
+  targetYear?: number
 ): CSVParseResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const flightDuties: FlightDuty[] = [];
 
   try {
-    // Extract month and year
+    // Extract month and year from CSV content
     const monthYear = extractMonthFromCSV(content);
     if (!monthYear) {
       errors.push('Could not extract month and year from CSV');
@@ -612,7 +638,10 @@ export function parseFlightDutiesFromCSV(
       };
     }
 
-    const { month, year } = monthYear;
+    // Use target month/year if provided, otherwise use extracted values
+    const { month: extractedMonth, year: extractedYear } = monthYear;
+    const month = targetMonth || extractedMonth;
+    const year = targetYear || extractedYear;
     const rows = parseCSVContent(content);
 
     // Find the actual data start row by looking for the header row
@@ -681,15 +710,37 @@ export function parseFlightDutiesFromCSV(
       i += rowsUsed;
     }
 
+    // Apply month boundary filtering to prevent duplicate duties from overlapping months
+    const filteredDuties = flightDuties.filter(duty => {
+      const dutyMonth = duty.date.getUTCMonth() + 1; // Convert to 1-based month
+      const dutyYear = duty.date.getUTCFullYear();
+
+      const belongsToTargetMonth = dutyMonth === month && dutyYear === year;
+
+      if (!belongsToTargetMonth) {
+        warnings.push(
+          `Filtered out duty from ${duty.date.toISOString().split('T')[0]} (belongs to ${dutyMonth}/${dutyYear}, target: ${month}/${year})`
+        );
+      }
+
+      return belongsToTargetMonth;
+    });
+
+    if (filteredDuties.length !== flightDuties.length) {
+      warnings.push(
+        `Month boundary filtering: ${flightDuties.length - filteredDuties.length} duties filtered out (${filteredDuties.length} remaining)`
+      );
+    }
+
     return {
       success: errors.length === 0,
-      data: flightDuties,
+      data: filteredDuties,
       errors,
       warnings,
       month,
       year,
       totalRows: dataRows.length,
-      processedRows
+      processedRows: filteredDuties.length // Update to reflect filtered count
     };
 
   } catch (error) {

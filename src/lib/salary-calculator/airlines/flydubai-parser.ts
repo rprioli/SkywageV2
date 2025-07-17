@@ -158,11 +158,11 @@ export class FlydubaiCSVParser implements CSVParser {
   /**
    * Parses Flydubai CSV into flight duties
    */
-  parseFlightDuties(content: string, userId: string): CSVParseResult {
+  parseFlightDuties(content: string, userId: string, targetMonth?: number, targetYear?: number): CSVParseResult {
     try {
       // Use the generic parser with Flydubai-specific validation
-      const result = parseFlightDutiesFromCSV(content, userId);
-      
+      const result = parseFlightDutiesFromCSV(content, userId, targetMonth, targetYear);
+
       // Add Flydubai-specific post-processing
       if (result.success && result.data) {
         result.data = this.postProcessFlydubaiData(result.data);

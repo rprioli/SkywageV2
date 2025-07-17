@@ -521,5 +521,3 @@ export function FlightDutiesTable({
     </Card>
   );
 }
-
-export { FlightDutiesTable };

@@ -210,7 +210,7 @@ export function validateFlightNumbers(duties: string, rowIndex: number): Validat
     }
   } else {
     // Check for special duty types and non-duty entries
-    const dutiesUpper = duties.toUpperCase();
+    const dutiesUpper = String(duties || '').toUpperCase();
     const isNonDutyEntry =
       dutiesUpper.includes('ASBY') ||
       dutiesUpper.includes('SBY') ||

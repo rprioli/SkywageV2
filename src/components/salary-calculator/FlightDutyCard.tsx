@@ -94,10 +94,10 @@ export function FlightDutyCard({
     return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
   };
 
-  // Helper function to find matching layover flight and calculate rest period
+  // Helper function to get layover rest period from calculated data
   const getLayoverRestPeriod = () => {
-    // Only calculate for layover duties
-    if (flightDuty.dutyType !== 'layover' || !allFlightDuties.length) {
+    // Only show for layover duties
+    if (flightDuty.dutyType !== 'layover') {
       return null;
     }
 
@@ -107,6 +107,12 @@ export function FlightDutyCard({
 
     // Don't show rest period on inbound flights returning to DXB
     if (isInboundToDXB) {
+      return null;
+    }
+
+    // For now, use the old logic as fallback until we can access layover rest periods data
+    // TODO: Update this to use proper layover rest periods from the calculation engine
+    if (!allFlightDuties.length) {
       return null;
     }
 
@@ -121,7 +127,8 @@ export function FlightDutyCard({
     );
 
     if (!matchingFlight) {
-      return { error: 'Could not find matching layover flight' };
+      // Don't show error for now - this is expected for many layover flights
+      return null;
     }
 
     try {
@@ -133,7 +140,7 @@ export function FlightDutyCard({
         flightDuty.debriefTime,
         flightDuty.isCrossDay,
         matchingFlight.reportTime,
-        false, // Assuming inbound flight reporting is not cross-day
+        matchingFlight.isCrossDay, // Use the inbound flight's cross-day status
         daysBetween
       );
 
@@ -148,24 +155,48 @@ export function FlightDutyCard({
       };
     } catch (error) {
       console.warn('Error calculating layover rest period:', error);
-      return { error: 'Error calculating rest period' };
+      return null; // Don't show error, just hide the rest period
     }
   };
 
   const renderSectorsWithIcons = (sectors: string[], dutyType: string) => {
     if (sectors.length === 0) return null;
 
-    if (dutyType === 'turnaround' && sectors.length > 1) {
-      // For turnarounds, show simplified routing: DXB → CMB → DXB
-      const airports = sectors.flatMap(sector => sector.split('-'));
-      const uniqueAirports = [...new Set(airports)];
-      if (uniqueAirports.length > 1) {
+    // Special handling for home standby - just show base location without arrows
+    if (dutyType === 'sby' || dutyType === 'asby') {
+      // For standby duties, extract just the base airport (usually DXB)
+      const baseAirport = sectors[0]?.split('-')[0]?.trim() || 'DXB';
+      return <span>{baseAirport}</span>;
+    }
+
+    // Check if this looks like a turnaround pattern regardless of duty type
+    const isTurnaroundPattern = (sectors: string[]) => {
+      if (sectors.length >= 2) {
+        const airports = sectors.flatMap(sector => sector.split('-').map(airport => airport.trim()));
+        // Check if it starts and ends with the same airport (typically DXB)
+        return airports.length >= 3 && airports[0] === airports[airports.length - 1];
+      }
+      return false;
+    };
+
+    // Handle turnaround patterns (either classified as turnaround or looks like one)
+    if (dutyType === 'turnaround' || isTurnaroundPattern(sectors)) {
+      const airports = sectors.flatMap(sector => sector.split('-').map(airport => airport.trim()));
+      if (airports.length >= 3) {
+        // For turnaround, show origin → destination → origin
+        const origin = airports[0];
+        const destination = airports[1];
+        const returnToOrigin = airports[airports.length - 1];
+
+        // Create clean turnaround display: DXB → KTM → DXB
+        const turnaroundRoute = [origin, destination, returnToOrigin];
+
         return (
           <span className="flex items-center justify-center gap-1.5">
-            {uniqueAirports.map((airport, index) => (
+            {turnaroundRoute.map((airport, index) => (
               <span key={index} className="flex items-center gap-1.5">
                 <span>{airport}</span>
-                {index < uniqueAirports.length - 1 && (
+                {index < turnaroundRoute.length - 1 && (
                   <ArrowRight className="h-3 w-3 text-[#4C49ED]" />
                 )}
               </span>
@@ -175,34 +206,36 @@ export function FlightDutyCard({
       }
     }
 
-    // For layovers or single sectors, show individual sectors with arrows
+    if (dutyType === 'layover') {
+      // For layovers, show each sector separately
+      return (
+        <div className="flex flex-col gap-1">
+          {sectors.map((sector, index) => {
+            const airports = sector.split('-').map(airport => airport.trim());
+            if (airports.length === 2) {
+              return (
+                <span key={index} className="flex items-center justify-center gap-1.5">
+                  <span>{airports[0]}</span>
+                  <ArrowRight className="h-3 w-3 text-[#4C49ED]" />
+                  <span>{airports[1]}</span>
+                </span>
+              );
+            }
+            return <span key={index}>{sector}</span>;
+          })}
+        </div>
+      );
+    }
+
+    // For single sectors (any duty type), show with arrow
     if (sectors.length === 1) {
-      const airports = sectors[0].split('-');
+      const airports = sectors[0].split('-').map(airport => airport.trim());
       if (airports.length === 2) {
         return (
           <span className="flex items-center justify-center gap-1.5">
             <span>{airports[0]}</span>
             <ArrowRight className="h-3 w-3 text-[#4C49ED]" />
             <span>{airports[1]}</span>
-          </span>
-        );
-      }
-    }
-
-    // For layovers and other cases, show sectors with arrows
-    if (sectors.length > 0) {
-      const airports = sectors.flatMap(sector => sector.split('-'));
-      if (airports.length >= 2) {
-        return (
-          <span className="flex items-center justify-center gap-1.5">
-            {airports.map((airport, index) => (
-              <span key={index} className="flex items-center gap-1.5">
-                <span>{airport}</span>
-                {index < airports.length - 1 && (
-                  <ArrowRight className="h-3 w-3 text-[#4C49ED]" />
-                )}
-              </span>
-            ))}
           </span>
         );
       }
@@ -363,10 +396,14 @@ export function FlightDutyCard({
               </h4>
             ) : flightDuty.flightNumbers.length > 0 ? (
               <h4 className="font-semibold text-base text-gray-800 mb-1">
-                {flightDuty.flightNumbers.map(num => num.startsWith('FZ') ? num : `FZ${num}`).join(' ')}
+                {flightDuty.dutyType === 'sby' || flightDuty.dutyType === 'asby'
+                  ? flightDuty.flightNumbers.join(' ') // No FZ prefix for standby duties
+                  : flightDuty.flightNumbers.map(num => num.startsWith('FZ') ? num : `FZ${num}`).join(' ')
+                }
               </h4>
             ) : null}
-            {flightDuty.sectors.length > 0 && (
+            {/* Only show sectors for non-recurrent duties to avoid verbose training descriptions */}
+            {flightDuty.dutyType !== 'recurrent' && flightDuty.sectors.length > 0 && (
               <div className="text-sm text-gray-500">
                 {renderSectorsWithIcons(flightDuty.sectors, flightDuty.dutyType)}
               </div>
@@ -400,14 +437,6 @@ export function FlightDutyCard({
             const restPeriod = getLayoverRestPeriod();
             if (!restPeriod) return null;
 
-            if (restPeriod.error) {
-              return (
-                <div className="text-xs text-red-500 text-center py-1">
-                  {restPeriod.error}
-                </div>
-              );
-            }
-
             return (
               <div className="border-t border-gray-100 pt-2 mt-2">
                 <div className="flex justify-between items-center text-sm">
@@ -431,19 +460,21 @@ export function FlightDutyCard({
               <span className="text-gray-600 ml-1">{formatDecimalHoursToHHMM(flightDuty.dutyHours)}</span>
             </div>
 
-            {/* Right side - Pay Badge with accent brand color background and white text */}
-            <Badge
-              variant="secondary"
-              className="bg-[#6DDC91] text-white border-[#6DDC91] text-xs px-3 py-1 rounded-full font-medium cursor-pointer"
-            >
-              {formatCurrency(flightDuty.flightPay)}
-            </Badge>
+            {/* Right side - Pay Badge (hidden for Home Standby since it's always 0) */}
+            {flightDuty.dutyType !== 'sby' && flightDuty.dutyType !== 'asby' && (
+              <Badge
+                variant="secondary"
+                className="bg-[#6DDC91] text-white border-[#6DDC91] text-xs px-3 py-1 rounded-full font-medium cursor-pointer"
+              >
+                {formatCurrency(flightDuty.flightPay)}
+              </Badge>
+            )}
           </div>
 
           {/* Per Diem Row - Only show on first card of layover pair */}
           {(() => {
             const restPeriod = getLayoverRestPeriod();
-            if (!restPeriod || restPeriod.error) return null;
+            if (!restPeriod) return null;
 
             return (
               <div className="flex justify-between items-center pt-1">

@@ -4,7 +4,9 @@
  * Following existing utility patterns in the codebase
  */
 
-import { DutyType, FlightClassificationResult } from '@/types/salary-calculator';
+import { DutyType, FlightClassificationResult, Position, TimeValue } from '@/types/salary-calculator';
+import { calculateRecurrentPay, calculateAsbyPay, FLYDUBAI_RATES } from './calculation-engine';
+import { createTimeValue, calculateDuration } from './time-calculator';
 
 /**
  * Classifies flight duty type based on flight data
@@ -13,18 +15,31 @@ export function classifyFlightDuty(
   duties: string,
   details: string,
   reportTime?: string,
-  debriefTime?: string
+  debriefTime?: string,
+  position?: Position,
+  reportTimeValue?: TimeValue,
+  debriefTimeValue?: TimeValue,
+  actualDutyHours?: number
 ): FlightClassificationResult {
-  const dutiesUpper = duties.toUpperCase().trim();
-  const detailsUpper = details.toUpperCase().trim();
+  const dutiesUpper = String(duties || '').toUpperCase().trim();
+  const detailsUpper = String(details || '').toUpperCase().trim();
   
   // Check for Airport Standby (ASBY)
   if (dutiesUpper.includes('ASBY')) {
+    let dutyHours = 4; // ASBY is always 4 hours
+    let flightPay = 0;
+
+    if (position) {
+      flightPay = calculateAsbyPay(position); // 4 hours × position rate
+    }
+
     return {
       dutyType: 'asby',
       confidence: 1.0,
       reasoning: 'Contains ASBY in duties column',
-      warnings: []
+      warnings: [],
+      dutyHours,
+      flightPay
     };
   }
 
@@ -35,6 +50,30 @@ export function classifyFlightDuty(
       confidence: 1.0,
       reasoning: 'Contains SBY (Home Standby) in duties column',
       warnings: []
+    };
+  }
+
+  // Check for Recurrent Training
+  const isTraining = isRecurrentTraining(dutiesUpper, detailsUpper);
+  console.log(`🔍 DUTY CLASSIFICATION: duties="${duties}", details="${details}", isTraining=${isTraining}`);
+
+  if (isTraining) {
+    let dutyHours = actualDutyHours || 8; // Default to 8 hours if not provided
+    let flightPay = 0;
+
+    if (position) {
+      flightPay = calculateRecurrentPay(position); // 4 hours × position rate
+    }
+
+    console.log(`✅ CLASSIFIED AS RECURRENT: dutyHours=${dutyHours}, flightPay=${flightPay}`);
+
+    return {
+      dutyType: 'recurrent',
+      confidence: 1.0,
+      reasoning: 'Contains recurrent training codes or keywords',
+      warnings: [],
+      dutyHours,
+      flightPay
     };
   }
 
@@ -57,6 +96,25 @@ export function classifyFlightDuty(
   const sectors = extractSectors(details);
 
   if (flightNumbers.length === 0) {
+    // Check if this might be recurrent training that wasn't caught earlier
+    if (isRecurrentTraining(dutiesUpper, detailsUpper)) {
+      let dutyHours = actualDutyHours || 8;
+      let flightPay = 0;
+
+      if (position) {
+        flightPay = calculateRecurrentPay(position);
+      }
+
+      return {
+        dutyType: 'recurrent',
+        confidence: 0.9,
+        reasoning: 'No flight numbers but contains recurrent training indicators',
+        warnings: [],
+        dutyHours,
+        flightPay
+      };
+    }
+
     return {
       dutyType: 'off',
       confidence: 0.8,
@@ -65,25 +123,42 @@ export function classifyFlightDuty(
     };
   }
 
+  // Calculate duty hours and flight pay for flight duties
+  let dutyHours = 0;
+  let flightPay = 0;
+
+  if (reportTimeValue && debriefTimeValue) {
+    dutyHours = calculateDuration(reportTimeValue, debriefTimeValue, false); // Assume same day for now
+
+    if (position) {
+      const rates = FLYDUBAI_RATES[position];
+      flightPay = dutyHours * rates.hourlyRate;
+    }
+  }
+
   // Determine if turnaround or layover
   if (flightNumbers.length > 1) {
     // Multiple flight numbers suggest turnaround
     const lastSector = sectors[sectors.length - 1] || '';
     const returnsToDXB = lastSector.includes('DXB') && sectors.length > 1;
-    
+
     if (returnsToDXB) {
       return {
         dutyType: 'turnaround',
         confidence: 0.9,
         reasoning: `Multiple flights (${flightNumbers.join(', ')}) returning to DXB`,
-        warnings: []
+        warnings: [],
+        dutyHours,
+        flightPay
       };
     } else {
       return {
         dutyType: 'turnaround',
         confidence: 0.7,
         reasoning: `Multiple flights (${flightNumbers.join(', ')}) in single duty`,
-        warnings: ['Could not confirm return to DXB - verify turnaround classification']
+        warnings: ['Could not confirm return to DXB - verify turnaround classification'],
+        dutyHours,
+        flightPay
       };
     }
   } else {
@@ -92,9 +167,66 @@ export function classifyFlightDuty(
       dutyType: 'layover',
       confidence: 0.8,
       reasoning: `Single flight (${flightNumbers[0]}) suggests layover duty`,
-      warnings: []
+      warnings: [],
+      dutyHours,
+      flightPay
     };
   }
+}
+
+/**
+ * Checks if the duty is recurrent training based on duty codes and descriptions
+ */
+export function isRecurrentTraining(duties: string, details: string): boolean {
+  const dutiesUpper = String(duties || '').toUpperCase().trim();
+  const detailsUpper = String(details || '').toUpperCase().trim();
+
+  // Known recurrent training duty codes from Excel analysis
+  const recurrentTrainingCodes = [
+    'ELD',      // e-learning Day
+    'SEPR',     // SEP- Recurrent & Pilot Incap
+    'SEPD',     // SEP-Triennial Doors & Exits
+    'RAFT',     // RAFT training for ETOPS
+    'FA-R',     // First Aid - Recurrent
+    'DG-R',     // Dangerous Goods Recurrent
+    'RTC',      // Recurrent Training Credit
+    'GS',       // ground school
+    'CRMC',     // CRM - Recurrent (CC)
+    'ASRC',     // Aviation Security - Recurrent (CC)
+    'AS-G',     // Avsec Ground School
+    'IFX',      // Inflight Experience Training
+    'CSR'       // Customer Service Recurrent
+  ];
+
+  // Check for exact duty code matches
+  for (const code of recurrentTrainingCodes) {
+    if (dutiesUpper.includes(code)) {
+      return true;
+    }
+  }
+
+  // Check for recurrent training keywords in details
+  const recurrentKeywords = [
+    'RECURRENT',
+    'TRAINING',
+    'E-LEARNING',
+    'GROUND SCHOOL',
+    'INFLIGHT EXPERIENCE',
+    'CUSTOMER SERVICE RECURRENT',
+    'DANGEROUS GOODS RECURRENT',
+    'FIRST AID - RECURRENT',
+    'CRM - RECURRENT',
+    'AVIATION SECURITY - RECURRENT',
+    'RECURRENT TRAINING CREDIT'
+  ];
+
+  for (const keyword of recurrentKeywords) {
+    if (detailsUpper.includes(keyword)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -108,7 +240,7 @@ export function extractFlightNumbers(duties: string): string[] {
   // Common flight number patterns: FZ123, FZ1234, etc.
   const flightPattern = /\b[A-Z]{2}\d{3,4}\b/g;
   const matches = duties.match(flightPattern);
-  
+
   return matches ? [...new Set(matches)] : []; // Remove duplicates
 }
 

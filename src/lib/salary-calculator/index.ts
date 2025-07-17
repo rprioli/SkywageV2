@@ -26,7 +26,9 @@ export {
   formatDecimalHours,
   validateTimeSequence,
   createTimestamp,
-  calculateTimestampDuration
+  calculateTimestampDuration,
+  detectCrossDay,
+  parseTimeStringWithCrossDay
 } from './time-calculator';
 
 // Flight classification utilities
@@ -85,15 +87,22 @@ export {
 // Flydubai CSV parser
 export { FlydubaiCSVParser } from './airlines/flydubai-parser';
 
-// Phase 3: Upload processing
+// Phase 3 & 4: Upload processing (CSV and Excel)
 export {
   processCSVUpload,
   processCSVUploadWithReplacement,
+  processFileUpload,
+  processFileUploadWithReplacement,
   validateCSVFileQuick,
+  validateFileQuick,
+  detectFileType,
+  parseFileContent,
   checkForExistingData,
   type ProcessingStatus,
   type ProcessingResult,
-  type ProgressCallback
+  type ProgressCallback,
+  type FileType,
+  type UnifiedParseResult
 } from './upload-processor';
 
 // Roster replacement utilities
@@ -128,6 +137,42 @@ export {
   type FormValidationResult
 } from './manual-entry-validation';
 
+// Excel parsing utilities (NEW)
+export {
+  readExcelFile,
+  getFirstWorksheet,
+  getCellValue,
+  validateExcelFile,
+  validateExcelContent,
+  parseExcelTime,
+  parseExcelDateRange,
+  parseEmployeeInfo,
+  createExcelError,
+  hasWorksheetData
+} from './excel-parser';
+
+// Excel parser and validator (NEW)
+export {
+  FlydubaiExcelParser,
+  parseFlydubaiExcelFile
+} from './flydubai-excel-parser';
+
+export {
+  validateExcelFileComprehensive,
+  validateExcelStructure,
+  createValidationError,
+  validateCellContent
+} from './excel-validator';
+
+export {
+  detectExcelStructureFlexible,
+  findFlydubaiValidation,
+  findScheduleDetailsRow,
+  mapColumnHeaders,
+  findDateRangeFlexible,
+  findEmployeeInfoFlexible
+} from './excel-parser';
+
 // Type exports
 export type {
   Position,
@@ -156,6 +201,21 @@ export type {
   AirlineConfigRegistry,
   ConfigFactory
 } from '@/types/airline-config';
+
+// Excel type exports (NEW)
+export type {
+  ExcelFileFormat,
+  ExcelParsingConfig,
+  ExcelParseResult,
+  ExcelFlightDuty,
+  ExcelEmployeeInfo,
+  ExcelValidationResult,
+  ExcelCellReference,
+  ExcelTimeParseResult,
+  ExcelDateRangeResult,
+  ExcelErrorType,
+  ExcelError
+} from '@/types/excel-config';
 
 // Phase 5: Edit functionality and recalculation
 export {
