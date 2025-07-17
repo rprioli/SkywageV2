@@ -174,4 +174,6 @@ export interface FlightClassificationResult {
   confidence: number; // 0-1 scale
   reasoning: string;
   warnings: string[];
+  dutyHours?: number; // Calculated duty hours (optional)
+  flightPay?: number; // Calculated flight pay (optional)
 }

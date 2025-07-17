@@ -2,16 +2,16 @@
 
 /**
  * Roster Upload Component for Skywage Salary Calculator
- * Phase 3: CSV file upload with drag & drop and validation
+ * Phase 4: CSV and Excel file upload with drag & drop and validation
  * Following existing file upload patterns from AvatarUpload.tsx
  */
 
 import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, FileText, AlertCircle, CheckCircle } from 'lucide-react';
+import { Upload, FileText, AlertCircle, CheckCircle, FileSpreadsheet } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { validateCSVFileQuick } from '@/lib/salary-calculator/upload-processor';
+import { validateFileQuick, detectFileType } from '@/lib/salary-calculator/upload-processor';
 import { ValidationResult } from '@/types/salary-calculator';
 
 interface RosterUploadProps {
@@ -24,13 +24,18 @@ export function RosterUpload({ onFileSelect, disabled = false, className }: Rost
   const [dragActive, setDragActive] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [validation, setValidation] = useState<ValidationResult | null>(null);
+  const [fileType, setFileType] = useState<'csv' | 'excel' | null>(null);
 
   // Handle file selection
   const handleFileSelect = useCallback((file: File) => {
     setSelectedFile(file);
 
-    // Quick validation
-    const validationResult = validateCSVFileQuick(file);
+    // Detect file type
+    const detectedFileType = detectFileType(file);
+    setFileType(detectedFileType);
+
+    // Quick validation (unified for both CSV and Excel)
+    const validationResult = validateFileQuick(file);
     setValidation(validationResult);
 
     // If valid, automatically start processing (no extra button needed)
@@ -86,7 +91,7 @@ export function RosterUpload({ onFileSelect, disabled = false, className }: Rost
           Upload Roster File
         </CardTitle>
         <CardDescription>
-          Upload your Flydubai CSV roster file for automatic salary calculation
+          Upload your Flydubai roster file (CSV or Excel) for automatic salary calculation
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -108,7 +113,7 @@ export function RosterUpload({ onFileSelect, disabled = false, className }: Rost
           >
             <input
               type="file"
-              accept=".csv"
+              accept=".csv,.xlsx,.xlsm,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12"
               onChange={handleFileChange}
               disabled={disabled}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
@@ -117,11 +122,15 @@ export function RosterUpload({ onFileSelect, disabled = false, className }: Rost
             <div className="space-y-4">
               {selectedFile ? (
                 <div className="space-y-2">
-                  <FileText className="h-12 w-12 mx-auto text-primary" />
+                  {fileType === 'excel' ? (
+                    <FileSpreadsheet className="h-12 w-12 mx-auto text-primary" />
+                  ) : (
+                    <FileText className="h-12 w-12 mx-auto text-primary" />
+                  )}
                   <div>
                     <p className="font-medium">{selectedFile.name}</p>
                     <p className="text-sm text-muted-foreground">
-                      {(selectedFile.size / 1024).toFixed(1)} KB
+                      {(selectedFile.size / 1024).toFixed(1)} KB • {fileType?.toUpperCase()} file
                     </p>
                   </div>
                 </div>
@@ -129,7 +138,7 @@ export function RosterUpload({ onFileSelect, disabled = false, className }: Rost
                 <div className="space-y-2">
                   <Upload className="h-12 w-12 mx-auto text-muted-foreground" />
                   <div>
-                    <p className="font-medium">Drop your CSV file here</p>
+                    <p className="font-medium">Drop your roster file here</p>
                     <p className="text-sm text-muted-foreground">
                       or click to browse files
                     </p>
@@ -143,7 +152,7 @@ export function RosterUpload({ onFileSelect, disabled = false, className }: Rost
           <div className="text-sm text-muted-foreground space-y-1">
             <p className="font-medium">File Requirements:</p>
             <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>CSV format (.csv extension)</li>
+              <li>CSV (.csv) or Excel (.xlsx, .xlsm) format</li>
               <li>Flydubai roster format</li>
               <li>Maximum file size: 10MB</li>
               <li>Must contain flight duties data</li>

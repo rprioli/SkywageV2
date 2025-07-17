@@ -178,9 +178,27 @@ export function calculateLayoverRestPeriods(
   userId: string,
   position: Position
 ): LayoverRestPeriod[] {
+  // PHASE 4 DEBUGGING: Log input data
+  console.log('🔍 PHASE 4 DEBUG (Calculation Engine) - calculateLayoverRestPeriods called with:');
+  console.log('Total flight duties:', flightDuties.length);
+  console.log('User ID:', userId);
+  console.log('Position:', position);
+
   const layoverFlights = flightDuties
     .filter(flight => flight.dutyType === 'layover')
     .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  console.log('🔍 PHASE 4 DEBUG (Calculation Engine) - Layover flights found:', layoverFlights.length);
+  layoverFlights.forEach((flight, index) => {
+    console.log(`Layover flight ${index + 1}:`, {
+      id: flight.id,
+      date: flight.date,
+      dutyType: flight.dutyType,
+      reportTime: flight.reportTime,
+      debriefTime: flight.debriefTime,
+      hasId: !!flight.id
+    });
+  });
 
   const restPeriods: LayoverRestPeriod[] = [];
 
@@ -188,10 +206,25 @@ export function calculateLayoverRestPeriods(
     const outboundFlight = layoverFlights[i];
     const inboundFlight = layoverFlights[i + 1];
 
+    console.log(`🔍 PHASE 4 DEBUG (Calculation Engine) - Processing layover pair ${i + 1}:`);
+    console.log('Outbound flight:', {
+      id: outboundFlight.id,
+      date: outboundFlight.date,
+      debriefTime: outboundFlight.debriefTime,
+      isCrossDay: outboundFlight.isCrossDay
+    });
+    console.log('Inbound flight:', {
+      id: inboundFlight.id,
+      date: inboundFlight.date,
+      reportTime: inboundFlight.reportTime
+    });
+
     // Check if flights are consecutive (within 3 days)
     const daysDiff = Math.abs(
       (inboundFlight.date.getTime() - outboundFlight.date.getTime()) / (1000 * 60 * 60 * 24)
     );
+
+    console.log(`Days difference: ${daysDiff}`);
 
     if (daysDiff <= 3) {
       try {
@@ -203,26 +236,59 @@ export function calculateLayoverRestPeriods(
           Math.floor(daysDiff)
         );
 
-        if (restHours > 0) {
-          const perDiemPay = calculatePerDiemPay(restHours, position);
+        console.log(`Calculated rest hours: ${restHours}`);
 
-          restPeriods.push({
-            userId,
-            outboundFlightId: outboundFlight.id || '',
-            inboundFlightId: inboundFlight.id || '',
-            restStartTime: new Date(outboundFlight.date), // Simplified - should use actual debrief timestamp
-            restEndTime: new Date(inboundFlight.date), // Simplified - should use actual report timestamp
-            restHours,
-            perDiemPay,
-            month: outboundFlight.month,
-            year: outboundFlight.year
-          });
+        if (restHours > 0) {
+          // Only create rest period if both flights have valid IDs
+          if (outboundFlight.id && inboundFlight.id) {
+            const perDiemPay = calculatePerDiemPay(restHours, position);
+
+            console.log(`🔍 PHASE 4 DEBUG (Calculation Engine) - Creating rest period:`, {
+              outboundFlightId: outboundFlight.id,
+              inboundFlightId: inboundFlight.id,
+              restHours,
+              perDiemPay
+            });
+
+            restPeriods.push({
+              userId,
+              outboundFlightId: outboundFlight.id,
+              inboundFlightId: inboundFlight.id,
+              restStartTime: new Date(outboundFlight.date), // Simplified - should use actual debrief timestamp
+              restEndTime: new Date(inboundFlight.date), // Simplified - should use actual report timestamp
+              restHours,
+              perDiemPay,
+              month: outboundFlight.month,
+              year: outboundFlight.year
+            });
+          } else {
+            console.warn('🔍 PHASE 4 DEBUG (Calculation Engine) - Skipping layover rest period creation - missing flight IDs:', {
+              outboundId: outboundFlight.id,
+              inboundId: inboundFlight.id,
+              outboundDate: outboundFlight.date,
+              inboundDate: inboundFlight.date,
+              outboundHasId: !!outboundFlight.id,
+              inboundHasId: !!inboundFlight.id,
+              restHours: restHours
+            });
+          }
         }
       } catch (error) {
         console.warn(`Error calculating rest period between flights: ${error}`);
       }
     }
   }
+
+  console.log('🔍 PHASE 4 DEBUG (Calculation Engine) - Final rest periods summary:');
+  console.log(`Total rest periods created: ${restPeriods.length}`);
+  restPeriods.forEach((period, index) => {
+    console.log(`Rest period ${index + 1}:`, {
+      outboundFlightId: period.outboundFlightId,
+      inboundFlightId: period.inboundFlightId,
+      restHours: period.restHours,
+      perDiemPay: period.perDiemPay
+    });
+  });
 
   return restPeriods;
 }

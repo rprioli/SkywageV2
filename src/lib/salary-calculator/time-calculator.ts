@@ -36,10 +36,10 @@ export function parseTimeString(timeStr: string): TimeParseResult {
 
   // Clean the time string - remove special characters including all suffix patterns
   // Note: � is Unicode replacement character (U+FFFD) that appears in CSV files
-  const cleanedTime = timeStr.replace(/[?¹²³⁴⁵⁶⁷⁸⁹⁰♦◆�]/g, '').trim();
+  const cleanedTime = timeStr.replace(/[?¹²³⁴⁵⁶⁷⁸⁹⁰♦◆�⁺]/g, '').trim();
 
-  // Check for cross-day indicator (¹ or ?¹ patterns, but not ♦ which is same-day)
-  const isCrossDay = /[¹²³⁴⁵⁶⁷⁸⁹]/.test(timeStr) || timeStr.includes('?¹');
+  // Check for cross-day indicator (¹, ⁺¹, or ?¹ patterns, but not ♦ which is same-day)
+  const isCrossDay = /[¹²³⁴⁵⁶⁷⁸⁹]/.test(timeStr) || timeStr.includes('?¹') || timeStr.includes('⁺¹');
   
   // Parse HH:MM format
   const timeMatch = cleanedTime.match(/^(\d{1,2}):(\d{2})$/);
@@ -221,10 +221,92 @@ export function createTimestamp(date: Date, timeValue: TimeValue, isCrossDay: bo
  */
 export function calculateTimestampDuration(startTimestamp: Date, endTimestamp: Date): number {
   const diffMs = endTimestamp.getTime() - startTimestamp.getTime();
-  
+
   if (diffMs < 0) {
     throw new Error('End timestamp cannot be before start timestamp');
   }
-  
+
   return diffMs / (1000 * 60 * 60); // Convert to decimal hours
+}
+
+/**
+ * Enhanced cross-day detection for flight duties
+ * Automatically detects when debriefing occurs on the next day
+ */
+export function detectCrossDay(
+  reportTime: TimeValue,
+  debriefTime: TimeValue,
+  explicitCrossDay?: boolean
+): boolean {
+  // If explicitly marked as cross-day (from symbols like ⁺¹), trust that FIRST
+  if (explicitCrossDay === true) {
+    return true;
+  }
+
+  // If explicitly marked as same-day (from symbols like ♦), trust that
+  if (explicitCrossDay === false) {
+    return false;
+  }
+
+  // Auto-detect only when no explicit indicator is present
+  // If debrief time is earlier than or equal to report time, assume next day
+  // This handles cases like: Report 17:30 → Debrief 05:48 (next day)
+  const reportMinutes = reportTime.totalMinutes;
+  const debriefMinutes = debriefTime.totalMinutes;
+
+  // If debrief is significantly earlier than report, it's likely next day
+  if (debriefMinutes <= reportMinutes) {
+    return true;
+  }
+
+  // Additional heuristic: if the duty would be longer than 16 hours, it's likely cross-day
+  const sameDayDuration = (debriefMinutes - reportMinutes) / 60;
+  if (sameDayDuration > 16) {
+    return true;
+  }
+
+  // Default to same day
+  return false;
+}
+
+/**
+ * Enhanced time parsing with automatic cross-day detection
+ * Combines explicit indicators with logical detection
+ */
+export function parseTimeStringWithCrossDay(
+  reportTimeStr: string,
+  debriefTimeStr: string
+): {
+  reportTime: TimeParseResult;
+  debriefTime: TimeParseResult;
+  isCrossDay: boolean;
+} {
+  // Parse both times
+  const reportTime = parseTimeString(reportTimeStr);
+  const debriefTime = parseTimeString(debriefTimeStr);
+
+  if (!reportTime.success || !debriefTime.success || !reportTime.timeValue || !debriefTime.timeValue) {
+    return {
+      reportTime,
+      debriefTime,
+      isCrossDay: debriefTime.isCrossDay || false // Use explicit indicator if parsing failed
+    };
+  }
+
+  // Detect cross-day using enhanced logic
+  // Priority: explicit indicator from debriefTime > automatic detection
+  const isCrossDay = detectCrossDay(
+    reportTime.timeValue,
+    debriefTime.timeValue,
+    debriefTime.isCrossDay // Use explicit indicator from parseTimeString
+  );
+
+  return {
+    reportTime,
+    debriefTime: {
+      ...debriefTime,
+      isCrossDay // Update with final detected value
+    },
+    isCrossDay
+  };
 }

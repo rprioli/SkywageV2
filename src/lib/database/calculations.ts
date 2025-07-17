@@ -206,13 +206,41 @@ export async function createLayoverRestPeriods(
   userId: string
 ): Promise<{ data: LayoverRestPeriod[] | null; error: string | null }> {
   try {
+    // Validate that all rest periods have valid flight IDs
+    const invalidPeriods = restPeriods.filter(period =>
+      !period.outboundFlightId || !period.inboundFlightId
+    );
+
+    if (invalidPeriods.length > 0) {
+      console.error('Database - Invalid layover rest periods found:', invalidPeriods);
+      return {
+        data: null,
+        error: `${invalidPeriods.length} layover rest periods have missing flight IDs`
+      };
+    }
+
     const insertData = restPeriods.map(period => layoverRestPeriodToInsert(period, userId));
 
-    // Debug: Log the data being inserted
-    console.log('Database - Creating layover rest periods:', {
+    // PHASE 4 DEBUGGING: Enhanced logging for database insertion
+    console.log('🔍 PHASE 4 DEBUG (Database) - Creating layover rest periods:', {
       count: insertData.length,
       sample: insertData[0],
       allData: insertData
+    });
+
+    // PHASE 4 DEBUGGING: Log each record being inserted
+    insertData.forEach((record, index) => {
+      console.log(`🔍 PHASE 4 DEBUG (Database) - Insert record ${index + 1}:`, {
+        user_id: record.user_id,
+        outbound_flight_id: record.outbound_flight_id,
+        inbound_flight_id: record.inbound_flight_id,
+        rest_hours: record.rest_hours,
+        per_diem_pay: record.per_diem_pay,
+        month: record.month,
+        year: record.year,
+        outboundIdValid: !!record.outbound_flight_id,
+        inboundIdValid: !!record.inbound_flight_id
+      });
     });
 
     const { data, error } = await supabase
@@ -221,8 +249,40 @@ export async function createLayoverRestPeriods(
       .select();
 
     if (error) {
-      console.error('Error creating layover rest periods:', error);
-      console.error('Insert data that failed:', insertData);
+      console.error('🔍 PHASE 4 DEBUG (Database) - Error creating layover rest periods:', error);
+      console.error('🔍 PHASE 4 DEBUG (Database) - Insert data that failed:', insertData);
+
+      // PHASE 4 DEBUGGING: Check if the flight IDs actually exist in the flights table
+      console.log('🔍 PHASE 4 DEBUG (Database) - Checking if flight IDs exist in flights table...');
+
+      for (const record of insertData) {
+        // Check outbound flight
+        const { data: outboundFlight } = await supabase
+          .from('flights')
+          .select('id')
+          .eq('id', record.outbound_flight_id)
+          .single();
+
+        // Check inbound flight
+        const { data: inboundFlight } = await supabase
+          .from('flights')
+          .select('id')
+          .eq('id', record.inbound_flight_id)
+          .single();
+
+        console.log('🔍 PHASE 4 DEBUG (Database) - Flight ID existence check:', {
+          outbound_flight_id: record.outbound_flight_id,
+          outboundExists: !!outboundFlight,
+          inbound_flight_id: record.inbound_flight_id,
+          inboundExists: !!inboundFlight
+        });
+      }
+
+      // Provide more specific error information
+      if (error.code === '23503') {
+        return { data: null, error: 'Foreign key constraint violation: Referenced flight IDs do not exist in the flights table' };
+      }
+
       return { data: null, error: error.message };
     }
 
