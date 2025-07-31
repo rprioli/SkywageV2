@@ -128,12 +128,8 @@ export async function processCSVUpload(
       };
     }
 
-    console.log('Upload Processor - Success condition passed, extracting flight duties...');
     let flightDuties = parseResult.data;
-    console.log('Upload Processor - Flight duties extracted:', flightDuties.length, 'duties');
     warnings.push(...(parseResult.warnings || []));
-
-    console.log('Upload Processor - About to start Step 3 - calculating flight payments...');
 
     // Step 3: Calculate duty hours and flight pay for each flight duty
     onProgress?.({
@@ -162,11 +158,7 @@ export async function processCSVUpload(
       }
     });
 
-    console.log('Upload Processor - Flight duties calculated, sample:', {
-      id: flightDuties[0]?.id,
-      dutyHours: flightDuties[0]?.dutyHours,
-      flightPay: flightDuties[0]?.flightPay
-    });
+
 
     // Step 4: Calculate layover rest periods
     onProgress?.({
@@ -176,9 +168,7 @@ export async function processCSVUpload(
       details: 'Computing rest times and per diem'
     });
 
-    console.log('Upload Processor - Progress update sent, starting layover calculation...');
     const layoverRestPeriods = calculateLayoverRestPeriods(flightDuties, userId, position);
-    console.log('Upload Processor - Layover calculation complete:', layoverRestPeriods.length, 'periods');
 
     // Extract month and year from first flight duty for later use
     const firstFlight = flightDuties[0];
@@ -196,22 +186,16 @@ export async function processCSVUpload(
     let year: number;
 
     if (targetMonth && targetYear) {
-      console.log('Upload Processor - Using user-selected target month/year:', targetMonth, '/', targetYear);
       month = targetMonth;
       year = targetYear;
 
       // Override month/year for all flight duties (preserve original dates for display)
       flightDuties.forEach((duty, index) => {
-        const originalDate = new Date(duty.date);
-
-        console.log(`Upload Processor - Assigning flight ${index + 1} to target month/year: ${originalDate.toDateString()} → month ${month}, year ${year} (date preserved for display)`);
-
         // Keep original date for display purposes, only change month/year for calculations and database organization
         duty.month = month;
         duty.year = year;
       });
     } else {
-      console.log('Upload Processor - Using CSV-detected month/year from first flight');
       month = firstFlight.month;
       year = firstFlight.year;
     }
@@ -252,14 +236,8 @@ export async function processCSVUpload(
     });
 
     // Save flight duties first to get database IDs
-    console.log('Upload Processor - Starting flight duties save...');
-    console.log('Upload Processor - Flight duties to save:', flightDuties.length, 'duties');
-    console.log('Upload Processor - Sample flight duty:', flightDuties[0]);
-
     const flightSaveResult = await createFlightDuties(flightDuties, userId);
-    console.log('Upload Processor - Flight duties save result:', flightSaveResult);
     if (flightSaveResult.error) {
-      console.log('Upload Processor - Flight duties save failed:', flightSaveResult.error);
       return {
         success: false,
         errors: [`Failed to save flight duties: ${flightSaveResult.error}`],
@@ -270,42 +248,14 @@ export async function processCSVUpload(
     // Update flight duties with database IDs for layover calculation
     const savedFlightDuties = flightSaveResult.data || [];
 
-    // PHASE 4 DEBUGGING: Log detailed flight duty information after database save
-    console.log('🔍 PHASE 4 DEBUG - Flight duties after database save:');
-    console.log('Total saved flight duties:', savedFlightDuties.length);
-    console.log('Sample saved flight duty:', savedFlightDuties[0]);
 
-    // Log all layover flights specifically
-    const layoverFlights = savedFlightDuties.filter(flight => flight.dutyType === 'layover');
-    console.log('Layover flights found:', layoverFlights.length);
-    layoverFlights.forEach((flight, index) => {
-      console.log(`Layover flight ${index + 1}:`, {
-        id: flight.id,
-        date: flight.date,
-        dutyType: flight.dutyType,
-        reportTime: flight.reportTime,
-        debriefTime: flight.debriefTime,
-        hasValidId: !!flight.id
-      });
-    });
+
+
 
     // Recalculate layover rest periods with saved flight duties (which have IDs)
-    console.log('Upload Processor - Recalculating layover periods with saved flight IDs...');
     const updatedLayoverRestPeriods = calculateLayoverRestPeriods(savedFlightDuties, userId, position);
-    console.log('Upload Processor - Updated layover calculation complete:', updatedLayoverRestPeriods.length, 'periods');
 
-    // PHASE 4 DEBUGGING: Log detailed layover rest period information
-    console.log('🔍 PHASE 4 DEBUG - Layover rest periods after calculation:');
-    updatedLayoverRestPeriods.forEach((period, index) => {
-      console.log(`Rest period ${index + 1}:`, {
-        outboundFlightId: period.outboundFlightId,
-        inboundFlightId: period.inboundFlightId,
-        restHours: period.restHours,
-        hasValidOutboundId: !!period.outboundFlightId,
-        hasValidInboundId: !!period.inboundFlightId,
-        bothIdsValid: !!(period.outboundFlightId && period.inboundFlightId)
-      });
-    });
+
 
     // Save layover rest periods
     if (updatedLayoverRestPeriods.length > 0) {
@@ -315,58 +265,28 @@ export async function processCSVUpload(
       );
 
       if (validRestPeriods.length > 0) {
-        console.log('Upload Processor - Starting rest periods save...', {
-          total: updatedLayoverRestPeriods.length,
-          valid: validRestPeriods.length,
-          invalid: updatedLayoverRestPeriods.length - validRestPeriods.length
-        });
 
-        // PHASE 4 DEBUGGING: Log each valid rest period being sent to database
-        console.log('🔍 PHASE 4 DEBUG - Valid rest periods being sent to database:');
-        validRestPeriods.forEach((period, index) => {
-          console.log(`Valid period ${index + 1} for database:`, {
-            outboundFlightId: period.outboundFlightId,
-            inboundFlightId: period.inboundFlightId,
-            restHours: period.restHours,
-            perDiemPay: period.perDiemPay,
-            month: period.month,
-            year: period.year
-          });
-        });
 
-        // PHASE 4 DEBUGGING: Verify flight IDs exist in saved flights
-        console.log('🔍 PHASE 4 DEBUG - Verifying flight IDs exist in saved flights:');
+        // Verify flight IDs exist in saved flights
         const savedFlightIds = savedFlightDuties.map(f => f.id);
-        console.log('🔍 PHASE 4 DEBUG - Available flight IDs:', savedFlightIds);
-        console.log('🔍 PHASE 4 DEBUG - Total available flight IDs:', savedFlightIds.length);
 
         validRestPeriods.forEach((period, index) => {
           const outboundExists = savedFlightIds.includes(period.outboundFlightId);
           const inboundExists = savedFlightIds.includes(period.inboundFlightId);
-          console.log(`🔍 PHASE 4 DEBUG - Period ${index + 1} ID verification:`, {
-            outboundFlightId: period.outboundFlightId,
-            outboundExists,
-            inboundFlightId: period.inboundFlightId,
-            inboundExists,
-            bothExist: outboundExists && inboundExists
-          });
 
           if (!outboundExists) {
-            console.error(`🚨 PHASE 4 DEBUG - OUTBOUND FLIGHT ID NOT FOUND: ${period.outboundFlightId}`);
+            console.error(`Outbound flight ID not found: ${period.outboundFlightId}`);
           }
           if (!inboundExists) {
-            console.error(`🚨 PHASE 4 DEBUG - INBOUND FLIGHT ID NOT FOUND: ${period.inboundFlightId}`);
+            console.error(`Inbound flight ID not found: ${period.inboundFlightId}`);
           }
         });
 
         const restSaveResult = await createLayoverRestPeriods(validRestPeriods, userId);
-        console.log('Upload Processor - Rest periods save result:', restSaveResult);
         if (restSaveResult.error) {
-          console.log('Upload Processor - Rest periods save failed:', restSaveResult.error);
           warnings.push(`Warning: Failed to save rest periods: ${restSaveResult.error}`);
         }
       } else {
-        console.log('Upload Processor - No valid rest periods to save (all missing flight IDs)');
         warnings.push('Warning: No layover rest periods could be saved due to missing flight IDs');
       }
     }
@@ -379,7 +299,7 @@ export async function processCSVUpload(
       details: 'Computing final salary breakdown'
     });
 
-    console.log('Upload Processor - Starting monthly calculation for:', month, year);
+
     const monthlyCalculation = calculateMonthlySalary(
       savedFlightDuties,
       updatedLayoverRestPeriods,
@@ -388,14 +308,9 @@ export async function processCSVUpload(
       year,
       userId
     );
-    console.log('Upload Processor - Monthly calculation complete:', monthlyCalculation);
-
     // Save monthly calculation
-    console.log('Upload Processor - Starting monthly calculation save...');
     const calculationSaveResult = await upsertMonthlyCalculation(monthlyCalculation.monthlyCalculation, userId);
-    console.log('Upload Processor - Monthly calculation save result:', calculationSaveResult);
     if (calculationSaveResult.error) {
-      console.log('Upload Processor - Monthly calculation save failed:', calculationSaveResult.error);
       return {
         success: false,
         errors: [`Failed to save monthly calculation: ${calculationSaveResult.error}`],
@@ -625,9 +540,7 @@ export async function processCSVUploadWithReplacement(
 
   try {
     if (performReplacement) {
-      console.log('🔄 ROSTER REPLACEMENT: Starting safe replacement workflow');
-      console.log('📁 File:', file.name, 'Size:', file.size, 'bytes');
-      console.log('👤 User:', userId, 'Month:', month, 'Year:', year);
+
 
       // CRITICAL FIX: Process new data FIRST to ensure it's valid
       onProgress?.({
@@ -637,14 +550,12 @@ export async function processCSVUploadWithReplacement(
         details: 'Processing new CSV file before replacement'
       });
 
-      console.log('✅ STEP 1: Validating new CSV data (dry run)...');
+
       // Step 1: Process the new CSV data first (without saving to database yet)
       const newDataResult = await processCSVUpload(file, userId, position, onProgress, true, month, year); // dry run with target month/year
 
       if (!newDataResult.success) {
-        console.error('❌ STEP 1 FAILED: New CSV validation failed');
-        console.error('Errors:', newDataResult.errors);
-        console.error('Warnings:', newDataResult.warnings);
+
         return {
           success: false,
           errors: [`Cannot replace data - new CSV processing failed: ${newDataResult.errors?.join(', ')}`],
@@ -653,12 +564,7 @@ export async function processCSVUploadWithReplacement(
         };
       }
 
-      console.log('✅ STEP 1 SUCCESS: New CSV data is valid');
-      console.log('Flight duties found:', newDataResult.flightDuties?.length || 0);
-      console.log('Layover periods found:', newDataResult.layoverRestPeriods?.length || 0);
-
       // Step 2: Only if new data is valid, then delete existing data
-      console.log('🗑️ STEP 2: Deleting existing data...');
       onProgress?.({
         step: 'validating',
         progress: 50,
@@ -674,8 +580,6 @@ export async function processCSVUploadWithReplacement(
       );
 
       if (!replacementResult.success) {
-        console.error('❌ STEP 2 FAILED: Failed to delete existing data');
-        console.error('Errors:', replacementResult.errors);
         return {
           success: false,
           errors: [`Failed to replace existing data: ${replacementResult.errors.join(', ')}`],
@@ -684,13 +588,7 @@ export async function processCSVUploadWithReplacement(
         };
       }
 
-      console.log('✅ STEP 2 SUCCESS: Existing data deleted');
-      console.log('Deleted flights:', replacementResult.deletedFlights);
-      console.log('Deleted rest periods:', replacementResult.deletedRestPeriods);
-      console.log('Deleted calculation:', replacementResult.deletedCalculation);
-
       // Step 3: Now process and save the new data (for real this time)
-      console.log('💾 STEP 3: Saving new data to database...');
       onProgress?.({
         step: 'processing',
         progress: 75,
@@ -701,9 +599,7 @@ export async function processCSVUploadWithReplacement(
       const finalResult = await processCSVUpload(file, userId, position, onProgress, false, month, year); // real save with target month/year
 
       if (!finalResult.success) {
-        console.error('❌ STEP 3 FAILED: Failed to save new data');
-        console.error('Errors:', finalResult.errors);
-        console.error('⚠️ CRITICAL: Data has been deleted but new data failed to save!');
+
         return {
           success: false,
           errors: [`CRITICAL: Existing data was deleted but new data failed to save: ${finalResult.errors?.join(', ')}`],
@@ -712,8 +608,7 @@ export async function processCSVUploadWithReplacement(
         };
       }
 
-      console.log('✅ STEP 3 SUCCESS: New data saved successfully');
-      console.log('🎉 ROSTER REPLACEMENT COMPLETED SUCCESSFULLY');
+
 
       return {
         ...finalResult,
@@ -733,9 +628,7 @@ export async function processCSVUploadWithReplacement(
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    console.error('💥 ROSTER REPLACEMENT FAILED WITH EXCEPTION');
-    console.error('Error:', error);
-    console.error('Stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('Roster replacement failed with exception:', error);
     return {
       success: false,
       errors: [`Roster replacement failed with exception: ${errorMessage}`],
@@ -817,13 +710,8 @@ export async function processFileUpload(
       };
     }
 
-    console.log('Upload Processor - Success condition passed, extracting flight duties...');
     let flightDuties = parseResult.data;
-    console.log('Upload Processor - Flight duties extracted:', flightDuties.length, 'duties');
     warnings.push(...(parseResult.warnings || []));
-
-    // Continue with existing processing logic (same as processCSVUpload)
-    console.log('Upload Processor - About to start Step 3 - calculating flight payments...');
 
     // Step 3: Calculate duty hours and flight pay for each flight duty
     onProgress?.({
@@ -860,31 +748,25 @@ export async function processFileUpload(
       details: 'Computing rest time between flights'
     });
 
-    console.log('Upload Processor - Progress update sent, starting layover calculation...');
     const layoverRestPeriods = calculateLayoverRestPeriods(flightDuties, userId, position);
-    console.log('Upload Processor - Layover calculation complete:', layoverRestPeriods.length, 'periods');
 
     // Extract month and year from parse result or first flight duty
     let month: number;
     let year: number;
 
     if (targetMonth && targetYear) {
-      console.log('Upload Processor - Using user-selected target month/year:', targetMonth, '/', targetYear);
       month = targetMonth;
       year = targetYear;
     } else if (parseResult.month && parseResult.year) {
-      console.log('Upload Processor - Using file-detected month/year from parser:', parseResult.month, '/', parseResult.year);
       month = parseResult.month;
       year = parseResult.year;
     } else {
       // Fallback to first flight duty
       const firstFlight = flightDuties[0];
       if (firstFlight) {
-        console.log('Upload Processor - Using month/year from first flight duty');
         month = firstFlight.month;
         year = firstFlight.year;
       } else {
-        console.log('Upload Processor - Error: No flight duties found and no month/year from parser');
         return {
           success: false,
           errors: ['No flight duties found in file and unable to determine month/year'],
@@ -896,10 +778,6 @@ export async function processFileUpload(
     // Override month/year for all flight duties if using target values
     if (targetMonth && targetYear) {
       flightDuties.forEach((duty, index) => {
-        const originalDate = new Date(duty.date);
-
-        console.log(`Upload Processor - Assigning flight ${index + 1} to target month/year: ${originalDate.toDateString()} → month ${month}, year ${year} (date preserved for display)`);
-
         // Keep original date for display purposes, only change month/year for calculations and database organization
         duty.month = month;
         duty.year = year;
@@ -943,14 +821,8 @@ export async function processFileUpload(
     });
 
     // Save flight duties first to get database IDs
-    console.log('Upload Processor - Starting flight duties save...');
-    console.log('Upload Processor - Flight duties to save:', flightDuties.length, 'duties');
-    console.log('Upload Processor - Sample flight duty:', flightDuties[0]);
-
     const flightSaveResult = await createFlightDuties(flightDuties, userId);
-    console.log('Upload Processor - Flight duties save result:', flightSaveResult);
     if (flightSaveResult.error) {
-      console.log('Upload Processor - Flight duties save failed:', flightSaveResult.error);
       return {
         success: false,
         errors: [`Failed to save flight duties: ${flightSaveResult.error}`],
@@ -959,53 +831,18 @@ export async function processFileUpload(
     }
 
     const savedFlightDuties = flightSaveResult.data || [];
-    console.log('Upload Processor - Flight duties saved successfully:', savedFlightDuties.length, 'duties');
 
-    // PHASE 4 DEBUGGING: Log detailed flight duty information after database save (File Upload)
-    console.log('🔍 PHASE 4 DEBUG (File Upload) - Flight duties after database save:');
-    console.log('Total saved flight duties:', savedFlightDuties.length);
-    console.log('Sample saved flight duty:', savedFlightDuties[0]);
 
-    // Log all layover flights specifically
-    const layoverFlights = savedFlightDuties.filter(flight => flight.dutyType === 'layover');
-    console.log('Layover flights found:', layoverFlights.length);
-    layoverFlights.forEach((flight, index) => {
-      console.log(`Layover flight ${index + 1}:`, {
-        id: flight.id,
-        date: flight.date,
-        dutyType: flight.dutyType,
-        reportTime: flight.reportTime,
-        debriefTime: flight.debriefTime,
-        hasValidId: !!flight.id
-      });
-    });
 
-    // 🚀 PHASE 4 FIX: Recalculate layover rest periods with saved flight duties (which have correct IDs)
-    console.log('🔧 PHASE 4 FIX - Recalculating layover periods with saved flight IDs...');
+
+
+
+    // Recalculate layover rest periods with saved flight duties (which have correct IDs)
     const updatedLayoverRestPeriods = calculateLayoverRestPeriods(savedFlightDuties, userId, position);
-    console.log('🔧 PHASE 4 FIX - Updated layover calculation complete:', updatedLayoverRestPeriods.length, 'periods');
 
-    // PHASE 4 DEBUGGING: Log layover rest periods before and after ID update
-    console.log('🔍 PHASE 4 DEBUG (File Upload) - Layover rest periods before ID update:');
-    layoverRestPeriods.forEach((period, index) => {
-      console.log(`Original rest period ${index + 1}:`, {
-        outboundFlightId: period.outboundFlightId,
-        inboundFlightId: period.inboundFlightId,
-        restHours: period.restHours
-      });
-    });
 
-    console.log('🔍 PHASE 4 DEBUG (File Upload) - Layover rest periods after ID update:');
-    updatedLayoverRestPeriods.forEach((period, index) => {
-      console.log(`Updated rest period ${index + 1}:`, {
-        outboundFlightId: period.outboundFlightId,
-        inboundFlightId: period.inboundFlightId,
-        restHours: period.restHours,
-        hasValidOutboundId: !!period.outboundFlightId,
-        hasValidInboundId: !!period.inboundFlightId,
-        bothIdsValid: !!(period.outboundFlightId && period.inboundFlightId)
-      });
-    });
+
+
 
     // Save layover rest periods
     if (updatedLayoverRestPeriods.length > 0) {
@@ -1015,58 +852,28 @@ export async function processFileUpload(
       );
 
       if (validRestPeriods.length > 0) {
-        console.log('Upload Processor - Starting rest periods save...', {
-          total: updatedLayoverRestPeriods.length,
-          valid: validRestPeriods.length,
-          invalid: updatedLayoverRestPeriods.length - validRestPeriods.length
-        });
 
-        // PHASE 4 DEBUGGING: Log each valid rest period being sent to database (File Upload)
-        console.log('🔍 PHASE 4 DEBUG (File Upload) - Valid rest periods being sent to database:');
-        validRestPeriods.forEach((period, index) => {
-          console.log(`Valid period ${index + 1} for database:`, {
-            outboundFlightId: period.outboundFlightId,
-            inboundFlightId: period.inboundFlightId,
-            restHours: period.restHours,
-            perDiemPay: period.perDiemPay,
-            month: period.month,
-            year: period.year
-          });
-        });
 
-        // PHASE 4 DEBUGGING: Verify flight IDs exist in saved flights (File Upload)
-        console.log('🔍 PHASE 4 DEBUG (File Upload) - Verifying flight IDs exist in saved flights:');
+        // Verify flight IDs exist in saved flights
         const savedFlightIds = savedFlightDuties.map(f => f.id);
-        console.log('🔍 PHASE 4 DEBUG (File Upload) - Available flight IDs:', savedFlightIds);
-        console.log('🔍 PHASE 4 DEBUG (File Upload) - Total available flight IDs:', savedFlightIds.length);
 
         validRestPeriods.forEach((period, index) => {
           const outboundExists = savedFlightIds.includes(period.outboundFlightId);
           const inboundExists = savedFlightIds.includes(period.inboundFlightId);
-          console.log(`🔍 PHASE 4 DEBUG (File Upload) - Period ${index + 1} ID verification:`, {
-            outboundFlightId: period.outboundFlightId,
-            outboundExists,
-            inboundFlightId: period.inboundFlightId,
-            inboundExists,
-            bothExist: outboundExists && inboundExists
-          });
 
           if (!outboundExists) {
-            console.error(`🚨 PHASE 4 DEBUG (File Upload) - OUTBOUND FLIGHT ID NOT FOUND: ${period.outboundFlightId}`);
+            console.error(`Outbound flight ID not found: ${period.outboundFlightId}`);
           }
           if (!inboundExists) {
-            console.error(`🚨 PHASE 4 DEBUG (File Upload) - INBOUND FLIGHT ID NOT FOUND: ${period.inboundFlightId}`);
+            console.error(`Inbound flight ID not found: ${period.inboundFlightId}`);
           }
         });
 
         const restSaveResult = await createLayoverRestPeriods(validRestPeriods, userId);
-        console.log('Upload Processor - Rest periods save result:', restSaveResult);
         if (restSaveResult.error) {
-          console.log('Upload Processor - Rest periods save failed:', restSaveResult.error);
           warnings.push(`Warning: Failed to save rest periods: ${restSaveResult.error}`);
         }
       } else {
-        console.log('Upload Processor - No valid rest periods to save (all missing flight IDs)');
         warnings.push('Warning: No layover rest periods could be saved due to missing flight IDs');
       }
     }
@@ -1079,7 +886,7 @@ export async function processFileUpload(
       details: 'Computing final salary breakdown'
     });
 
-    console.log('Upload Processor - Starting monthly calculation for:', month, year);
+
     const monthlyCalculation = calculateMonthlySalary(
       savedFlightDuties,
       updatedLayoverRestPeriods,
@@ -1088,14 +895,9 @@ export async function processFileUpload(
       year,
       userId
     );
-    console.log('Upload Processor - Monthly calculation complete:', monthlyCalculation);
-
     // Save monthly calculation
-    console.log('Upload Processor - Starting monthly calculation save...');
     const calculationSaveResult = await upsertMonthlyCalculation(monthlyCalculation.monthlyCalculation, userId);
-    console.log('Upload Processor - Monthly calculation save result:', calculationSaveResult);
     if (calculationSaveResult.error) {
-      console.log('Upload Processor - Monthly calculation save failed:', calculationSaveResult.error);
       return {
         success: false,
         errors: [`Failed to save monthly calculation: ${calculationSaveResult.error}`],
@@ -1155,9 +957,7 @@ export async function processFileUploadWithReplacement(
 
   try {
     if (performReplacement) {
-      console.log('🔄 ROSTER REPLACEMENT: Starting safe replacement workflow');
-      console.log('📁 File:', file.name, 'Size:', file.size, 'bytes', 'Type:', fileType.toUpperCase());
-      console.log('👤 User:', userId, 'Month:', month, 'Year:', year);
+
 
       // CRITICAL FIX: Process new data FIRST to ensure it's valid
       onProgress?.({
@@ -1167,14 +967,11 @@ export async function processFileUploadWithReplacement(
         details: `Processing new ${fileType.toUpperCase()} file before replacement`
       });
 
-      console.log('✅ STEP 1: Validating new file data (dry run)...');
+
       // Step 1: Process the new file data first (without saving to database yet)
       const newDataResult = await processFileUpload(file, userId, position, onProgress, true, month, year); // dry run with target month/year
 
       if (!newDataResult.success) {
-        console.error('❌ STEP 1 FAILED: New file validation failed');
-        console.error('Errors:', newDataResult.errors);
-        console.error('Warnings:', newDataResult.warnings);
         return {
           success: false,
           errors: [`Cannot replace data - new ${fileType.toUpperCase()} processing failed: ${newDataResult.errors?.join(', ')}`],
@@ -1183,12 +980,7 @@ export async function processFileUploadWithReplacement(
         };
       }
 
-      console.log('✅ STEP 1 SUCCESS: New file data is valid');
-      console.log('Flight duties found:', newDataResult.flightDuties?.length || 0);
-      console.log('Layover periods found:', newDataResult.layoverRestPeriods?.length || 0);
-
       // Step 2: Only if new data is valid, then delete existing data
-      console.log('🗑️ STEP 2: Deleting existing data...');
       onProgress?.({
         step: 'validating',
         progress: 50,
@@ -1204,8 +996,6 @@ export async function processFileUploadWithReplacement(
       );
 
       if (replacementResult.error) {
-        console.error('❌ STEP 2 FAILED: Failed to delete existing data');
-        console.error('Error:', replacementResult.error);
         return {
           success: false,
           errors: [`Failed to delete existing data: ${replacementResult.error}`],
@@ -1214,13 +1004,7 @@ export async function processFileUploadWithReplacement(
         };
       }
 
-      console.log('✅ STEP 2 SUCCESS: Existing data deleted');
-      console.log('Deleted flights:', replacementResult.deletedFlights);
-      console.log('Deleted rest periods:', replacementResult.deletedRestPeriods);
-      console.log('Deleted calculation:', replacementResult.deletedCalculation);
-
       // Step 3: Now process and save the new data (for real this time)
-      console.log('💾 STEP 3: Saving new data to database...');
       onProgress?.({
         step: 'processing',
         progress: 75,
@@ -1231,9 +1015,6 @@ export async function processFileUploadWithReplacement(
       const finalResult = await processFileUpload(file, userId, position, onProgress, false, month, year); // real save with target month/year
 
       if (!finalResult.success) {
-        console.error('❌ STEP 3 FAILED: Failed to save new data');
-        console.error('Errors:', finalResult.errors);
-        console.error('⚠️ CRITICAL: Data has been deleted but new data failed to save!');
         return {
           success: false,
           errors: [`CRITICAL: Existing data was deleted but new data failed to save: ${finalResult.errors?.join(', ')}`],
@@ -1242,8 +1023,7 @@ export async function processFileUploadWithReplacement(
         };
       }
 
-      console.log('✅ STEP 3 SUCCESS: New data saved successfully');
-      console.log('🎉 ROSTER REPLACEMENT COMPLETED SUCCESSFULLY');
+
 
       return {
         ...finalResult,
@@ -1263,9 +1043,7 @@ export async function processFileUploadWithReplacement(
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    console.error('💥 ROSTER REPLACEMENT FAILED WITH EXCEPTION');
-    console.error('Error:', error);
-    console.error('Stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('Roster replacement failed with exception:', error);
     return {
       success: false,
       errors: [`Roster replacement failed with exception: ${errorMessage}`],

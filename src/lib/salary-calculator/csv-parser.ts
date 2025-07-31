@@ -490,6 +490,7 @@ export function parseFlightDutyRow(
     dutiesUpper.includes('DAY OFF') ||
     dutiesUpper.includes('REST DAY') ||
     dutiesUpper.includes('ADDITIONAL DAY OFF') ||
+    dutiesUpper.includes('ANNUAL LEAVE') ||
     dutiesUpper.includes('OFF') ||
     dutiesUpper === 'X' ||
     classification.dutyType === 'off' ||

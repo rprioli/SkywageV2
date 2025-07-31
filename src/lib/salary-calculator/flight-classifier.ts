@@ -45,11 +45,17 @@ export function classifyFlightDuty(
 
   // Check for Home Standby (SBY)
   if (dutiesUpper.includes('SBY') && !dutiesUpper.includes('ASBY')) {
+    // Use actualDutyHours if provided
+    let dutyHours = actualDutyHours || 0;
+    let flightPay = 0; // SBY duties (including XSBY) have no payment
+
     return {
       dutyType: 'sby',
       confidence: 1.0,
       reasoning: 'Contains SBY (Home Standby) in duties column',
-      warnings: []
+      warnings: [],
+      dutyHours,
+      flightPay
     };
   }
 
@@ -82,11 +88,12 @@ export function classifyFlightDuty(
       dutiesUpper.includes('DAY OFF') ||
       dutiesUpper.includes('REST DAY') ||
       dutiesUpper.includes('ADDITIONAL DAY OFF') ||
+      dutiesUpper.includes('ANNUAL LEAVE') ||
       dutiesUpper === 'X') {
     return {
       dutyType: 'off',
       confidence: 1.0,
-      reasoning: 'Contains OFF, DAY OFF, REST DAY, or X indicating off day',
+      reasoning: 'Contains OFF, DAY OFF, REST DAY, ANNUAL LEAVE, or X indicating off day',
       warnings: []
     };
   }

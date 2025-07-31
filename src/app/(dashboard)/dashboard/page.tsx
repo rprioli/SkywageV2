@@ -92,6 +92,28 @@ export default function DashboardPage() {
       console.log('✋ Skipping auto month selection - user has made manual selection');
     }
   }, [monthlyDataLoading, allMonthlyCalculations, hasUserSelectedMonth]);
+
+  // Update currentMonthCalculation when selectedOverviewMonth changes
+  useEffect(() => {
+    if (allMonthlyCalculations.length > 0) {
+      const currentYear = new Date().getFullYear();
+      const selectedMonth = selectedOverviewMonth + 1; // Convert from 0-based to 1-based
+
+      console.log(`🔄 Updating currentMonthCalculation for month: ${selectedMonth}`);
+
+      const selectedMonthData = allMonthlyCalculations.find(calc =>
+        calc.month === selectedMonth && calc.year === currentYear
+      );
+
+      if (selectedMonthData) {
+        console.log(`✅ Found data for month ${selectedMonth}:`, selectedMonthData);
+        setCurrentMonthCalculation(selectedMonthData);
+      } else {
+        console.log(`❌ No data found for month ${selectedMonth}`);
+        setCurrentMonthCalculation(null);
+      }
+    }
+  }, [selectedOverviewMonth, allMonthlyCalculations]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedFlightForDelete, setSelectedFlightForDelete] = useState<FlightDuty | null>(null);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
@@ -951,7 +973,7 @@ export default function DashboardPage() {
             {/* Left: Duty Hours */}
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center flex flex-col justify-center min-h-[80px]">
               <div className="text-2xl font-bold">
-                {monthlyDataLoading ? '...' : `${selectedData.dutyHours.toFixed(0)}h`}
+                {monthlyDataLoading ? '...' : `${Math.floor(selectedData.dutyHours)}h`}
               </div>
               <div className="text-xs text-white/70 mt-1">Duty Hours</div>
             </div>
@@ -1017,17 +1039,22 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Bottom Side Card */}
+          {/* Bottom Side Card - Salary Breakdown */}
           <Card className="bg-white border-2 border-gray-100 rounded-3xl shadow-lg">
             <CardContent className="p-6 text-center">
               <div className="w-12 h-12 bg-[#4C49ED] rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <BarChart3 className="h-6 w-6 text-white" />
               </div>
-              <div className="text-3xl font-bold text-[#4C49ED] mb-2">
-                {currentMonthCalculation ? `${currentMonthCalculation.totalDutyHours.toFixed(0)}h` : '0h'}
+              <div className="space-y-2">
+                <div className="text-lg font-bold text-[#4C49ED]">
+                  {currentMonthCalculation ? formatCurrency(currentMonthCalculation.flightPay) : formatCurrency(0)}
+                </div>
+                <div className="text-xs text-gray-600 font-medium">Flight Pay</div>
+                <div className="text-lg font-bold text-[#6DDC91]">
+                  {currentMonthCalculation ? formatCurrency(currentMonthCalculation.perDiemPay) : formatCurrency(0)}
+                </div>
+                <div className="text-xs text-gray-500">Per Diem</div>
               </div>
-              <div className="text-gray-600 font-medium">Duty Hours</div>
-              <div className="text-sm text-gray-500 mt-1">Flight Time</div>
             </CardContent>
           </Card>
         </div>

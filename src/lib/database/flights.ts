@@ -116,13 +116,7 @@ export async function createFlightDuties(
   userId: string
 ): Promise<{ data: FlightDuty[] | null; error: string | null }> {
   try {
-    console.log('Database - Creating flight duties for user:', userId);
-    console.log('Database - Number of duties to insert:', flightDuties.length);
-
     const insertData = flightDuties.map(duty => flightDutyToInsert(duty, userId));
-    console.log('Database - Sample insert data:', insertData[0]);
-
-    console.log('Database - Starting Supabase insert...');
     const { data, error } = await supabase
       .from('flights')
       .insert(insertData)
@@ -130,18 +124,13 @@ export async function createFlightDuties(
 
     if (error) {
       console.error('Database - Supabase insert error:', error);
-      console.error('Database - Error details:', error.details);
-      console.error('Database - Error hint:', error.hint);
-      console.error('Database - Error code:', error.code);
       return { data: null, error: error.message };
     }
 
-    console.log('Database - Insert successful, converting results...');
     const flightDutiesResult = data.map(rowToFlightDuty);
-    console.log('Database - Conversion complete, returning', flightDutiesResult.length, 'duties');
     return { data: flightDutiesResult, error: null };
   } catch (error) {
-    console.error('Database - Unexpected error creating flight duties:', error);
+    console.error('Error creating flight duties:', error);
     return { data: null, error: (error as Error).message };
   }
 }

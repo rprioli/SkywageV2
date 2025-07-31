@@ -219,18 +219,15 @@ export function parseTrainingTimeRange(timeRangeString: string): {
   }
 
   const trimmed = timeRangeString.trim();
-  console.log(`🔍 parseTrainingTimeRange input: "${trimmed}"`);
 
   const sessions: Array<{ start: string; end: string; hours: number }> = [];
   let totalHours = 0;
 
   // Handle multi-line time ranges (separated by \n, \r\n, or \r)
   const lines = trimmed.split(/[\r\n]+/).map(line => line.trim()).filter(line => line.length > 0);
-  console.log(`🔍 Split into ${lines.length} lines:`, lines);
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    console.log(`🔍 Processing line ${i + 1}: "${line}"`);
 
     // Match time range pattern: "HH:MM - HH:MM"
     const timeRangeRegex = /(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/;
@@ -239,7 +236,6 @@ export function parseTrainingTimeRange(timeRangeString: string): {
     if (match) {
       const startTime = match[1];
       const endTime = match[2];
-      console.log(`✅ Found time range: ${startTime} - ${endTime}`);
 
       // Calculate hours for this session
       const [startHour, startMin] = startTime.split(':').map(Number);
@@ -262,9 +258,6 @@ export function parseTrainingTimeRange(timeRangeString: string): {
       });
 
       totalHours += sessionHours;
-      console.log(`✅ Session added: ${startTime} - ${endTime} (${sessionHours} hours)`);
-    } else {
-      console.log(`⚠️ No time range found in line: "${line}"`);
     }
   }
 
@@ -279,7 +272,6 @@ export function parseTrainingTimeRange(timeRangeString: string): {
     sessions
   };
 
-  console.log(`✅ parseTrainingTimeRange result:`, result);
   return result;
 }
 
@@ -483,11 +475,9 @@ export function mapColumnHeaders(
         columnMapping.debriefTime = columnLetter;
       } else if (headerValue.includes('actual') && (headerValue.includes('time') || headerValue.includes('delay'))) {
         columnMapping.actualTimes = columnLetter;
-        console.log(`📍 Found Actual Times column: ${columnLetter} with header: "${cell.v}"`);
       } else if (headerValue.includes('actualtimes')) {
         // Handle case where header might be "ActualTimes" without space
         columnMapping.actualTimes = columnLetter;
-        console.log(`📍 Found ActualTimes column: ${columnLetter} with header: "${cell.v}"`);
       } else if (headerValue.includes('indicator')) {
         columnMapping.indicators = columnLetter;
       }
@@ -611,7 +601,6 @@ export function detectExcelStructureFlexible(worksheet: XLSX.WorkSheet): Flexibl
     };
 
   } catch (error) {
-    console.error('Failed to detect Excel structure:', error);
     return null;
   }
 }

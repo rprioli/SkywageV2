@@ -94,53 +94,109 @@ export function FlightDutyCard({
     return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
   };
 
-  // Helper function to get layover rest period from calculated data
+  // Helper function to get layover rest period using the same logic as calculation engine
   const getLayoverRestPeriod = () => {
     // Only show for layover duties
     if (flightDuty.dutyType !== 'layover') {
       return null;
     }
 
-    // Check if this is an inbound flight (returning to DXB)
-    // The last sector in the array should be DXB for inbound flights
-    const isInboundToDXB = flightDuty.sectors[flightDuty.sectors.length - 1]?.toUpperCase() === 'DXB';
+    // Helper function to parse sector string into array
+    const parseSectors = (sectorString: string): string[] => {
+      // Handle both single sector strings like "DXB  - ZAG" and multi-sector strings
+      if (sectorString.includes(' → ')) {
+        // Multi-sector format: "DXB  - EBL → EBL  - DXB"
+        return sectorString.split(' → ').map(s => s.trim());
+      } else {
+        // Single sector format: "DXB  - ZAG"
+        const parts = sectorString.split(' - ').map(s => s.trim());
+        return parts.length >= 2 ? parts : [sectorString.trim()];
+      }
+    };
 
-    // Don't show rest period on inbound flights returning to DXB
-    if (isInboundToDXB) {
+    // Helper function to extract destination from sectors
+    const getDestination = (sectors: string[]): string => {
+      // Parse the first sector string to get airports
+      const firstSector = sectors[0] || '';
+      const airports = parseSectors(firstSector);
+
+      // For outbound flights: DXB → destination, return destination
+      // For inbound flights: destination → DXB, return destination (first airport)
+      if (airports.length >= 2) {
+        return airports[0] === 'DXB' ? airports[1] : airports[0];
+      }
+      return '';
+    };
+
+    // Helper function to check if flight is outbound (DXB → destination)
+    const isOutboundFlight = (sectors: string[]): boolean => {
+      const firstSector = sectors[0] || '';
+      const airports = parseSectors(firstSector);
+      return airports.length >= 2 && airports[0] === 'DXB';
+    };
+
+    // Helper function to check if flight is inbound (destination → DXB)
+    const isInboundFlight = (sectors: string[]): boolean => {
+      const firstSector = sectors[0] || '';
+      const airports = parseSectors(firstSector);
+      return airports.length >= 2 && airports[airports.length - 1] === 'DXB';
+    };
+
+    // Only show rest period on outbound flights (DXB → destination)
+    if (!isOutboundFlight(flightDuty.sectors)) {
       return null;
     }
 
-    // For now, use the old logic as fallback until we can access layover rest periods data
-    // TODO: Update this to use proper layover rest periods from the calculation engine
     if (!allFlightDuties.length) {
       return null;
     }
 
-    // Find the matching inbound flight (next layover flight with same user)
-    const currentDate = flightDuty.date.getTime();
-    const matchingFlight = allFlightDuties.find(flight =>
-      flight.dutyType === 'layover' &&
-      flight.userId === flightDuty.userId &&
-      flight.id !== flightDuty.id &&
-      flight.date.getTime() > currentDate &&
-      Math.abs(flight.date.getTime() - currentDate) <= 3 * 24 * 60 * 60 * 1000 // Within 3 days
-    );
+    const destination = getDestination(flightDuty.sectors);
+    if (!destination) {
+      return null;
+    }
 
-    if (!matchingFlight) {
-      // Don't show error for now - this is expected for many layover flights
+    // Find the matching inbound flight for this destination using the same logic as calculation engine
+    const matchingInboundFlight = allFlightDuties.find(flight => {
+      // Must be a layover duty
+      if (flight.dutyType !== 'layover') {
+        return false;
+      }
+
+      // Must be an inbound flight
+      if (!isInboundFlight(flight.sectors)) {
+        return false;
+      }
+
+      // Must be the same destination
+      if (getDestination(flight.sectors) !== destination) {
+        return false;
+      }
+
+      // Must be after the outbound flight
+      if (flight.date.getTime() <= flightDuty.date.getTime()) {
+        return false;
+      }
+
+      // Must be within reasonable timeframe (within 5 days for layovers)
+      const daysDiff = (flight.date.getTime() - flightDuty.date.getTime()) / (1000 * 60 * 60 * 24);
+      return daysDiff <= 5;
+    });
+
+    if (!matchingInboundFlight) {
       return null;
     }
 
     try {
       // Calculate days between flights
-      const daysBetween = Math.floor((matchingFlight.date.getTime() - flightDuty.date.getTime()) / (24 * 60 * 60 * 1000));
+      const daysBetween = Math.floor((matchingInboundFlight.date.getTime() - flightDuty.date.getTime()) / (24 * 60 * 60 * 1000));
 
       // Use the existing calculateRestPeriod utility function for accurate calculation
       const restHours = calculateRestPeriod(
         flightDuty.debriefTime,
         flightDuty.isCrossDay,
-        matchingFlight.reportTime,
-        matchingFlight.isCrossDay, // Use the inbound flight's cross-day status
+        matchingInboundFlight.reportTime,
+        matchingInboundFlight.isCrossDay,
         daysBetween
       );
 
@@ -151,7 +207,7 @@ export function FlightDutyCard({
       return {
         restHours,
         perDiemPay,
-        matchingFlight
+        matchingFlight: matchingInboundFlight
       };
     } catch (error) {
       console.warn('Error calculating layover rest period:', error);
@@ -394,16 +450,25 @@ export function FlightDutyCard({
               <h4 className="font-semibold text-base text-gray-800 mb-1">
                 Recurrent Training
               </h4>
+            ) : flightDuty.dutyType === 'sby' ? (
+              <>
+                <h4 className="font-semibold text-base text-gray-800 mb-1">
+                  SBY
+                </h4>
+                <div className="text-sm text-gray-500">
+                  DXB
+                </div>
+              </>
             ) : flightDuty.flightNumbers.length > 0 ? (
               <h4 className="font-semibold text-base text-gray-800 mb-1">
-                {flightDuty.dutyType === 'sby' || flightDuty.dutyType === 'asby'
+                {flightDuty.dutyType === 'asby'
                   ? flightDuty.flightNumbers.join(' ') // No FZ prefix for standby duties
                   : flightDuty.flightNumbers.map(num => num.startsWith('FZ') ? num : `FZ${num}`).join(' ')
                 }
               </h4>
             ) : null}
-            {/* Only show sectors for non-recurrent duties to avoid verbose training descriptions */}
-            {flightDuty.dutyType !== 'recurrent' && flightDuty.sectors.length > 0 && (
+            {/* Only show sectors for non-recurrent and non-sby duties to avoid verbose descriptions */}
+            {flightDuty.dutyType !== 'recurrent' && flightDuty.dutyType !== 'sby' && flightDuty.sectors.length > 0 && (
               <div className="text-sm text-gray-500">
                 {renderSectorsWithIcons(flightDuty.sectors, flightDuty.dutyType)}
               </div>
