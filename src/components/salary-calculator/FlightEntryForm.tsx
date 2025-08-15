@@ -98,7 +98,7 @@ export function FlightEntryForm({
       setFormData(prev => ({
         ...prev,
         flightNumbers: ['', ''],
-        sectors: formData.dutyType === 'layover' ? ['', '', '', ''] : ['', '']
+        sectors: formData.dutyType === 'layover' ? ['', '', '', ''] : ['', '', '']
       }));
     }
   }, []); // Only run on mount
@@ -135,12 +135,12 @@ export function FlightEntryForm({
           newData.inboundDate = newData.date;
         }
       } else if (dutyType === 'turnaround') {
-        // Ensure at least two entries for turnaround
+        // Ensure at least two flight numbers and three sectors for turnaround
         if (prev.flightNumbers.length < 2) {
           newData.flightNumbers = [prev.flightNumbers[0] || '', ''];
         }
-        if (prev.sectors.length < 2) {
-          newData.sectors = [prev.sectors[0] || '', ''];
+        if (prev.sectors.length < 3) {
+          newData.sectors = [prev.sectors[0] || '', prev.sectors[1] || '', prev.sectors[2] || ''];
         }
       }
 
@@ -602,10 +602,10 @@ export function FlightEntryForm({
                 <label className="block text-sm font-medium">
                   Sectors
                 </label>
-                <div className="grid grid-cols-2 gap-3">
-                  {Array.from({ length: 4 }, (_, index) => {
+                <div className="grid grid-cols-3 gap-3">
+                  {Array.from({ length: 3 }, (_, index) => {
                     const sector = formData.sectors[index] || '';
-                    const placeholders = ['DXB', 'KHI', 'KHI', 'DXB'];
+                    const placeholders = ['DXB', 'BOM', 'DXB'];
 
                     return (
                       <div key={index} className="relative">

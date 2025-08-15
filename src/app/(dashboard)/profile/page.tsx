@@ -4,6 +4,8 @@ import { useAuth } from '@/contexts/AuthProvider';
 import { AvatarUpload } from '@/components/profile/AvatarUpload';
 import { NationalityUpdate } from '@/components/profile/NationalityUpdate';
 import { PositionUpdate } from '@/components/profile/PositionUpdate';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { UserCircle, Info, Settings } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { setupAvatarsBucket } from '@/lib/setupStorage';
 
@@ -42,55 +44,91 @@ export default function ProfilePage() {
   };
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-6">Your Profile</h1>
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-primary mb-2">Your Profile</h1>
+        <p className="text-muted-foreground">
+          Manage your account information and preferences
+        </p>
+      </div>
 
-      <div className="p-6 border border-border rounded-lg bg-card">
-        <div className="flex flex-col md:flex-row gap-8">
-          <div className="flex-shrink-0">
-            {bucketError ? (
-              <div className="mb-4 p-4 border border-destructive/50 rounded-md bg-destructive/10 max-w-md">
-                <h3 className="font-semibold text-destructive mb-1">Storage Configuration Error</h3>
-                <p className="text-sm text-destructive/90 mb-2">{bucketError}</p>
-                <p className="text-xs text-muted-foreground">
-                  The administrator needs to set up the storage bucket and policies for profile pictures.
-                </p>
-              </div>
-            ) : (
-              <AvatarUpload onUploadComplete={handleAvatarUploadComplete} size={150} />
-            )}
+      {/* Cards Grid */}
+      <div className="space-y-6">
+        {/* Profile Picture Card */}
+        <Card className="rounded-3xl border-2 border-gray-100 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2">
+              <UserCircle className="h-5 w-5 text-primary" />
+              Profile Picture
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col items-center">
+              {bucketError ? (
+                <div className="mb-4 p-4 border border-destructive/50 rounded-md bg-destructive/10 max-w-md">
+                  <h3 className="font-semibold text-destructive mb-1">Storage Configuration Error</h3>
+                  <p className="text-sm text-destructive/90 mb-2">{bucketError}</p>
+                  <p className="text-xs text-muted-foreground">
+                    The administrator needs to set up the storage bucket and policies for profile pictures.
+                  </p>
+                </div>
+              ) : (
+                <AvatarUpload onUploadComplete={handleAvatarUploadComplete} size={150} />
+              )}
 
-            {avatarUpdated && (
-              <div className="mt-2 text-center text-sm text-accent">
-                Profile picture updated successfully!
-              </div>
-            )}
-          </div>
+              {avatarUpdated && (
+                <div className="mt-2 text-center text-sm text-accent">
+                  Profile picture updated successfully!
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-          <div className="flex-1">
-            <h2 className="text-xl font-semibold mb-4">Personal Information</h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Personal Information Card */}
+        <Card className="rounded-3xl border-2 border-gray-100 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5 text-primary" />
+              Personal Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <p className="text-sm text-muted-foreground">First Name</p>
+                <p className="text-sm text-muted-foreground mb-1">First Name</p>
                 <p className="font-medium">{user?.user_metadata?.first_name || 'N/A'}</p>
               </div>
 
               <div>
-                <p className="text-sm text-muted-foreground">Last Name</p>
+                <p className="text-sm text-muted-foreground mb-1">Last Name</p>
                 <p className="font-medium">{user?.user_metadata?.last_name || 'N/A'}</p>
               </div>
 
               <div>
-                <p className="text-sm text-muted-foreground">Email</p>
+                <p className="text-sm text-muted-foreground mb-1">Email</p>
                 <p className="font-medium">{user?.email || 'N/A'}</p>
               </div>
 
               <div>
-                <p className="text-sm text-muted-foreground">Airline</p>
+                <p className="text-sm text-muted-foreground mb-1">Airline</p>
                 <p className="font-medium">{user?.user_metadata?.airline || 'N/A'}</p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
 
+        {/* Account Settings Card */}
+        <Card className="rounded-3xl border-2 border-gray-100 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5 text-primary" />
+              Account Settings
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <PositionUpdate />
               </div>
@@ -99,8 +137,8 @@ export default function ProfilePage() {
                 <NationalityUpdate />
               </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

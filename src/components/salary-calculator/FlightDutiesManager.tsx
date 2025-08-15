@@ -12,8 +12,9 @@ import { deleteFlightDuty } from '@/lib/database/flights';
 import { handleFlightEdit } from '@/lib/salary-calculator/recalculation-engine';
 import { FlightDutiesTable } from './FlightDutiesTable';
 import { EditFlightModal } from './EditFlightModal';
-import { AuditTrailModal } from './AuditTrailDisplay';
+
 import { useToast } from '@/hooks/use-toast';
+import { identifyLayoverPairs } from '@/lib/salary-calculator/card-data-mapper';
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -25,8 +26,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { History, Trash2, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 
 interface FlightDutiesManagerProps {
   flightDuties: FlightDuty[];
@@ -51,26 +51,28 @@ export function FlightDutiesManager({
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedFlight, setSelectedFlight] = useState<FlightDuty | null>(null);
-  const [deleteReason, setDeleteReason] = useState('');
-  const [processing, setProcessing] = useState(false);
-  const [lastOperation, setLastOperation] = useState<{
-    type: 'edit' | 'delete' | 'bulk-delete';
-    success: boolean;
-    message: string;
-  } | null>(null);
 
-  // Clear operation status after 5 seconds
-  useEffect(() => {
-    if (lastOperation) {
-      const timer = setTimeout(() => setLastOperation(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [lastOperation]);
+  const [processing, setProcessing] = useState(false);
 
   // Handle edit button click
   const handleEditClick = (flightDuty: FlightDuty) => {
     setSelectedFlight(flightDuty);
     setEditModalOpen(true);
+  };
+
+  // Helper function to find layover pair for a given flight duty
+  const findLayoverPair = (targetFlight: FlightDuty): FlightDuty | null => {
+    if (targetFlight.dutyType !== 'layover') return null;
+
+    const layoverPairs = identifyLayoverPairs(flightDuties);
+    const pair = layoverPairs.find(p =>
+      p.outbound.id === targetFlight.id || p.inbound.id === targetFlight.id
+    );
+
+    if (!pair) return null;
+
+    // Return the other flight in the pair
+    return pair.outbound.id === targetFlight.id ? pair.inbound : pair.outbound;
   };
 
   // Handle delete button click
@@ -87,33 +89,16 @@ export function FlightDutiesManager({
       const recalcResult = await handleFlightEdit(updatedFlight, userId, position);
 
       if (recalcResult.success) {
-        setLastOperation({
-          type: 'edit',
-          success: true,
-          message: 'Flight updated successfully and calculations refreshed'
-        });
-
         // Show success toast
         salaryCalculator.flightUpdated(updatedFlight.flightNumbers);
-
         onFlightUpdated?.(updatedFlight);
         onRecalculationComplete?.();
       } else {
         const errorMsg = `Flight updated but recalculation failed: ${recalcResult.errors.join(', ')}`;
-        setLastOperation({
-          type: 'edit',
-          success: false,
-          message: errorMsg
-        });
         salaryCalculator.calculationError(errorMsg);
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error during recalculation';
-      setLastOperation({
-        type: 'edit',
-        success: false,
-        message: errorMsg
-      });
       salaryCalculator.calculationError(errorMsg);
     } finally {
       setProcessing(false);
@@ -122,11 +107,6 @@ export function FlightDutiesManager({
 
   // Handle edit error
   const handleEditError = (error: string) => {
-    setLastOperation({
-      type: 'edit',
-      success: false,
-      message: error
-    });
     salaryCalculator.calculationError(error);
   };
 
@@ -136,45 +116,45 @@ export function FlightDutiesManager({
 
     setProcessing(true);
     try {
-      const result = await deleteFlightDuty(
-        selectedFlight.id,
-        userId,
-        deleteReason || 'Flight duty deleted via manager'
+      // Check if this is a layover flight and find its pair
+      const layoverPair = findLayoverPair(selectedFlight);
+      const flightsToDelete = layoverPair ? [selectedFlight, layoverPair] : [selectedFlight];
+
+      // Delete all flights (main flight and its layover pair if applicable)
+      const deletePromises = flightsToDelete.map(flight =>
+        deleteFlightDuty(
+          flight.id,
+          userId,
+          layoverPair
+            ? 'Layover pair deletion - Flight duty deleted via manager'
+            : 'Flight duty deleted via manager'
+        )
       );
 
-      if (result.error) {
-        setLastOperation({
-          type: 'delete',
-          success: false,
-          message: result.error
-        });
-        salaryCalculator.calculationError(result.error);
+      const results = await Promise.all(deletePromises);
+      const errors = results.filter(result => result.error).map(result => result.error);
+
+      if (errors.length > 0) {
+        salaryCalculator.calculationError(`Failed to delete ${errors.length} flights`);
       } else {
-        setLastOperation({
-          type: 'delete',
-          success: true,
-          message: 'Flight deleted successfully'
-        });
-
         // Show success toast
-        salaryCalculator.flightDeleted(selectedFlight.flightNumbers);
+        if (layoverPair) {
+          salaryCalculator.bulkDeleteSuccess(2); // Show bulk delete success for layover pair
+        } else {
+          salaryCalculator.flightDeleted(selectedFlight.flightNumbers);
+        }
 
-        onFlightDeleted?.(selectedFlight.id);
+        // Notify parent components for all deleted flights
+        flightsToDelete.forEach(flight => onFlightDeleted?.(flight.id));
         onRecalculationComplete?.();
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      setLastOperation({
-        type: 'delete',
-        success: false,
-        message: errorMessage
-      });
       salaryCalculator.calculationError(errorMessage);
     } finally {
       setProcessing(false);
       setDeleteDialogOpen(false);
       setSelectedFlight(null);
-      setDeleteReason('');
     }
   };
 
@@ -196,19 +176,8 @@ export function FlightDutiesManager({
       const errors = results.filter(result => result.error).map(result => result.error);
 
       if (errors.length > 0) {
-        setLastOperation({
-          type: 'bulk-delete',
-          success: false,
-          message: `Failed to delete ${errors.length} of ${flightDuties.length} flights: ${errors.join(', ')}`
-        });
         salaryCalculator.calculationError(`Failed to delete ${errors.length} flights`);
       } else {
-        setLastOperation({
-          type: 'bulk-delete',
-          success: true,
-          message: `Successfully deleted ${flightDuties.length} flights`
-        });
-
         // Show success toast
         salaryCalculator.bulkDeleteSuccess(flightDuties.length);
 
@@ -218,11 +187,41 @@ export function FlightDutiesManager({
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error during bulk delete';
-      setLastOperation({
-        type: 'bulk-delete',
-        success: false,
-        message: errorMessage
-      });
+      salaryCalculator.calculationError(errorMessage);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // Handle Delete All functionality
+  const handleDeleteAll = async () => {
+    if (flightDuties.length === 0) return;
+
+    setProcessing(true);
+    try {
+      const deletePromises = flightDuties.map(flight =>
+        deleteFlightDuty(
+          flight.id,
+          userId,
+          `Delete all operation - ${flightDuties.length} flights`
+        )
+      );
+
+      const results = await Promise.all(deletePromises);
+      const errors = results.filter(result => result.error).map(result => result.error);
+
+      if (errors.length > 0) {
+        salaryCalculator.calculationError(`Failed to delete ${errors.length} flights`);
+      } else {
+        // Show success toast
+        salaryCalculator.bulkDeleteSuccess(flightDuties.length);
+
+        // Notify parent components
+        flightDuties.forEach(flight => onFlightDeleted?.(flight.id));
+        onRecalculationComplete?.();
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error during delete all';
       salaryCalculator.calculationError(errorMessage);
     } finally {
       setProcessing(false);
@@ -231,28 +230,6 @@ export function FlightDutiesManager({
 
   return (
     <div className="space-y-4">
-      {/* Operation Status */}
-      {lastOperation && (
-        <Alert variant={lastOperation.success ? "default" : "destructive"}>
-          {lastOperation.success ? (
-            <CheckCircle className="h-4 w-4" />
-          ) : (
-            <AlertTriangle className="h-4 w-4" />
-          )}
-          <AlertDescription>{lastOperation.message}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Processing Indicator */}
-      {processing && (
-        <Alert>
-          <div className="flex items-center">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
-            <AlertDescription>Processing changes and updating calculations...</AlertDescription>
-          </div>
-        </Alert>
-      )}
-
       {/* Flight Duties Table */}
       <FlightDutiesTable
         flightDuties={flightDuties}
@@ -260,23 +237,11 @@ export function FlightDutiesManager({
         onEdit={handleEditClick}
         onDelete={handleDeleteClick}
         onBulkDelete={handleBulkDelete}
+        onDeleteAll={handleDeleteAll}
         showActions={true}
       />
 
-      {/* Audit Trail Button */}
-      {flightDuties.length > 0 && (
-        <div className="flex justify-end">
-          <AuditTrailModal
-            userId={userId}
-            trigger={
-              <Button variant="outline" size="sm">
-                <History className="h-4 w-4 mr-2" />
-                View Activity History
-              </Button>
-            }
-          />
-        </div>
-      )}
+
 
       {/* Edit Modal */}
       <EditFlightModal
@@ -296,41 +261,23 @@ export function FlightDutiesManager({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <Trash2 className="h-5 w-5 text-destructive" />
-              Delete Flight Duty
+              <Trash2 className="h-5 w-5 text-red-500" />
+              Delete Flight
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this flight duty? This action cannot be undone.
-              {selectedFlight && (
-                <div className="mt-3 p-3 bg-muted rounded-lg">
-                  <div className="text-sm font-medium">
-                    {selectedFlight.date.toLocaleDateString()} - {selectedFlight.dutyType.toUpperCase()}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {selectedFlight.flightNumbers.join(', ')} | {selectedFlight.sectors.join(' ')}
-                  </div>
-                </div>
-              )}
+              Are you sure you want to delete flight <strong>{selectedFlight?.flightNumbers.join('')}</strong>?
+              <br />
+              <span className="text-sm text-gray-500 mt-2 block">
+                This action cannot be undone. The flight will be permanently removed from your roster and salary calculations will be updated automatically.
+              </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          
-          <div className="my-4">
-            <label className="block text-sm font-medium mb-2">Reason for deletion (optional)</label>
-            <textarea
-              value={deleteReason}
-              onChange={(e) => setDeleteReason(e.target.value)}
-              placeholder="Explain why this flight duty is being deleted..."
-              className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              rows={3}
-            />
-          </div>
-
           <AlertDialogFooter>
             <AlertDialogCancel disabled={processing}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               disabled={processing}
-              className="bg-destructive hover:bg-destructive/90"
+              className="bg-red-600 hover:bg-red-700"
             >
               {processing ? 'Deleting...' : 'Delete Flight'}
             </AlertDialogAction>

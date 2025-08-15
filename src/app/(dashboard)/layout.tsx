@@ -10,7 +10,7 @@ export default function DashboardLayout({
 }) {
   return (
     <ProtectedRoute>
-      <div className="flex h-screen bg-background">
+      <div className="flex h-screen" style={{ backgroundColor: 'rgba(76, 73, 237, 0.05)' }}>
         <DashboardSidebar />
         <main className="flex-1 overflow-auto p-6">
           {children}

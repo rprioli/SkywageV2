@@ -6,7 +6,7 @@
  * Preserves all existing flight duty components and Phase 6 functionality
  */
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef, memo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthProvider';
 import { Button } from '@/components/ui/button';
@@ -24,13 +24,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Upload, FileText, BarChart3, Plane, Calendar, Trash2, Plus } from 'lucide-react';
+import { Upload, FileText, BarChart3, Plane, Calendar, Trash2, Plus, Clock, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
-import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Bar, BarChart, Cell } from 'recharts';
 import { MonthlyCalculation, FlightDuty, Position } from '@/types/salary-calculator';
 import { getMonthlyCalculation, getAllMonthlyCalculations } from '@/lib/database/calculations';
 import { getFlightDutiesByMonth, deleteFlightDuty } from '@/lib/database/flights';
-import { FlightDutiesTable } from '@/components/salary-calculator/FlightDutiesTable';
+import { FlightDutiesManager } from '@/components/salary-calculator/FlightDutiesManager';
 import { RosterUpload } from '@/components/salary-calculator/RosterUpload';
 import { ProcessingStatus } from '@/components/salary-calculator/ProcessingStatus';
 import { ManualFlightEntry } from '@/components/salary-calculator/ManualFlightEntry';
@@ -63,33 +63,28 @@ export default function DashboardPage() {
   // Add state for overview month selection (lifted from MonthlyOverviewCard)
   const [selectedOverviewMonth, setSelectedOverviewMonth] = useState<number>(new Date().getMonth());
   const [hasUserSelectedMonth, setHasUserSelectedMonth] = useState<boolean>(false);
+  const [isMonthSwitching, setIsMonthSwitching] = useState<boolean>(false);
 
   // Initialize overview month based on available data (only on first load)
   useEffect(() => {
     if (!monthlyDataLoading && allMonthlyCalculations.length > 0 && !hasUserSelectedMonth) {
-      console.log('🔄 Auto-initializing month selector (user has not made manual selection)');
       const currentMonthIndex = new Date().getMonth();
       const currentYear = new Date().getFullYear();
 
-      // Check if current month has data
       const currentMonthData = allMonthlyCalculations.find(calc =>
         calc.month === currentMonthIndex + 1 && calc.year === currentYear
       );
 
       if (currentMonthData) {
-        console.log(`📅 Setting month to current month: ${currentMonthIndex + 1}`);
         setSelectedOverviewMonth(currentMonthIndex);
       } else {
-        // Use the most recent month with data
-        const sortedCalculations = allMonthlyCalculations.sort((a, b) => {
+        // Use the most recent month with data (avoid mutating state array)
+        const sortedCalculations = [...allMonthlyCalculations].sort((a, b) => {
           if (a.year !== b.year) return b.year - a.year;
           return b.month - a.month;
         });
-        console.log(`📅 Setting month to most recent with data: ${sortedCalculations[0].month}`);
         setSelectedOverviewMonth(sortedCalculations[0].month - 1); // Convert to 0-based index
       }
-    } else if (hasUserSelectedMonth) {
-      console.log('✋ Skipping auto month selection - user has made manual selection');
     }
   }, [monthlyDataLoading, allMonthlyCalculations, hasUserSelectedMonth]);
 
@@ -99,22 +94,19 @@ export default function DashboardPage() {
       const currentYear = new Date().getFullYear();
       const selectedMonth = selectedOverviewMonth + 1; // Convert from 0-based to 1-based
 
-      console.log(`🔄 Updating currentMonthCalculation for month: ${selectedMonth}`);
-
       const selectedMonthData = allMonthlyCalculations.find(calc =>
         calc.month === selectedMonth && calc.year === currentYear
       );
 
       if (selectedMonthData) {
-        console.log(`✅ Found data for month ${selectedMonth}:`, selectedMonthData);
         setCurrentMonthCalculation(selectedMonthData);
       } else {
-        console.log(`❌ No data found for month ${selectedMonth}`);
         setCurrentMonthCalculation(null);
       }
     }
   }, [selectedOverviewMonth, allMonthlyCalculations]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
   const [selectedFlightForDelete, setSelectedFlightForDelete] = useState<FlightDuty | null>(null);
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
   const [selectedFlightsForBulkDelete, setSelectedFlightsForBulkDelete] = useState<FlightDuty[]>([]);
@@ -227,7 +219,7 @@ export default function DashboardPage() {
           const allCalculationsResult = await getAllMonthlyCalculations(user.id);
           if (allCalculationsResult.data && allCalculationsResult.data.length > 0) {
             // Sort by year and month to get the most recent
-            const sortedCalculations = allCalculationsResult.data.sort((a, b) => {
+            const sortedCalculations = [...allCalculationsResult.data].sort((a, b) => {
               if (a.year !== b.year) return b.year - a.year;
               return b.month - a.month;
             });
@@ -254,6 +246,7 @@ export default function DashboardPage() {
 
   // Synchronize flight duties with selected overview month
   useEffect(() => {
+    let cancelled = false;
     const fetchFlightDutiesForSelectedMonth = async () => {
       if (!user?.id) return;
 
@@ -261,24 +254,28 @@ export default function DashboardPage() {
         const currentYear = new Date().getFullYear();
         const selectedMonth = selectedOverviewMonth + 1; // Convert from 0-based to 1-based
 
-        const flightDutiesResult = await getFlightDutiesByMonth(
-          user.id,
-          selectedMonth,
-          currentYear
-        );
+        // Coordinated loading: await duties before clearing switching flag
+        const flightDutiesResult = await getFlightDutiesByMonth(user.id, selectedMonth, currentYear);
 
-        if (flightDutiesResult.data && !flightDutiesResult.error) {
-          setFlightDuties(flightDutiesResult.data);
-        } else {
-          setFlightDuties([]);
+        if (!cancelled) {
+          if (flightDutiesResult.data && !flightDutiesResult.error) {
+            setFlightDuties(flightDutiesResult.data);
+          } else {
+            setFlightDuties([]);
+          }
+          setIsMonthSwitching(false);
         }
       } catch (error) {
-        console.error('Error fetching flight duties for selected month:', error);
-        setFlightDuties([]);
+        if (!cancelled) {
+          console.error('Error fetching flight duties for selected month:', error);
+          setFlightDuties([]);
+          setIsMonthSwitching(false);
+        }
       }
     };
 
     fetchFlightDutiesForSelectedMonth();
+    return () => { cancelled = true; };
   }, [user?.id, selectedOverviewMonth]); // Re-run when user or selected month changes
 
   // Fetch all monthly calculations for chart data
@@ -577,13 +574,25 @@ export default function DashboardPage() {
     setManualEntryModalOpen(false);
   };
 
-  // Handle flight deletion
+  // Handle flight deleted callback from FlightDutiesManager
+  const handleFlightDeleted = async (deletedFlightId: string) => {
+    // Remove the deleted flight from the current state
+    setFlightDuties(prevFlights => prevFlights.filter(flight => flight.id !== deletedFlightId));
+  };
+
+  // Handle recalculation complete callback from FlightDutiesManager
+  const handleRecalculationComplete = async () => {
+    // Refresh all data after recalculation
+    await refreshDataAfterDelete();
+  };
+
+  // Handle flight deletion (legacy - kept for any remaining direct usage)
   const handleFlightDelete = (flight: FlightDuty) => {
     setSelectedFlightForDelete(flight);
     setDeleteDialogOpen(true);
   };
 
-  // Handle bulk flight deletion
+  // Handle bulk flight deletion (legacy - kept for any remaining direct usage)
   const handleBulkFlightDelete = (flights: FlightDuty[]) => {
     setSelectedFlightsForBulkDelete(flights);
     setBulkDeleteDialogOpen(true);
@@ -819,6 +828,31 @@ export default function DashboardPage() {
     return months[monthNumber - 1];
   };
 
+  // Get data for selected month from real calculations
+  const getSelectedMonthData = () => {
+    const currentYear = new Date().getFullYear();
+    const selectedMonthCalc = allMonthlyCalculations.find(calc =>
+      calc.month === selectedOverviewMonth + 1 && calc.year === currentYear
+    );
+
+    if (selectedMonthCalc) {
+      return {
+        totalSalary: selectedMonthCalc.totalSalary,
+        dutyHours: selectedMonthCalc.totalDutyHours,
+        totalDuties: selectedMonthCalc.totalDutyHours > 0 ? Math.round(selectedMonthCalc.totalDutyHours / 8) : 0 // Estimate duties from hours
+      };
+    }
+
+    // Return zeros for months with no data
+    return {
+      totalSalary: 0,
+      dutyHours: 0,
+      totalDuties: 0
+    };
+  };
+
+  const selectedData = getSelectedMonthData();
+
   // Monthly Overview Card Component
   const MonthlyOverviewCard = () => {
     const currentDate = new Date();
@@ -836,7 +870,7 @@ export default function DashboardPage() {
           return currentMonthIndex;
         }
         // Otherwise, use the most recent month with data
-        const sortedCalculations = allMonthlyCalculations.sort((a, b) => {
+        const sortedCalculations = [...allMonthlyCalculations].sort((a, b) => {
           if (a.year !== b.year) return b.year - a.year;
           return b.month - a.month;
         });
@@ -876,148 +910,141 @@ export default function DashboardPage() {
 
     const chartData = generateChartData();
 
-    // Get data for selected month from real calculations
-    const getSelectedMonthData = () => {
-      const selectedMonthCalc = allMonthlyCalculations.find(calc =>
-        calc.month === selectedOverviewMonth + 1 && calc.year === currentYear
-      );
-
-      if (selectedMonthCalc) {
-        return {
-          totalSalary: selectedMonthCalc.totalSalary,
-          dutyHours: selectedMonthCalc.totalDutyHours,
-          totalDuties: selectedMonthCalc.totalDutyHours > 0 ? Math.round(selectedMonthCalc.totalDutyHours / 8) : 0 // Estimate duties from hours
-        };
-      }
-
-      // Return zeros for months with no data
-      return {
-        totalSalary: 0,
-        dutyHours: 0,
-        totalDuties: 0
-      };
-    };
-
-    const selectedData = getSelectedMonthData();
-
     return (
-      <Card className="bg-[#4C49ED] text-white rounded-3xl shadow-xl border-0 overflow-hidden h-full">
-        <CardContent className="p-8">
+      <Card className="bg-white rounded-3xl !border-0 !shadow-none overflow-hidden">
+        <CardContent className="p-7">
           {/* Header */}
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold">Overview</h2>
+          <div className="flex items-start justify-between mb-5">
+            <div>
+              <h2 className="text-2xl font-bold mb-3" style={{ color: '#3A3780' }}>Overview</h2>
+              <div className="text-5xl font-bold mb-2" style={{ color: '#3A3780' }}>
+                {monthlyDataLoading || isMonthSwitching ? '...' : formatCurrency(selectedData.totalSalary)}
+              </div>
+              <p className="text-sm text-gray-500">
+                {selectedData.totalSalary === 0 && !monthlyDataLoading ?
+                  `${months[selectedOverviewMonth]} - No Data` :
+                  (() => {
+                    const nextMonth = selectedOverviewMonth === 11 ? 0 : selectedOverviewMonth + 1;
+                    const nextYear = selectedOverviewMonth === 11 ? new Date().getFullYear() + 1 : new Date().getFullYear();
+                    return `Expected Salary for ${months[nextMonth]}, ${nextYear}`;
+                  })()
+                }
+              </p>
+            </div>
+            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+              <BarChart3 className="h-5 w-5 text-gray-600" />
+            </div>
           </div>
 
           {/* Chart Area */}
-          <div className="h-32 w-full mb-6">
-            {monthlyDataLoading ? (
+          <div className="h-48 w-full">
+            {monthlyDataLoading || isMonthSwitching ? (
               <div className="flex items-center justify-center h-full">
-                <div className="text-white/70 text-sm">Loading chart data...</div>
+                <div className="text-gray-500 text-sm">Loading chart data...</div>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#FF6B9D" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#FF6B9D" stopOpacity={0.1}/>
-                    </linearGradient>
-                  </defs>
+                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                   <XAxis
                     dataKey="month"
                     axisLine={false}
                     tickLine={false}
-                    tick={false}
+                    tick={{ fontSize: 12, fill: '#6B7280' }}
                   />
-                  <YAxis hide />
-                  <Area
-                    type="monotone"
+                  <Bar
                     dataKey="value"
-                    stroke="#FF6B9D"
-                    strokeWidth={2}
-                    fill="url(#colorGradient)"
-                    dot={{ fill: '#FF6B9D', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, fill: '#FF6B9D', stroke: '#fff', strokeWidth: 2 }}
-                  />
-                </AreaChart>
+                    radius={[8, 8, 0, 0]}
+                    isAnimationActive={true}
+                    animationDuration={300}
+                    animationEasing="ease-out"
+                    cursor="pointer"
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={index === selectedOverviewMonth ? '#4C49ED' : 'rgba(76, 73, 237, 0.08)'}
+                        onClick={() => {
+                          // Start coordinated month switching sequence
+                          setIsMonthSwitching(true);
+                          setSelectedOverviewMonth(index);
+                          setHasUserSelectedMonth(true);
+                        }}
+                        role="button"
+                        aria-label={`Select month ${entry.month}`}
+                        style={{ cursor: 'pointer' }}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             )}
           </div>
 
-          {/* Month Selector */}
-          <div className="flex justify-center gap-1 flex-wrap mb-8">
-            {months.map((month, index) => (
-              <Button
-                key={month}
-                variant={selectedOverviewMonth === index ? "secondary" : "ghost"}
-                size="sm"
-                onClick={() => {
-                  console.log(`👤 User manually selected month: ${index + 1}`);
-                  setSelectedOverviewMonth(index);
-                  setHasUserSelectedMonth(true); // Mark that user has made a manual selection
-                }}
-                className={cn(
-                  "h-8 px-3 text-xs font-medium transition-all",
-                  selectedOverviewMonth === index
-                    ? 'bg-white text-[#4C49ED] shadow-md hover:bg-white/90'
-                    : 'bg-white/10 text-white hover:bg-white/20 border-white/20'
-                )}
-              >
-                {month}
-              </Button>
-            ))}
-          </div>
-
-          {/* Bottom Metrics with Improved Hierarchy */}
-          <div className="grid grid-cols-3 gap-4">
-            {/* Left: Duty Hours */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center flex flex-col justify-center min-h-[80px]">
-              <div className="text-2xl font-bold">
-                {monthlyDataLoading ? '...' : `${Math.floor(selectedData.dutyHours)}h`}
-              </div>
-              <div className="text-xs text-white/70 mt-1">Duty Hours</div>
-            </div>
-
-            {/* Center: Total Salary (Prominent) */}
-            <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-6 text-center border border-white/20">
-              <div className="text-3xl font-bold mb-1">
-                {monthlyDataLoading ? '...' : formatCurrency(selectedData.totalSalary)}
-              </div>
-              <div className="text-sm text-white/80">
-                {selectedData.totalSalary === 0 && !monthlyDataLoading ?
-                  `${months[selectedOverviewMonth]} - No Data` :
-                  'Total Salary'
-                }
-              </div>
-            </div>
-
-            {/* Right: Number of Duties */}
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center flex flex-col justify-center min-h-[80px]">
-              <div className="text-2xl font-bold">
-                {monthlyDataLoading ? '...' : selectedData.totalDuties}
-              </div>
-              <div className="text-xs text-white/70 mt-1">Total Duties</div>
-            </div>
-          </div>
         </CardContent>
       </Card>
     );
   };
 
+  // Dynamic greeting based on current time
+  const getTimeBasedGreeting = () => {
+    const now = new Date();
+    const hour = now.getHours();
+
+    if (hour >= 6 && hour < 12) {
+      return 'Good Morning';
+    } else if (hour >= 12 && hour < 18) {
+      return 'Good Afternoon';
+    } else if (hour >= 18 && hour < 24) {
+      return 'Good Evening';
+    } else {
+      return 'Good Night';
+    }
+  };
+
+  // Current date information
+  const getCurrentDateInfo = () => {
+    const now = new Date();
+    const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
+    const dayNumber = now.getDate();
+    return `${dayName} ${dayNumber}`;
+  };
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-primary mb-2">
-          Welcome, {user?.user_metadata?.first_name || 'User'}
-        </h1>
-        <p className="text-muted-foreground">
-          Your salary calculator dashboard - track earnings and manage flight duties
-        </p>
+    <div className="space-y-4">
+      {/* Header and Action Buttons - Grouped with consistent spacing */}
+      <div className="space-y-6 px-6 pt-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold mb-1" style={{ color: '#3A3780' }}>
+            {getTimeBasedGreeting()}, {user?.user_metadata?.first_name || 'User'}
+          </h1>
+          <p className="text-primary font-bold">
+            {getCurrentDateInfo()}
+          </p>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-4">
+          <Button
+            className="bg-[#4C49ED] cursor-pointer rounded-2xl flex items-center gap-2 hover:opacity-90"
+            onClick={handleManualEntryClick}
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add Flight</span>
+          </Button>
+          <Button
+            variant="outline"
+            className="border-[#4C49ED] text-[#4C49ED] cursor-pointer rounded-2xl flex items-center gap-2 hover:bg-transparent hover:opacity-80"
+            onClick={handleUploadClick}
+          >
+            <Upload className="h-4 w-4" />
+            <span>Upload Roster</span>
+          </Button>
+        </div>
       </div>
 
       {/* Top Section - Monthly Overview + Side Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-6">
         {/* Monthly Overview - Large Card (2/3 width) */}
         <div className="lg:col-span-2">
           <MonthlyOverviewCard />
@@ -1025,68 +1052,70 @@ export default function DashboardPage() {
 
         {/* Side Cards - Stacked (1/3 width) */}
         <div className="space-y-6">
-          {/* Top Side Card */}
-          <Card className="bg-[#6DDC91] text-white rounded-3xl shadow-lg border-0">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Plane className="h-6 w-6 text-white" />
+          {/* Flight Hours Card */}
+          <Card className="bg-white rounded-3xl !border-0 !shadow-none">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center">
+                  <Clock className="h-8 w-8 text-blue-600" />
+                </div>
+                <div>
+                  <div className="text-3xl font-bold text-blue-900">
+                    {monthlyDataLoading || isMonthSwitching ? '...' : `${Math.floor(selectedData.dutyHours)}`}
+                  </div>
+                  <div className="text-sm text-blue-700">Flight Hours</div>
+                  <div className="text-xs text-blue-600">This month</div>
+                </div>
               </div>
-              <div className="text-3xl font-bold mb-2">
-                {flightDuties.length}
-              </div>
-              <div className="text-white/90 font-medium">Total Flights</div>
-              <div className="text-sm text-white/70 mt-1">This Month</div>
             </CardContent>
           </Card>
 
-          {/* Bottom Side Card - Salary Breakdown */}
-          <Card className="bg-white border-2 border-gray-100 rounded-3xl shadow-lg">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-[#4C49ED] rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <BarChart3 className="h-6 w-6 text-white" />
+
+          {/* Flight Pay Card */}
+          <Card className="bg-white rounded-3xl !border-0 !shadow-none">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-green-500/20 rounded-2xl flex items-center justify-center">
+                  <TrendingUp className="h-8 w-8 text-green-600" />
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-green-900">
+                    {currentMonthCalculation ? formatCurrency(currentMonthCalculation.flightPay) : formatCurrency(0)}
+                  </div>
+                  <div className="text-sm text-green-700">Flight Pay</div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <div className="text-lg font-bold text-[#4C49ED]">
-                  {currentMonthCalculation ? formatCurrency(currentMonthCalculation.flightPay) : formatCurrency(0)}
+            </CardContent>
+          </Card>
+
+          {/* Per Diem Card */}
+          <Card className="bg-white rounded-3xl !border-0 !shadow-none">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-emerald-500/20 rounded-2xl flex items-center justify-center">
+                  <TrendingUp className="h-8 w-8 text-emerald-600" />
                 </div>
-                <div className="text-xs text-gray-600 font-medium">Flight Pay</div>
-                <div className="text-lg font-bold text-[#6DDC91]">
-                  {currentMonthCalculation ? formatCurrency(currentMonthCalculation.perDiemPay) : formatCurrency(0)}
+                <div>
+                  <div className="text-lg font-bold text-emerald-900">
+                    {currentMonthCalculation ? formatCurrency(currentMonthCalculation.perDiemPay) : formatCurrency(0)}
+                  </div>
+                  <div className="text-sm text-emerald-700">Per Diem</div>
                 </div>
-                <div className="text-xs text-gray-500">Per Diem</div>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex gap-4">
-        <Button
-          className="bg-[#4C49ED] cursor-pointer rounded-2xl flex items-center gap-2 hover:opacity-90"
-          onClick={handleManualEntryClick}
-        >
-          <Plus className="h-4 w-4" />
-          <span>Add Flight</span>
-        </Button>
-        <Button
-          variant="outline"
-          className="border-[#4C49ED] text-[#4C49ED] cursor-pointer rounded-2xl flex items-center gap-2 hover:bg-transparent hover:opacity-80"
-          onClick={handleUploadClick}
-        >
-          <Upload className="h-4 w-4" />
-          <span>Upload Roster</span>
-        </Button>
-      </div>
-
-      {/* Flight Duties Table */}
+      {/* Flight Duties Manager */}
       {flightDuties.length > 0 ? (
-        <FlightDutiesTable
+        <FlightDutiesManager
           flightDuties={flightDuties}
+          position={userPosition as Position}
+          userId={user?.id || ''}
           loading={loading}
-          onDelete={handleFlightDelete}
-          onBulkDelete={handleBulkFlightDelete}
-          showActions={true}
+          onFlightDeleted={handleFlightDeleted}
+          onRecalculationComplete={handleRecalculationComplete}
         />
       ) : (
         <Card className="rounded-3xl border-2 border-gray-100">
