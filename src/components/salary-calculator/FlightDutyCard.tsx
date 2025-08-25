@@ -24,7 +24,6 @@ import {
   Clock,
   Calendar,
   BookOpen,
-  Edit,
   Trash2,
   ArrowRight
 } from 'lucide-react';
@@ -33,7 +32,6 @@ import { calculateRestPeriod } from '@/lib/salary-calculator/time-calculator';
 interface FlightDutyCardProps {
   flightDuty: FlightDuty;
   allFlightDuties?: FlightDuty[]; // For layover rest period calculation
-  onEdit?: (flightDuty: FlightDuty) => void;
   onDelete?: (flightDuty: FlightDuty) => void;
   showActions?: boolean;
   bulkMode?: boolean;
@@ -44,7 +42,6 @@ interface FlightDutyCardProps {
 export function FlightDutyCard({
   flightDuty,
   allFlightDuties = [],
-  onEdit,
   onDelete,
   showActions = true,
   bulkMode = false,
@@ -360,8 +357,6 @@ export function FlightDutyCard({
         return { label: 'CSV', variant: 'secondary' as const };
       case 'manual':
         return { label: 'Manual', variant: 'outline' as const };
-      case 'edited':
-        return { label: 'Edited', variant: 'default' as const };
       default:
         return { label: dataSource.toUpperCase(), variant: 'secondary' as const };
     }
@@ -394,7 +389,7 @@ export function FlightDutyCard({
           )}
 
           {/* Three Dots Menu - ShadCN Dropdown Menu */}
-          {showActions && (onEdit || onDelete) && !bulkMode && (
+          {showActions && onDelete && !bulkMode && (
             <div className="absolute top-4 right-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -408,12 +403,6 @@ export function FlightDutyCard({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40">
-                  {onEdit && (
-                    <DropdownMenuItem onClick={() => onEdit(flightDuty)} className="cursor-pointer">
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit
-                    </DropdownMenuItem>
-                  )}
                   {onDelete && (
                     <DropdownMenuItem
                       onClick={() => onDelete(flightDuty)}

@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Edit, Trash2, Clock, Plane, MapPin, Calendar, CheckSquare, Square, Trash, X, MoreHorizontal } from 'lucide-react';
+import { Trash2, Clock, Plane, MapPin, Calendar, CheckSquare, Square, Trash, X, MoreHorizontal } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,7 +33,6 @@ import { identifyLayoverPairs } from '@/lib/salary-calculator/card-data-mapper';
 interface FlightDutiesTableProps {
   flightDuties: FlightDuty[];
   loading?: boolean;
-  onEdit?: (flightDuty: FlightDuty) => void;
   onDelete?: (flightDuty: FlightDuty) => void;
   onBulkDelete?: (flightDuties: FlightDuty[]) => void;
   onDeleteAll?: () => void;
@@ -44,7 +43,6 @@ interface FlightDutiesTableProps {
 export function FlightDutiesTable({
   flightDuties,
   loading = false,
-  onEdit,
   onDelete,
   onBulkDelete,
   onDeleteAll,
@@ -346,7 +344,6 @@ export function FlightDutiesTable({
                   <NewFlightDutyCard
                     flightDuty={duty}
                     allFlightDuties={flightDuties} // Use original array for layover pairing
-                    onEdit={onEdit}
                     onDelete={onDelete}
                     showActions={showActions}
                     bulkMode={bulkMode}
@@ -357,7 +354,6 @@ export function FlightDutiesTable({
                   <FlightDutyCard
                     flightDuty={duty}
                     allFlightDuties={flightDuties}
-                    onEdit={onEdit}
                     onDelete={onDelete}
                     showActions={showActions}
                     bulkMode={bulkMode}

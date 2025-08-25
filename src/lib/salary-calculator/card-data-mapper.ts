@@ -222,46 +222,56 @@ export function identifyLayoverPairs(flightDuties: FlightDuty[]): LayoverPair[] 
   const layoverFlights = flightDuties.filter(flight => flight.dutyType === 'layover');
 
   for (const outboundFlight of layoverFlights) {
-    // Skip if this is not an outbound flight (doesn't start from DXB)
-    if (!isOutboundFlight(outboundFlight.sectors)) continue;
+    try {
+      // Skip if this is not an outbound flight (doesn't start from DXB)
+      if (!isOutboundFlight(outboundFlight.sectors)) continue;
 
-    const destination = getDestination(outboundFlight.sectors);
-    if (!destination) continue;
+      const destination = getDestination(outboundFlight.sectors);
+      if (!destination) continue;
 
-    // Find matching inbound flight
-    const matchingInboundFlight = layoverFlights.find(flight => {
-      // Must be an inbound flight (returns to DXB)
-      if (!isInboundFlight(flight.sectors)) return false;
+      // Find matching inbound flight
+      const matchingInboundFlight = layoverFlights.find(flight => {
+        try {
+          // Must be an inbound flight (returns to DXB)
+          if (!isInboundFlight(flight.sectors)) return false;
 
-      // Must be from the same destination
-      const inboundOrigin = flight.sectors[0]?.split(/[-→]/)[0]?.trim();
-      if (inboundOrigin !== destination) return false;
+          // Must be from the same destination - with better error handling
+          const inboundOrigin = flight.sectors?.[0]?.split(/[-→]/)?.[0]?.trim();
+          if (!inboundOrigin || inboundOrigin !== destination) return false;
 
-      // Must be after the outbound flight (within reasonable timeframe)
-      const daysDiff = (flight.date.getTime() - outboundFlight.date.getTime()) / (1000 * 60 * 60 * 24);
-      return daysDiff > 0 && daysDiff <= 5;
-    });
-
-    if (matchingInboundFlight) {
-      // Calculate rest period and per diem
-      const restHours = calculateRestPeriod(
-        outboundFlight.debriefTime,
-        outboundFlight.isCrossDay,
-        matchingInboundFlight.reportTime,
-        matchingInboundFlight.isCrossDay,
-        Math.floor((matchingInboundFlight.date.getTime() - outboundFlight.date.getTime()) / (24 * 60 * 60 * 1000))
-      );
-
-      const perDiemRate = 8.82; // AED per hour
-      const perDiemPay = restHours * perDiemRate;
-
-      pairs.push({
-        outbound: outboundFlight,
-        inbound: matchingInboundFlight,
-        destination,
-        restHours,
-        perDiemPay
+          // Must be after the outbound flight (within reasonable timeframe)
+          const daysDiff = (flight.date.getTime() - outboundFlight.date.getTime()) / (1000 * 60 * 60 * 24);
+          return daysDiff > 0 && daysDiff <= 5;
+        } catch (error) {
+          console.warn('Error matching inbound flight:', error);
+          return false;
+        }
       });
+
+      if (matchingInboundFlight) {
+        // Calculate rest period and per diem with error handling
+        const restHours = calculateRestPeriod(
+          outboundFlight.debriefTime,
+          outboundFlight.isCrossDay,
+          matchingInboundFlight.reportTime,
+          matchingInboundFlight.isCrossDay,
+          Math.floor((matchingInboundFlight.date.getTime() - outboundFlight.date.getTime()) / (24 * 60 * 60 * 1000))
+        );
+
+        const perDiemRate = 8.82; // AED per hour
+        const perDiemPay = restHours * perDiemRate;
+
+        pairs.push({
+          outbound: outboundFlight,
+          inbound: matchingInboundFlight,
+          destination,
+          restHours,
+          perDiemPay
+        });
+      }
+    } catch (error) {
+      console.warn('Error processing layover pair for flight:', outboundFlight.id, error);
+      continue;
     }
   }
 
@@ -269,14 +279,95 @@ export function identifyLayoverPairs(flightDuties: FlightDuty[]): LayoverPair[] 
 }
 
 /**
- * Finds layover pair for a specific flight duty
+ * Finds layover pair for a specific flight duty with robust error handling
  */
 export function findLayoverPair(
   flightDuty: FlightDuty,
   allFlightDuties: FlightDuty[]
 ): LayoverPair | null {
-  const pairs = identifyLayoverPairs(allFlightDuties);
-  return pairs.find(pair => 
-    pair.outbound.id === flightDuty.id || pair.inbound.id === flightDuty.id
-  ) || null;
+  try {
+    const pairs = identifyLayoverPairs(allFlightDuties);
+    const foundPair = pairs.find(pair =>
+      pair.outbound.id === flightDuty.id || pair.inbound.id === flightDuty.id
+    );
+
+    if (foundPair) {
+      return foundPair;
+    }
+
+    // Fallback: Try to find a layover pair using more lenient criteria
+    // This helps during edits when data might be temporarily inconsistent
+    return findLayoverPairFallback(flightDuty, allFlightDuties);
+  } catch (error) {
+    console.warn('Error in findLayoverPair, trying fallback:', error);
+    return findLayoverPairFallback(flightDuty, allFlightDuties);
+  }
+}
+
+/**
+ * Fallback layover pair detection with more lenient criteria
+ * Used when the main pairing logic fails during edits
+ */
+function findLayoverPairFallback(
+  flightDuty: FlightDuty,
+  allFlightDuties: FlightDuty[]
+): LayoverPair | null {
+  if (flightDuty.dutyType !== 'layover') {
+    return null;
+  }
+
+  const layoverFlights = allFlightDuties.filter(flight =>
+    flight.dutyType === 'layover' &&
+    flight.id !== flightDuty.id &&
+    flight.userId === flightDuty.userId
+  );
+
+  // Find the closest layover flight by date (within 7 days)
+  const potentialPairs = layoverFlights.filter(flight => {
+    const daysDiff = Math.abs(
+      (flight.date.getTime() - flightDuty.date.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return daysDiff > 0 && daysDiff <= 7;
+  });
+
+  if (potentialPairs.length === 0) {
+    return null;
+  }
+
+  // Sort by date proximity and take the closest one
+  const closestPair = potentialPairs.sort((a, b) =>
+    Math.abs(a.date.getTime() - flightDuty.date.getTime()) -
+    Math.abs(b.date.getTime() - flightDuty.date.getTime())
+  )[0];
+
+  // Determine which is outbound and which is inbound based on date
+  const isCurrentOutbound = flightDuty.date.getTime() < closestPair.date.getTime();
+
+  if (isCurrentOutbound) {
+    return {
+      outbound: flightDuty,
+      inbound: closestPair,
+      destination: getDestination(flightDuty.sectors) || 'Unknown',
+      restHours: calculateRestPeriod(
+        flightDuty.debriefTime,
+        flightDuty.isCrossDay,
+        closestPair.reportTime,
+        false
+      ),
+      perDiemPay: 0 // Will be calculated elsewhere
+    };
+  } else {
+    return {
+      outbound: closestPair,
+      inbound: flightDuty,
+      destination: getDestination(closestPair.sectors) || 'Unknown',
+      restHours: calculateRestPeriod(
+        closestPair.debriefTime,
+        closestPair.isCrossDay,
+        flightDuty.reportTime,
+        false
+      ),
+      perDiemPay: 0 // Will be calculated elsewhere
+    };
+  }
 }

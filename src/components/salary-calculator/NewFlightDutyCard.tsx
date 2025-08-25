@@ -14,7 +14,6 @@ import { StandardDutyCard } from './StandardDutyCard';
 interface NewFlightDutyCardProps {
   flightDuty: FlightDuty;
   allFlightDuties?: FlightDuty[];
-  onEdit?: (flightDuty: FlightDuty) => void;
   onDelete?: (flightDuty: FlightDuty) => void;
   showActions?: boolean;
   bulkMode?: boolean;
@@ -25,7 +24,6 @@ interface NewFlightDutyCardProps {
 export function NewFlightDutyCard({
   flightDuty,
   allFlightDuties = [],
-  onEdit,
   onDelete,
   showActions = true,
   bulkMode = false,
@@ -37,7 +35,6 @@ export function NewFlightDutyCard({
   const commonProps = {
     flightDuty,
     allFlightDuties,
-    onEdit,
     onDelete,
     showActions,
     bulkMode,

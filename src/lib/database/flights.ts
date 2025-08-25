@@ -192,68 +192,7 @@ export async function getFlightDutyById(
   }
 }
 
-/**
- * Updates a flight duty record
- */
-export async function updateFlightDuty(
-  flightId: string,
-  updates: Partial<FlightDuty>,
-  userId: string,
-  changeReason?: string
-): Promise<{ data: FlightDuty | null; error: string | null }> {
-  try {
-    // Get current data for audit trail
-    const { data: currentData } = await getFlightDutyById(flightId, userId);
-    
-    // Prepare update data
-    const updateData: FlightUpdate = {};
-    
-    if (updates.date) updateData.date = updates.date.toISOString().split('T')[0];
-    if (updates.flightNumbers) updateData.flight_numbers = updates.flightNumbers;
-    if (updates.sectors) updateData.sectors = updates.sectors;
-    if (updates.dutyType) updateData.duty_type = updates.dutyType;
-    if (updates.reportTime) updateData.report_time = formatTimeValue(updates.reportTime);
-    if (updates.debriefTime) updateData.debrief_time = formatTimeValue(updates.debriefTime);
-    if (updates.dutyHours !== undefined) updateData.duty_hours = updates.dutyHours;
-    if (updates.flightPay !== undefined) updateData.flight_pay = updates.flightPay;
-    if (updates.isCrossDay !== undefined) updateData.is_cross_day = updates.isCrossDay;
-    if (updates.dataSource) updateData.data_source = updates.dataSource;
-    if (updates.originalData) updateData.original_data = updates.originalData;
-    
-    updateData.last_edited_at = new Date().toISOString();
-    updateData.last_edited_by = userId;
 
-    const { data, error } = await supabase
-      .from('flights')
-      .update(updateData)
-      .eq('id', flightId)
-      .eq('user_id', userId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating flight duty:', error);
-      return { data: null, error: error.message };
-    }
-
-    // Create audit trail entry
-    if (currentData) {
-      await createAuditTrailEntry({
-        flightId,
-        userId,
-        action: 'updated',
-        oldData: currentData,
-        newData: rowToFlightDuty(data),
-        changeReason
-      });
-    }
-
-    return { data: rowToFlightDuty(data), error: null };
-  } catch (error) {
-    console.error('Error updating flight duty:', error);
-    return { data: null, error: (error as Error).message };
-  }
-}
 
 /**
  * Deletes a flight duty record
@@ -398,7 +337,7 @@ export async function deleteFlightDataByMonth(
 async function createAuditTrailEntry(entry: {
   flightId: string;
   userId: string;
-  action: 'created' | 'updated' | 'deleted';
+  action: 'created' | 'deleted';
   oldData?: any;
   newData?: any;
   changeReason?: string;

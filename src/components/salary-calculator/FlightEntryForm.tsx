@@ -20,7 +20,8 @@ import {
   MapPin,
   Plus,
   Sunrise,
-  Calendar
+  Calendar,
+  X
 } from 'lucide-react';
 
 import { FlightTypeSelector } from './FlightTypeSelector';
@@ -45,6 +46,7 @@ interface FlightEntryFormProps {
   position: Position;
   batchCount?: number;
   className?: string;
+
 }
 
 export function FlightEntryForm({
@@ -58,7 +60,7 @@ export function FlightEntryForm({
   batchCount = 0,
   className
 }: FlightEntryFormProps) {
-  const { toast } = useToast();
+  const { showError, showSuccess } = useToast();
 
   // Form state
   const [formData, setFormData] = useState<ManualFlightEntryData>({
@@ -78,6 +80,8 @@ export function FlightEntryForm({
   // Track whether form submission has been attempted
   const [submitAttempted, setSubmitAttempted] = useState(false);
 
+
+
   // Validation state
   const [validation, setValidation] = useState<FormValidationResult>({
     valid: false,
@@ -85,6 +89,25 @@ export function FlightEntryForm({
     warnings: [],
     fieldErrors: {}
   });
+
+  // Update form data when initialData changes (for edit mode)
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        date: initialData.date || '',
+        dutyType: initialData.dutyType || 'turnaround',
+        flightNumbers: initialData.flightNumbers || [''],
+        sectors: initialData.sectors || [''],
+        reportTime: initialData.reportTime || '',
+        debriefTime: initialData.debriefTime || '',
+        isCrossDay: initialData.isCrossDay || false,
+        // Layover-specific fields
+        inboundDate: initialData.inboundDate || '',
+        reportTimeInbound: initialData.reportTimeInbound || '',
+        debriefTimeOutbound: initialData.debriefTimeOutbound || ''
+      });
+    }
+  }, [initialData]);
 
   // Real-time validation (for internal use, not display)
   useEffect(() => {
@@ -178,10 +201,8 @@ export function FlightEntryForm({
         ? 'Please fix the validation error before adding to batch'
         : `Please fix ${errorCount} validation errors before adding to batch`;
 
-      toast({
-        title: "Validation Error",
+      showError("Validation Error", {
         description: errorMessage,
-        variant: "destructive",
       });
       return;
     }
@@ -199,8 +220,7 @@ export function FlightEntryForm({
       onAddToBatch(batchData);
       clearFormKeepDutyType();
 
-      toast({
-        title: "Added to Batch",
+      showSuccess("Added to Batch", {
         description: `Flight duty added to batch. Total: ${batchCount + 1}`,
       });
     }
@@ -221,10 +241,8 @@ export function FlightEntryForm({
         ? 'Please fix the validation error to continue'
         : `Please fix ${errorCount} validation errors to continue`;
 
-      toast({
-        title: "Validation Error",
+      showError("Validation Error", {
         description: errorMessage,
-        variant: "destructive",
       });
 
       return;
@@ -692,6 +710,8 @@ export function FlightEntryForm({
             </div>
           )}
 
+
+
           {/* Buttons Container */}
           <div className="space-y-3">
             {/* Save Batch Only Button - only show when there are items in batch */}
@@ -733,7 +753,9 @@ export function FlightEntryForm({
                 ) : (
                   <>
                     <Save className="h-4 w-4" />
-                    <span>{batchCount > 0 ? `Save ${batchCount + 1} Flight Duties` : 'Save Flight Duty'}</span>
+                    <span>
+                      {batchCount > 0 ? `Save ${batchCount + 1} Flight Duties` : 'Save Flight Duty'}
+                    </span>
                   </>
                 )}
               </Button>
@@ -751,6 +773,8 @@ export function FlightEntryForm({
                   <span>Add Another Duty</span>
                 </Button>
               )}
+
+
             </div>
           </div>
 

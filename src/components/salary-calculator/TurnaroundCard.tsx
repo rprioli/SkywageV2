@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { MoreVertical, Trash2 } from 'lucide-react';
 import { FlightDuty } from '@/types/salary-calculator';
 import { mapFlightDutyToCardData } from '@/lib/salary-calculator/card-data-mapper';
 
@@ -23,7 +23,6 @@ const BRAND = { primary: "#4C49ED", accent: "#6DDC91", neutral: "#FFFFFF" };
 interface TurnaroundCardProps {
   flightDuty: FlightDuty;
   allFlightDuties?: FlightDuty[];
-  onEdit?: (flightDuty: FlightDuty) => void;
   onDelete?: (flightDuty: FlightDuty) => void;
   showActions?: boolean;
   bulkMode?: boolean;
@@ -34,7 +33,6 @@ interface TurnaroundCardProps {
 export function TurnaroundCard({
   flightDuty,
   allFlightDuties = [],
-  onEdit,
   onDelete,
   showActions = true,
   bulkMode = false,
@@ -58,10 +56,6 @@ export function TurnaroundCard({
     from = routingParts[0] || '';
     to = routingParts[1] || '';
   }
-
-  const handleEdit = () => {
-    if (onEdit) onEdit(flightDuty);
-  };
 
   const handleDelete = () => {
     if (onDelete) onDelete(flightDuty);
@@ -94,19 +88,13 @@ export function TurnaroundCard({
           )}
 
           {/* Actions Menu - Bottom Right */}
-          {showActions && (onEdit || onDelete) && (
+          {showActions && onDelete && (
             <div className="absolute bottom-2 right-2 z-10">
               <DropdownMenu>
                 <DropdownMenuTrigger className="p-1 hover:bg-gray-100 rounded-full transition-colors">
                   <MoreVertical className="h-4 w-4 text-gray-500" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {onEdit && (
-                    <DropdownMenuItem onClick={handleEdit}>
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
-                    </DropdownMenuItem>
-                  )}
                   {onDelete && (
                     <DropdownMenuItem onClick={handleDelete} className="text-red-600">
                       <Trash2 className="h-4 w-4 mr-2" />

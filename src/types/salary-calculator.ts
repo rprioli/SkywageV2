@@ -146,7 +146,7 @@ export interface AuditTrailEntry {
   id?: string;
   flightId: string;
   userId: string;
-  action: 'created' | 'updated' | 'deleted';
+  action: 'created' | 'deleted';
   oldData?: Record<string, any>;
   newData?: Record<string, any>;
   changeReason?: string;

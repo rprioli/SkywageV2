@@ -2,20 +2,18 @@
 
 /**
  * Flight Duties Manager Component for Skywage Salary Calculator
- * Phase 5: Manages flight duties with edit, delete, and audit trail functionality
- * Integrates EditFlightModal, FlightDutiesTable, and AuditTrailDisplay
+ * Manages flight duties with delete and audit trail functionality
+ * Integrates FlightDutiesTable and delete operations
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { FlightDuty, Position } from '@/types/salary-calculator';
 import { deleteFlightDuty } from '@/lib/database/flights';
-import { handleFlightEdit } from '@/lib/salary-calculator/recalculation-engine';
 import { FlightDutiesTable } from './FlightDutiesTable';
-import { EditFlightModal } from './EditFlightModal';
 
 import { useToast } from '@/hooks/use-toast';
 import { identifyLayoverPairs } from '@/lib/salary-calculator/card-data-mapper';
-import { 
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -48,17 +46,12 @@ export function FlightDutiesManager({
   onRecalculationComplete
 }: FlightDutiesManagerProps) {
   const { salaryCalculator } = useToast();
-  const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedFlight, setSelectedFlight] = useState<FlightDuty | null>(null);
 
   const [processing, setProcessing] = useState(false);
 
-  // Handle edit button click
-  const handleEditClick = (flightDuty: FlightDuty) => {
-    setSelectedFlight(flightDuty);
-    setEditModalOpen(true);
-  };
+
 
   // Helper function to find layover pair for a given flight duty
   const findLayoverPair = (targetFlight: FlightDuty): FlightDuty | null => {
@@ -81,34 +74,16 @@ export function FlightDutiesManager({
     setDeleteDialogOpen(true);
   };
 
-  // Handle successful flight edit
-  const handleEditSuccess = async (updatedFlight: FlightDuty) => {
-    setProcessing(true);
-    try {
-      // Trigger recalculation
-      const recalcResult = await handleFlightEdit(updatedFlight, userId, position);
 
-      if (recalcResult.success) {
-        // Show success toast
-        salaryCalculator.flightUpdated(updatedFlight.flightNumbers);
-        onFlightUpdated?.(updatedFlight);
-        onRecalculationComplete?.();
-      } else {
-        const errorMsg = `Flight updated but recalculation failed: ${recalcResult.errors.join(', ')}`;
-        salaryCalculator.calculationError(errorMsg);
-      }
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error during recalculation';
-      salaryCalculator.calculationError(errorMsg);
-    } finally {
-      setProcessing(false);
-    }
-  };
 
-  // Handle edit error
-  const handleEditError = (error: string) => {
-    salaryCalculator.calculationError(error);
-  };
+
+
+
+
+
+
+
+
 
   // Handle flight deletion
   const handleDeleteConfirm = async () => {
@@ -234,26 +209,10 @@ export function FlightDutiesManager({
       <FlightDutiesTable
         flightDuties={flightDuties}
         loading={loading}
-        onEdit={handleEditClick}
         onDelete={handleDeleteClick}
         onBulkDelete={handleBulkDelete}
         onDeleteAll={handleDeleteAll}
         showActions={true}
-      />
-
-
-
-      {/* Edit Modal */}
-      <EditFlightModal
-        isOpen={editModalOpen}
-        onClose={() => {
-          setEditModalOpen(false);
-          setSelectedFlight(null);
-        }}
-        flightDuty={selectedFlight}
-        position={position}
-        onSuccess={handleEditSuccess}
-        onError={handleEditError}
       />
 
       {/* Delete Confirmation Dialog */}

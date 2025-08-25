@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreVertical, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MoreVertical, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { FlightDuty } from '@/types/salary-calculator';
 import { 
   mapFlightDutyToCardData, 
@@ -28,7 +28,6 @@ const BRAND = { primary: "#4C49ED", accent: "#6DDC91", neutral: "#FFFFFF" };
 interface LayoverConnectedCardProps {
   flightDuty: FlightDuty;
   allFlightDuties?: FlightDuty[];
-  onEdit?: (flightDuty: FlightDuty) => void;
   onDelete?: (flightDuty: FlightDuty) => void;
   showActions?: boolean;
   bulkMode?: boolean;
@@ -39,7 +38,6 @@ interface LayoverConnectedCardProps {
 export function LayoverConnectedCard({
   flightDuty,
   allFlightDuties = [],
-  onEdit,
   onDelete,
   showActions = true,
   bulkMode = false,
@@ -82,10 +80,6 @@ export function LayoverConnectedCard({
     ? cardData.routing.split(' → ')
     : cardData.routing.split(' - ');
   const [from, to] = routingParts;
-
-  const handleEdit = () => {
-    if (onEdit) onEdit(currentDuty);
-  };
 
   const handleDelete = () => {
     if (onDelete) onDelete(currentDuty);
@@ -174,19 +168,13 @@ export function LayoverConnectedCard({
             )}
 
             {/* Actions Menu - Bottom Right */}
-            {showActions && (onEdit || onDelete) && (
+            {showActions && onDelete && (
               <div className="absolute bottom-2 right-2 z-10">
                 <DropdownMenu>
                   <DropdownMenuTrigger className="p-1 hover:bg-gray-100 rounded-full transition-colors">
                     <MoreVertical className="h-4 w-4 text-gray-500" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    {onEdit && (
-                      <DropdownMenuItem onClick={handleEdit}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
-                    )}
                     {onDelete && (
                       <DropdownMenuItem onClick={handleDelete} className="text-red-600">
                         <Trash2 className="h-4 w-4 mr-2" />

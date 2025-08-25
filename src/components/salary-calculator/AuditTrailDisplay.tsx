@@ -20,12 +20,11 @@ import {
   DialogTitle,
   DialogTrigger
 } from '@/components/ui/dialog';
-import { 
-  History, 
-  User, 
-  Calendar, 
-  Edit, 
-  Plus, 
+import {
+  History,
+  User,
+  Calendar,
+  Plus,
   Trash2,
   ChevronDown,
   ChevronRight
@@ -103,17 +102,15 @@ export function AuditTrailDisplay({
   const getActionBadge = (action: string) => {
     const variants = {
       created: 'default',
-      updated: 'secondary',
       deleted: 'destructive'
     } as const;
 
     const icons = {
       created: Plus,
-      updated: Edit,
       deleted: Trash2
     };
 
-    const Icon = icons[action as keyof typeof icons] || Edit;
+    const Icon = icons[action as keyof typeof icons] || Plus;
     const variant = variants[action as keyof typeof variants] || 'default';
 
     return (

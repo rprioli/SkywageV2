@@ -167,10 +167,9 @@ export async function getAuditTrailStats(
   data: {
     totalChanges: number;
     createdCount: number;
-    updatedCount: number;
     deletedCount: number;
     lastActivity?: Date;
-  } | null; 
+  } | null;
   error: string | null 
 }> {
   try {
@@ -199,7 +198,6 @@ export async function getAuditTrailStats(
     const stats = {
       totalChanges: data.length,
       createdCount: data.filter(entry => entry.action === 'created').length,
-      updatedCount: data.filter(entry => entry.action === 'updated').length,
       deletedCount: data.filter(entry => entry.action === 'deleted').length,
       lastActivity: data.length > 0 ? new Date(data[0].created_at) : undefined
     };
@@ -278,12 +276,6 @@ export async function getRecentActivity(
         case 'created':
           const flightNumbers = entry.new_data?.flightNumbers || [];
           summary = `Created flight duty ${flightNumbers.join(', ')}`;
-          break;
-        case 'updated':
-          summary = `Updated flight duty`;
-          if (entry.change_reason) {
-            summary += ` (${entry.change_reason})`;
-          }
           break;
         case 'deleted':
           const deletedFlightNumbers = entry.old_data?.flightNumbers || [];
