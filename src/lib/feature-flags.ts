@@ -7,6 +7,10 @@ export const FEATURE_FLAGS = {
   // New flight cards redesign - enabled for testing
   NEW_FLIGHT_CARDS: process.env.NEXT_PUBLIC_NEW_FLIGHT_CARDS === 'true' || true, // Temporarily enabled for development
 
+  // Layover pairing fix - controlled rollout (enabled for development testing)
+  LAYOVER_PAIRING_FIX: process.env.NEXT_PUBLIC_LAYOVER_PAIRING_FIX === 'true' ||
+                       (process.env.NODE_ENV === 'development' && true), // Temporarily enabled for dev testing
+
   // Future feature flags can be added here
   // ENHANCED_ROSTER_UPLOAD: process.env.NEXT_PUBLIC_ENHANCED_ROSTER_UPLOAD === 'true',
   // MOBILE_OPTIMIZATIONS: process.env.NEXT_PUBLIC_MOBILE_OPTIMIZATIONS === 'true',
