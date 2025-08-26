@@ -75,10 +75,21 @@ export function LayoverConnectedCard({
 
   const cardData = mapFlightDutyToCardData(currentDuty, allFlightDuties);
 
-  // Handle both routing formats: "DXB → ZAG" and "DXB - ZAG"
-  const routingParts = cardData.routing.includes(' → ')
-    ? cardData.routing.split(' → ')
-    : cardData.routing.split(' - ');
+  // Handle multiple routing formats: "DXB → ZAG", "DXB - ZAG", and "DXB-ZAG" (manual entry)
+  let routingParts: string[];
+  if (cardData.routing.includes(' → ')) {
+    // Roster format with arrows: "DXB → ZAG"
+    routingParts = cardData.routing.split(' → ');
+  } else if (cardData.routing.includes(' - ')) {
+    // Roster format with spaces: "DXB - ZAG"
+    routingParts = cardData.routing.split(' - ');
+  } else if (cardData.routing.includes('-')) {
+    // Manual entry format without spaces: "DXB-ZAG"
+    routingParts = cardData.routing.split('-').map(part => part.trim());
+  } else {
+    // Fallback for other formats
+    routingParts = [cardData.routing];
+  }
   const [from, to] = routingParts;
 
   const handleDelete = () => {
