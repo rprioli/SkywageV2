@@ -207,8 +207,18 @@ export function calculateLayoverRestPeriods(
       // Multi-sector format: "DXB  - EBL → EBL  - DXB"
       return sectorString.split(' → ').map(s => s.trim());
     } else {
-      // Single sector format: "DXB  - ZAG"
-      const parts = sectorString.split(' - ').map(s => s.trim());
+      // Single sector format: Handle both "DXB - ZAG" and "DXB-ZAG" formats
+      let parts: string[];
+      if (sectorString.includes(' - ')) {
+        // Format with spaces: "DXB - ZAG"
+        parts = sectorString.split(' - ').map(s => s.trim());
+      } else if (sectorString.includes('-')) {
+        // Format without spaces: "DXB-ZAG" (manual entry format)
+        parts = sectorString.split('-').map(s => s.trim());
+      } else {
+        // Fallback for other formats
+        parts = [sectorString.trim()];
+      }
       return parts.length >= 2 ? parts : [sectorString.trim()];
     }
   };
