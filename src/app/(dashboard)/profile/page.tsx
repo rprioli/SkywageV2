@@ -44,21 +44,24 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-primary mb-2">Your Profile</h1>
-        <p className="text-muted-foreground">
-          Manage your account information and preferences
-        </p>
+    <div className="space-y-4">
+      {/* Header and Profile - Grouped with consistent spacing */}
+      <div className="space-y-6 px-6 pt-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold mb-1" style={{ color: '#3A3780' }}>Your Profile</h1>
+          <p className="text-primary font-bold">
+            Manage your account information and preferences
+          </p>
+        </div>
       </div>
 
       {/* Cards Grid */}
-      <div className="space-y-6">
+      <div className="space-y-6 px-6">
         {/* Profile Picture Card */}
-        <Card className="rounded-3xl border-2 border-gray-100 shadow-lg">
+        <Card className="bg-white rounded-3xl !border-0 !shadow-none">
           <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2" style={{ color: '#3A3780' }}>
               <UserCircle className="h-5 w-5 text-primary" />
               Profile Picture
             </CardTitle>
@@ -87,9 +90,9 @@ export default function ProfilePage() {
         </Card>
 
         {/* Personal Information Card */}
-        <Card className="rounded-3xl border-2 border-gray-100 shadow-lg">
+        <Card className="bg-white rounded-3xl !border-0 !shadow-none">
           <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2" style={{ color: '#3A3780' }}>
               <Info className="h-5 w-5 text-primary" />
               Personal Information
             </CardTitle>
@@ -120,9 +123,9 @@ export default function ProfilePage() {
         </Card>
 
         {/* Account Settings Card */}
-        <Card className="rounded-3xl border-2 border-gray-100 shadow-lg">
+        <Card className="bg-white rounded-3xl !border-0 !shadow-none">
           <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2" style={{ color: '#3A3780' }}>
               <Settings className="h-5 w-5 text-primary" />
               Account Settings
             </CardTitle>
