@@ -172,7 +172,14 @@ function convertToFlightDutyLegacy(
     if (data.dutyType === 'asby') {
       flightPay = calculateFlightPay(4, position); // ASBY is fixed 4 hours
     } else if (data.dutyType === 'recurrent') {
-      flightPay = calculateFlightPay(4, position); // Recurrent is equivalent to 4 flying hours
+      // Check if this is ELD (e-learning Day) which is unpaid
+      const isELD = data.flightNumbers.some(fn => fn.toUpperCase().includes('ELD')) ||
+                    data.sectors.some(s => s.toUpperCase().includes('ELD'));
+      if (isELD) {
+        flightPay = 0; // ELD is unpaid recurrent training
+      } else {
+        flightPay = calculateFlightPay(4, position); // Other recurrent training is equivalent to 4 flying hours
+      }
     } else if (data.dutyType !== 'sby' && data.dutyType !== 'off') {
       flightPay = calculateFlightPay(dutyHours, position);
     }
@@ -380,9 +387,16 @@ export function convertToFlightDuty(
       const rates = { CCM: { hourlyRate: 50, asbyHours: 4 }, SCCM: { hourlyRate: 62, asbyHours: 4 } };
       flightPay = rates[position].asbyHours * rates[position].hourlyRate;
     } else if (data.dutyType === 'recurrent') {
-      // Recurrent is paid at fixed 4 hours at hourly rate
-      const rates = { CCM: { hourlyRate: 50 }, SCCM: { hourlyRate: 62 } };
-      flightPay = 4 * rates[position].hourlyRate;
+      // Check if this is ELD (e-learning Day) which is unpaid
+      const isELD = data.flightNumbers.some(fn => fn.toUpperCase().includes('ELD')) ||
+                    data.sectors.some(s => s.toUpperCase().includes('ELD'));
+      if (isELD) {
+        flightPay = 0; // ELD is unpaid recurrent training
+      } else {
+        // Other recurrent training is paid at fixed 4 hours at hourly rate
+        const rates = { CCM: { hourlyRate: 50 }, SCCM: { hourlyRate: 62 } };
+        flightPay = 4 * rates[position].hourlyRate;
+      }
     } else if (data.dutyType === 'turnaround' || data.dutyType === 'layover') {
       // Regular flight duties are paid at hourly rate for actual duty hours
       flightPay = calculateFlightPay(dutyHours, position);

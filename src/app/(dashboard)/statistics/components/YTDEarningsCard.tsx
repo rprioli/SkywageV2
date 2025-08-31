@@ -19,20 +19,20 @@ interface YTDEarningsCardProps {
 export function YTDEarningsCard({ data, loading = false }: YTDEarningsCardProps) {
   if (loading) {
     return (
-      <Card className="rounded-3xl border-2 border-gray-100 shadow-lg">
+      <Card className="bg-white rounded-3xl !border-0 !shadow-none">
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2" style={{ color: '#3A3780' }}>
             <TrendingUp className="h-5 w-5 text-primary" />
             Year-to-Date Earnings
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-gray-200 rounded w-1/2"></div>
-            <div className="h-32 bg-gray-200 rounded"></div>
+            <div className="h-8 bg-primary/10 rounded w-1/2"></div>
+            <div className="h-32 bg-primary/10 rounded"></div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="h-16 bg-gray-200 rounded"></div>
-              <div className="h-16 bg-gray-200 rounded"></div>
+              <div className="h-16 bg-primary/10 rounded"></div>
+              <div className="h-16 bg-primary/10 rounded"></div>
             </div>
           </div>
         </CardContent>
@@ -47,7 +47,7 @@ export function YTDEarningsCard({ data, loading = false }: YTDEarningsCardProps)
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+        <div className="bg-white p-3 border border-gray-200 rounded-lg">
           <p className="font-medium">{label}</p>
           <div className="space-y-1 mt-2">
             <p className="text-sm">
@@ -64,9 +64,9 @@ export function YTDEarningsCard({ data, loading = false }: YTDEarningsCardProps)
   };
 
   return (
-    <Card className="rounded-3xl border-2 border-gray-100 shadow-lg">
+    <Card className="bg-white rounded-3xl !border-0 !shadow-none">
       <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2" style={{ color: '#3A3780' }}>
           <TrendingUp className="h-5 w-5 text-primary" />
           Year-to-Date Earnings
         </CardTitle>
@@ -74,7 +74,7 @@ export function YTDEarningsCard({ data, loading = false }: YTDEarningsCardProps)
       <CardContent className="space-y-6">
         {/* YTD Total with Comparison */}
         <div className="text-center">
-          <div className="text-3xl font-bold text-primary mb-2">
+          <div className="text-3xl font-bold mb-2" style={{ color: '#3A3780' }}>
             {formatCurrency(data.totalEarnings)}
           </div>
           <div className="text-sm text-muted-foreground mb-3">
@@ -137,7 +137,7 @@ export function YTDEarningsCard({ data, loading = false }: YTDEarningsCardProps)
         {/* Fixed vs Variable Breakdown */}
         <div className="grid grid-cols-2 gap-4">
           {/* Fixed Earnings */}
-          <div className="bg-gray-50 rounded-2xl p-4 text-center">
+          <div className="bg-white rounded-2xl p-4 text-center border border-gray-100">
             <div className="text-lg font-bold text-gray-700 mb-1">
               {formatCurrency(data.fixedEarnings)}
             </div>

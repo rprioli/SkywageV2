@@ -39,20 +39,20 @@ const DUTY_TYPE_ICONS = {
 export function DutyTypesCard({ data, loading = false }: DutyTypesCardProps) {
   if (loading) {
     return (
-      <Card className="rounded-3xl border-2 border-gray-100 shadow-lg">
+      <Card className="bg-white rounded-3xl !border-0 !shadow-none">
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2" style={{ color: '#3A3780' }}>
             <PieChart className="h-5 w-5 text-primary" />
             Duty Types Analysis
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-4">
-            <div className="h-40 bg-gray-200 rounded-full mx-auto w-40"></div>
+            <div className="h-40 bg-primary/10 rounded-full mx-auto w-40"></div>
             <div className="space-y-2">
-              <div className="h-4 bg-gray-200 rounded w-full"></div>
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              <div className="h-4 bg-primary/10 rounded w-full"></div>
+              <div className="h-4 bg-primary/10 rounded w-3/4"></div>
+              <div className="h-4 bg-primary/10 rounded w-1/2"></div>
             </div>
           </div>
         </CardContent>
@@ -63,9 +63,9 @@ export function DutyTypesCard({ data, loading = false }: DutyTypesCardProps) {
   // No data state
   if (data.dutyTypeBreakdown.length === 0) {
     return (
-      <Card className="rounded-3xl border-2 border-gray-100 shadow-lg">
+      <Card className="bg-white rounded-3xl !border-0 !shadow-none">
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2" style={{ color: '#3A3780' }}>
             <PieChart className="h-5 w-5 text-primary" />
             Duty Types Analysis
           </CardTitle>
@@ -114,9 +114,9 @@ export function DutyTypesCard({ data, loading = false }: DutyTypesCardProps) {
 
 
   return (
-    <Card className="rounded-3xl border-2 border-gray-100 shadow-lg">
+    <Card className="bg-white rounded-3xl !border-0 !shadow-none">
       <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2" style={{ color: '#3A3780' }}>
           <PieChart className="h-5 w-5 text-primary" />
           Duty Types Analysis
         </CardTitle>
@@ -153,7 +153,7 @@ export function DutyTypesCard({ data, loading = false }: DutyTypesCardProps) {
             const color = DUTY_TYPE_COLORS[duty.dutyType];
             
             return (
-              <div key={duty.dutyType} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+              <div key={duty.dutyType} className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100">
                 <div className="flex items-center gap-3">
                   <div 
                     className="w-4 h-4 rounded-full flex items-center justify-center"

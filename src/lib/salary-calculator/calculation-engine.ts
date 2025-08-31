@@ -125,7 +125,27 @@ export function calculateFlightDuty(
         break;
 
       case 'recurrent':
-        flightPay = calculateRecurrentPay(position); // Recurrent is paid at 4 hours at flight rate
+        // Check if this is ELD (e-learning Day) which is unpaid
+        // Look for ELD in original data or flight numbers/sectors for manual entries
+        let isELD = false;
+
+        // Check original data from roster upload
+        if (flightDuty.originalData?.rawData) {
+          const originalDuties = flightDuty.originalData.rawData[1]?.value?.toString().toUpperCase() || '';
+          isELD = originalDuties.includes('ELD');
+        }
+
+        // Check flight numbers/sectors for manual entries where user might enter ELD
+        if (!isELD) {
+          isELD = flightDuty.flightNumbers.some(fn => fn.toUpperCase().includes('ELD')) ||
+                  flightDuty.sectors.some(s => s.toUpperCase().includes('ELD'));
+        }
+
+        if (isELD) {
+          flightPay = 0; // ELD is unpaid recurrent training
+        } else {
+          flightPay = calculateRecurrentPay(position); // Other recurrent training is paid at 4 hours at flight rate
+        }
         break;
 
       case 'sby':

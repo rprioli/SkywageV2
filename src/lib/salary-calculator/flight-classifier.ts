@@ -68,7 +68,13 @@ export function classifyFlightDuty(
     let flightPay = 0;
 
     if (position) {
-      flightPay = calculateRecurrentPay(position); // 4 hours × position rate
+      // Check if this is ELD (e-learning Day) which is unpaid
+      if (dutiesUpper.includes('ELD')) {
+        flightPay = 0; // ELD is unpaid recurrent training
+        console.log(`📚 ELD DETECTED: Setting flightPay to 0 (unpaid e-learning)`);
+      } else {
+        flightPay = calculateRecurrentPay(position); // 4 hours × position rate for other recurrent training
+      }
     }
 
     console.log(`✅ CLASSIFIED AS RECURRENT: dutyHours=${dutyHours}, flightPay=${flightPay}`);
@@ -109,7 +115,12 @@ export function classifyFlightDuty(
       let flightPay = 0;
 
       if (position) {
-        flightPay = calculateRecurrentPay(position);
+        // Check if this is ELD (e-learning Day) which is unpaid
+        if (dutiesUpper.includes('ELD')) {
+          flightPay = 0; // ELD is unpaid recurrent training
+        } else {
+          flightPay = calculateRecurrentPay(position);
+        }
       }
 
       return {
@@ -190,7 +201,7 @@ export function isRecurrentTraining(duties: string, details: string): boolean {
 
   // Known recurrent training duty codes from Excel analysis
   const recurrentTrainingCodes = [
-    'ELD',      // e-learning Day
+    'ELD',      // e-learning Day (UNPAID - special exception)
     'SEPR',     // SEP- Recurrent & Pilot Incap
     'SEPD',     // SEP-Triennial Doors & Exits
     'RAFT',     // RAFT training for ETOPS

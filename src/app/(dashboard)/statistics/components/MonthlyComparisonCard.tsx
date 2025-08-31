@@ -20,9 +20,9 @@ interface MonthlyComparisonCardProps {
 export function MonthlyComparisonCard({ data, monthlyTrends, loading = false }: MonthlyComparisonCardProps) {
   if (loading) {
     return (
-      <Card className="rounded-3xl border-2 border-gray-100 shadow-lg">
+      <Card className="bg-white rounded-3xl !border-0 !shadow-none">
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2" style={{ color: '#3A3780' }}>
             <Calendar className="h-5 w-5 text-primary" />
             Monthly Comparisons
           </CardTitle>
@@ -30,13 +30,13 @@ export function MonthlyComparisonCard({ data, monthlyTrends, loading = false }: 
         <CardContent>
           <div className="animate-pulse space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="h-20 bg-gray-200 rounded"></div>
-              <div className="h-20 bg-gray-200 rounded"></div>
+              <div className="h-20 bg-primary/10 rounded"></div>
+              <div className="h-20 bg-primary/10 rounded"></div>
             </div>
-            <div className="h-32 bg-gray-200 rounded"></div>
+            <div className="h-32 bg-primary/10 rounded"></div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="h-16 bg-gray-200 rounded"></div>
-              <div className="h-16 bg-gray-200 rounded"></div>
+              <div className="h-16 bg-primary/10 rounded"></div>
+              <div className="h-16 bg-primary/10 rounded"></div>
             </div>
           </div>
         </CardContent>
@@ -59,7 +59,7 @@ export function MonthlyComparisonCard({ data, monthlyTrends, loading = false }: 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+        <div className="bg-white p-3 border border-gray-200 rounded-lg">
           <p className="font-medium">{label}</p>
           <p className="text-sm text-primary">
             Earnings: {formatCurrency(payload[0].value)}
@@ -71,9 +71,9 @@ export function MonthlyComparisonCard({ data, monthlyTrends, loading = false }: 
   };
 
   return (
-    <Card className="rounded-3xl border-2 border-gray-100 shadow-lg">
+    <Card className="bg-white rounded-3xl !border-0 !shadow-none">
       <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2" style={{ color: '#3A3780' }}>
           <Calendar className="h-5 w-5 text-primary" />
           Monthly Comparisons
         </CardTitle>
@@ -95,13 +95,13 @@ export function MonthlyComparisonCard({ data, monthlyTrends, loading = false }: 
           </div>
 
           {/* Previous Month */}
-          <div className="bg-gray-50 rounded-2xl p-4">
+          <div className="bg-white rounded-2xl p-4 border border-gray-100">
             <div className="text-center">
               <div className="text-lg font-bold text-gray-700 mb-1">
                 {data.previousMonth ? formatCurrency(data.previousMonth.totalEarnings) : 'N/A'}
               </div>
               <div className="text-xs text-gray-500 mb-2">
-                {data.previousMonth 
+                {data.previousMonth
                   ? `${getMonthName(data.previousMonth.month)} ${data.previousMonth.year}`
                   : 'No Data'
                 }
@@ -167,7 +167,7 @@ export function MonthlyComparisonCard({ data, monthlyTrends, loading = false }: 
         {/* Best and Worst Months */}
         <div className="grid grid-cols-2 gap-4">
           {/* Best Month */}
-          <div className="bg-green-50 rounded-2xl p-4">
+          <div className="bg-accent/5 rounded-2xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <Award className="h-4 w-4 text-green-600" />
               <span className="text-xs font-medium text-green-700">Best Month</span>
@@ -183,7 +183,7 @@ export function MonthlyComparisonCard({ data, monthlyTrends, loading = false }: 
           </div>
 
           {/* Worst Month */}
-          <div className="bg-orange-50 rounded-2xl p-4">
+          <div className="bg-white rounded-2xl p-4 border border-orange-200">
             <div className="flex items-center gap-2 mb-2">
               <AlertTriangle className="h-4 w-4 text-orange-600" />
               <span className="text-xs font-medium text-orange-700">Lowest Month</span>
@@ -200,7 +200,7 @@ export function MonthlyComparisonCard({ data, monthlyTrends, loading = false }: 
         </div>
 
         {/* Performance Insights */}
-        <div className="bg-blue-50 rounded-2xl p-4">
+        <div className="bg-primary/5 rounded-2xl p-4">
           <h4 className="text-sm font-medium text-blue-700 mb-2">Performance Insights</h4>
           <div className="space-y-2 text-xs text-blue-600">
             {data.previousMonth && (

@@ -108,6 +108,15 @@ CCM: 4 × 50 = 200 AED
 SCCM: 4 × 62 = 248 AED
 ```
 
+**Recurrent Training:**
+
+```
+Formula: 4 hours × Position Rate (except ELD)
+CCM: 4 × 50 = 200 AED
+SCCM: 4 × 62 = 248 AED
+Exception: ELD (e-learning Day) = 0 AED (unpaid)
+```
+
 #### 2.1.3 Total Salary Calculation
 
 ```

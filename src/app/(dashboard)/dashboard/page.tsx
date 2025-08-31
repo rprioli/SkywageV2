@@ -49,6 +49,166 @@ import { RosterReplacementDialog } from '@/components/salary-calculator/RosterRe
 import { cn } from '@/lib/utils';
 import { getProfile } from '@/lib/db';
 
+// Monthly Overview Card Component - Extracted to prevent recreation on parent re-renders
+const MonthlyOverviewCard = memo(({
+  allMonthlyCalculations,
+  selectedOverviewMonth,
+  setSelectedOverviewMonth,
+  setHasUserSelectedMonth,
+  setIsMonthSwitching,
+  monthlyDataLoading,
+  isMonthSwitching,
+  selectedData
+}: {
+  allMonthlyCalculations: MonthlyCalculation[];
+  selectedOverviewMonth: number;
+  setSelectedOverviewMonth: (month: number) => void;
+  setHasUserSelectedMonth: (selected: boolean) => void;
+  setIsMonthSwitching: (switching: boolean) => void;
+  monthlyDataLoading: boolean;
+  isMonthSwitching: boolean;
+  selectedData: { totalSalary: number; dutyHours: number; totalDuties: number };
+}) => {
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  // Hover state for enhanced interactivity
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  // Memoized month selection handler for smooth transitions
+  const handleMonthSelection = useCallback((index: number) => {
+    // Immediate month selection for smooth chart transition
+    setSelectedOverviewMonth(index);
+    setHasUserSelectedMonth(true);
+    // Set switching state for other UI elements (not chart)
+    setIsMonthSwitching(true);
+  }, [setSelectedOverviewMonth, setHasUserSelectedMonth, setIsMonthSwitching]);
+
+  // Memoize chart data to prevent unnecessary re-renders
+  const chartData = useMemo(() => {
+    const data = [];
+
+    // Find the maximum salary to normalize the chart values
+    const maxSalary = Math.max(...allMonthlyCalculations.map(calc => calc.totalSalary), 1);
+
+    for (let i = 0; i < 12; i++) {
+      const monthCalc = allMonthlyCalculations.find(calc =>
+        calc.month === i + 1 && calc.year === currentYear
+      );
+
+      // Normalize values to 0-100 range for better chart display
+      const normalizedValue = monthCalc ? Math.round((monthCalc.totalSalary / maxSalary) * 100) : 0;
+
+      data.push({
+        month: months[i],
+        value: normalizedValue
+      });
+    }
+
+    return data;
+  }, [allMonthlyCalculations, currentYear, months]);
+
+  // Enhanced color logic for smooth transitions
+  const getBarColor = (index: number) => {
+    if (index === selectedOverviewMonth) {
+      return '#4C49ED'; // Active: Dark purple
+    } else if (index === hoveredIndex) {
+      return 'rgba(76, 73, 237, 0.4)'; // Hover: Medium purple
+    } else {
+      return 'rgba(76, 73, 237, 0.08)'; // Inactive: Light purple
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-AE', {
+      style: 'currency',
+      currency: 'AED',
+      minimumFractionDigits: 0
+    }).format(amount);
+  };
+
+  return (
+    <Card className="bg-white rounded-3xl !border-0 !shadow-none overflow-hidden">
+      <CardContent className="p-7">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <h2 className="text-2xl font-bold mb-3" style={{ color: '#3A3780' }}>Overview</h2>
+            <div className="text-5xl font-bold mb-2" style={{
+              color: '#3A3780',
+              transition: 'opacity 0.2s ease-in-out'
+            }}>
+              {monthlyDataLoading ? '...' : formatCurrency(selectedData.totalSalary)}
+            </div>
+            <p className="text-sm text-gray-500">
+              {selectedData.totalSalary === 0 && !monthlyDataLoading ?
+                `${months[selectedOverviewMonth]} - No Data` :
+                (() => {
+                  const nextMonth = selectedOverviewMonth === 11 ? 0 : selectedOverviewMonth + 1;
+                  const nextYear = selectedOverviewMonth === 11 ? new Date().getFullYear() + 1 : new Date().getFullYear();
+                  return `Expected Salary for ${months[nextMonth]}, ${nextYear}`;
+                })()
+              }
+            </p>
+          </div>
+          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+            <BarChart3 className="h-5 w-5 text-gray-600" />
+          </div>
+        </div>
+
+        {/* Chart Area */}
+        <div className="h-48 w-full">
+          {monthlyDataLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-gray-500 text-sm">Loading chart data...</div>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <XAxis
+                  dataKey="month"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: '#6B7280' }}
+                />
+                <Bar
+                  dataKey="value"
+                  radius={[8, 8, 0, 0]}
+                  isAnimationActive={!monthlyDataLoading}
+                  animationDuration={400}
+                  animationEasing="ease-in-out"
+                  animationBegin={0}
+                  cursor="pointer"
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={getBarColor(index)}
+                      onClick={() => handleMonthSelection(index)}
+                      onMouseEnter={() => setHoveredIndex(index)}
+                      onMouseLeave={() => setHoveredIndex(null)}
+                      role="button"
+                      aria-label={`Select month ${entry.month}`}
+                      style={{
+                        cursor: 'pointer',
+                        transition: 'fill 0.4s ease-in-out, transform 0.2s ease-in-out',
+                        transformOrigin: 'bottom center'
+                      }}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+});
+
+MonthlyOverviewCard.displayName = 'MonthlyOverviewCard';
+
 export default function DashboardPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -878,137 +1038,6 @@ export default function DashboardPage() {
 
   const selectedData = getSelectedMonthData();
 
-  // Monthly Overview Card Component
-  const MonthlyOverviewCard = () => {
-    const currentDate = new Date();
-    const currentMonthIndex = currentDate.getMonth();
-    const currentYear = currentDate.getFullYear();
-
-    // Initialize with current month, but if no data exists, default to most recent month with data
-    const getInitialMonth = () => {
-      if (allMonthlyCalculations.length > 0) {
-        // Find if current month has data
-        const currentMonthData = allMonthlyCalculations.find(calc =>
-          calc.month === currentMonthIndex + 1 && calc.year === currentYear
-        );
-        if (currentMonthData) {
-          return currentMonthIndex;
-        }
-        // Otherwise, use the most recent month with data
-        const sortedCalculations = [...allMonthlyCalculations].sort((a, b) => {
-          if (a.year !== b.year) return b.year - a.year;
-          return b.month - a.month;
-        });
-        return sortedCalculations[0].month - 1; // Convert to 0-based index
-      }
-      return currentMonthIndex;
-    };
-
-    // Use the lifted state from parent component
-    // (selectedOverviewMonth and setSelectedOverviewMonth are now in parent scope)
-
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-    // Generate chart data from real monthly calculations
-    const generateChartData = () => {
-      const chartData = [];
-
-      // Find the maximum salary to normalize the chart values
-      const maxSalary = Math.max(...allMonthlyCalculations.map(calc => calc.totalSalary), 1);
-
-      for (let i = 0; i < 12; i++) {
-        const monthCalc = allMonthlyCalculations.find(calc =>
-          calc.month === i + 1 && calc.year === currentYear
-        );
-
-        // Normalize values to 0-100 range for better chart display
-        const normalizedValue = monthCalc ? Math.round((monthCalc.totalSalary / maxSalary) * 100) : 0;
-
-        chartData.push({
-          month: months[i],
-          value: normalizedValue
-        });
-      }
-
-      return chartData;
-    };
-
-    const chartData = generateChartData();
-
-    return (
-      <Card className="bg-white rounded-3xl !border-0 !shadow-none overflow-hidden">
-        <CardContent className="p-7">
-          {/* Header */}
-          <div className="flex items-start justify-between mb-5">
-            <div>
-              <h2 className="text-2xl font-bold mb-3" style={{ color: '#3A3780' }}>Overview</h2>
-              <div className="text-5xl font-bold mb-2" style={{ color: '#3A3780' }}>
-                {monthlyDataLoading || isMonthSwitching ? '...' : formatCurrency(selectedData.totalSalary)}
-              </div>
-              <p className="text-sm text-gray-500">
-                {selectedData.totalSalary === 0 && !monthlyDataLoading ?
-                  `${months[selectedOverviewMonth]} - No Data` :
-                  (() => {
-                    const nextMonth = selectedOverviewMonth === 11 ? 0 : selectedOverviewMonth + 1;
-                    const nextYear = selectedOverviewMonth === 11 ? new Date().getFullYear() + 1 : new Date().getFullYear();
-                    return `Expected Salary for ${months[nextMonth]}, ${nextYear}`;
-                  })()
-                }
-              </p>
-            </div>
-            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-              <BarChart3 className="h-5 w-5 text-gray-600" />
-            </div>
-          </div>
-
-          {/* Chart Area */}
-          <div className="h-48 w-full">
-            {monthlyDataLoading || isMonthSwitching ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-gray-500 text-sm">Loading chart data...</div>
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <XAxis
-                    dataKey="month"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: '#6B7280' }}
-                  />
-                  <Bar
-                    dataKey="value"
-                    radius={[8, 8, 0, 0]}
-                    isAnimationActive={true}
-                    animationDuration={300}
-                    animationEasing="ease-out"
-                    cursor="pointer"
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={index === selectedOverviewMonth ? '#4C49ED' : 'rgba(76, 73, 237, 0.08)'}
-                        onClick={() => {
-                          // Start coordinated month switching sequence
-                          setIsMonthSwitching(true);
-                          setSelectedOverviewMonth(index);
-                          setHasUserSelectedMonth(true);
-                        }}
-                        role="button"
-                        aria-label={`Select month ${entry.month}`}
-                        style={{ cursor: 'pointer' }}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-
-        </CardContent>
-      </Card>
-    );
-  };
 
   // Dynamic greeting based on current time
   const getTimeBasedGreeting = () => {
@@ -1072,7 +1101,16 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-6">
         {/* Monthly Overview - Large Card (2/3 width) */}
         <div className="lg:col-span-2">
-          <MonthlyOverviewCard />
+          <MonthlyOverviewCard
+            allMonthlyCalculations={allMonthlyCalculations}
+            selectedOverviewMonth={selectedOverviewMonth}
+            setSelectedOverviewMonth={setSelectedOverviewMonth}
+            setHasUserSelectedMonth={setHasUserSelectedMonth}
+            setIsMonthSwitching={setIsMonthSwitching}
+            monthlyDataLoading={monthlyDataLoading}
+            isMonthSwitching={isMonthSwitching}
+            selectedData={selectedData}
+          />
         </div>
 
         {/* Side Cards - Stacked (1/3 width) */}
@@ -1132,25 +1170,33 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Flight Duties Manager */}
-      {flightDuties.length > 0 ? (
-        <FlightDutiesManager
-          flightDuties={flightDuties}
-          position={userPosition as Position}
-          userId={user?.id || ''}
-          loading={loading}
-          onFlightDeleted={handleFlightDeleted}
-          onRecalculationComplete={handleRecalculationComplete}
-        />
-      ) : (
-        <Card className="rounded-3xl border-2 border-gray-100">
-          <CardContent className="p-8 text-center">
-            <Plane className="h-16 w-16 mx-auto mb-4 opacity-50 text-gray-400" />
-            <h3 className="text-xl font-semibold mb-2">No Flight Duties Yet</h3>
-            <p className="text-gray-600">Upload your roster file or add flights manually to see them here</p>
-          </CardContent>
-        </Card>
-      )}
+      {/* Flight Duties Section - Full Width */}
+      <div className="px-6">
+        {flightDuties.length > 0 ? (
+          <FlightDutiesManager
+            flightDuties={flightDuties}
+            position={userPosition as Position}
+            userId={user?.id || ''}
+            loading={loading}
+            onFlightDeleted={handleFlightDeleted}
+            onRecalculationComplete={handleRecalculationComplete}
+          />
+        ) : (
+          <Card className="bg-white rounded-3xl !border-0 !shadow-none overflow-hidden">
+            <CardContent className="p-7">
+              <div className="text-center py-8" role="status" aria-label="No flight duties available">
+                <Plane className="h-16 w-16 mx-auto mb-6 text-gray-400" />
+                <h3 className="text-2xl font-bold mb-3 tracking-tight" style={{ color: '#3A3780' }}>
+                  No Flight Duties Yet
+                </h3>
+                <p className="text-sm text-gray-500 max-w-sm mx-auto leading-relaxed">
+                  Upload your roster file or add flights manually to see them here
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       {/* Upload Roster Modal */}
       <Dialog open={uploadModalOpen} onOpenChange={handleUploadModalClose}>
