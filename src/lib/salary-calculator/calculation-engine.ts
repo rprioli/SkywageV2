@@ -15,8 +15,8 @@ import {
 } from '@/types/salary-calculator';
 import { calculateDuration, calculateRestPeriod } from './time-calculator';
 
-// Flydubai salary rates as per specification
-export const FLYDUBAI_RATES: { [K in Position]: SalaryRates } = {
+// Historical salary rates (effective until June 2025)
+export const FLYDUBAI_RATES_LEGACY: { [K in Position]: SalaryRates } = {
   CCM: {
     position: 'CCM',
     basicSalary: 3275,
@@ -37,41 +37,116 @@ export const FLYDUBAI_RATES: { [K in Position]: SalaryRates } = {
   }
 };
 
+// New salary rates (effective from July 2025 onwards)
+export const FLYDUBAI_RATES_NEW: { [K in Position]: SalaryRates } = {
+  CCM: {
+    position: 'CCM',
+    basicSalary: 3405, // Increased from 3275
+    housingAllowance: 4500, // Increased from 4000
+    transportAllowance: 1000, // Unchanged
+    hourlyRate: 50, // Unchanged for now
+    perDiemRate: 8.82, // Unchanged for now
+    asbyHours: 4
+  },
+  SCCM: {
+    position: 'SCCM',
+    basicSalary: 4446, // New rate as specified
+    housingAllowance: 5500, // 10% increase from 5000
+    transportAllowance: 1000, // Unchanged
+    hourlyRate: 62, // Unchanged for now
+    perDiemRate: 8.82, // Unchanged for now
+    asbyHours: 4
+  }
+};
+
+// Backward compatibility - maintains existing FLYDUBAI_RATES export
+// This will be replaced by date-aware rate selection
+export const FLYDUBAI_RATES: { [K in Position]: SalaryRates } = FLYDUBAI_RATES_LEGACY;
+
+/**
+ * Gets the appropriate salary rates based on the calculation date
+ * New rates are effective from July 2025 onwards
+ * Historical rates apply to June 2025 and earlier
+ */
+export function getRatesForDate(year: number, month: number): { [K in Position]: SalaryRates } {
+  // July 2025 is the effective date for new rates
+  const effectiveDate = new Date(2025, 6, 1); // Month is 0-indexed, so 6 = July
+  const calculationDate = new Date(year, month - 1, 1); // month parameter is 1-indexed
+
+  if (calculationDate >= effectiveDate) {
+    return FLYDUBAI_RATES_NEW;
+  } else {
+    return FLYDUBAI_RATES_LEGACY;
+  }
+}
+
+/**
+ * Gets salary rates for a specific position and date
+ */
+export function getPositionRatesForDate(position: Position, year: number, month: number): SalaryRates {
+  const rates = getRatesForDate(year, month);
+  return rates[position];
+}
+
 /**
  * Calculates flight pay for a single duty
+ * Overloaded to support date-aware rate selection
  */
 export function calculateFlightPay(
   dutyHours: number,
-  position: Position
+  position: Position,
+  year?: number,
+  month?: number
 ): number {
-  const rates = FLYDUBAI_RATES[position];
+  const rates = year && month
+    ? getPositionRatesForDate(position, year, month)
+    : FLYDUBAI_RATES[position];
   return dutyHours * rates.hourlyRate;
 }
 
 /**
  * Calculates per diem pay for rest period
+ * Overloaded to support date-aware rate selection
  */
 export function calculatePerDiemPay(
   restHours: number,
-  position: Position
+  position: Position,
+  year?: number,
+  month?: number
 ): number {
-  const rates = FLYDUBAI_RATES[position];
+  const rates = year && month
+    ? getPositionRatesForDate(position, year, month)
+    : FLYDUBAI_RATES[position];
   return restHours * rates.perDiemRate;
 }
 
 /**
  * Calculates ASBY (Airport Standby) pay
+ * Overloaded to support date-aware rate selection
  */
-export function calculateAsbyPay(position: Position): number {
-  const rates = FLYDUBAI_RATES[position];
+export function calculateAsbyPay(
+  position: Position,
+  year?: number,
+  month?: number
+): number {
+  const rates = year && month
+    ? getPositionRatesForDate(position, year, month)
+    : FLYDUBAI_RATES[position];
   return rates.asbyHours * rates.hourlyRate;
 }
 
 /**
  * Calculates Recurrent pay (4 hours at flight rate)
+ * Overloaded to support date-aware rate selection
  */
-export function calculateRecurrentPay(position: Position): number {
-  const rates = FLYDUBAI_RATES[position];
+export function calculateRecurrentPay(
+  position: Position,
+  year?: number,
+  month?: number
+): number {
+  const rates = year && month
+    ? getPositionRatesForDate(position, year, month)
+    : FLYDUBAI_RATES[position];
   return 4 * rates.hourlyRate; // 4 hours at hourly rate
 }
 
@@ -91,7 +166,9 @@ export function calculateDutyHours(flightDuty: FlightDuty): number {
  */
 export function calculateFlightDuty(
   flightDuty: FlightDuty,
-  position: Position
+  position: Position,
+  year?: number,
+  month?: number
 ): FlightCalculationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -112,15 +189,19 @@ export function calculateFlightDuty(
     let flightPay = 0;
     let asbyPay = 0;
 
+    // Use provided date parameters or extract from flight duty
+    const calculationYear = year || flightDuty.year;
+    const calculationMonth = month || flightDuty.month;
+
     // Calculate payment based on duty type
     switch (flightDuty.dutyType) {
       case 'turnaround':
       case 'layover':
-        flightPay = calculateFlightPay(dutyHours, position);
+        flightPay = calculateFlightPay(dutyHours, position, calculationYear, calculationMonth);
         break;
 
       case 'asby':
-        asbyPay = calculateAsbyPay(position);
+        asbyPay = calculateAsbyPay(position, calculationYear, calculationMonth);
         flightPay = asbyPay; // ASBY is paid at flight rate for fixed hours
         break;
 
@@ -144,7 +225,7 @@ export function calculateFlightDuty(
         if (isELD) {
           flightPay = 0; // ELD is unpaid recurrent training
         } else {
-          flightPay = calculateRecurrentPay(position); // Other recurrent training is paid at 4 hours at flight rate
+          flightPay = calculateRecurrentPay(position, calculationYear, calculationMonth); // Other recurrent training is paid at 4 hours at flight rate
         }
         break;
 
@@ -333,7 +414,7 @@ export function calculateLayoverRestPeriods(
       if (restHours > 0) {
         // Only create rest period if both flights have valid IDs
         if (outboundFlight.id && matchingInboundFlight.id) {
-          const perDiemPay = calculatePerDiemPay(restHours, position);
+          const perDiemPay = calculatePerDiemPay(restHours, position, outboundFlight.year, outboundFlight.month);
 
           restPeriods.push({
             userId,
@@ -374,7 +455,7 @@ export function calculateMonthlySalary(
 ): MonthlyCalculationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
-  const rates = FLYDUBAI_RATES[position];
+  const rates = getPositionRatesForDate(position, year, month);
 
   // Fixed components
   const basicSalary = rates.basicSalary;
@@ -398,7 +479,7 @@ export function calculateMonthlySalary(
   const perDiemPay = layoverRestPeriods.reduce((sum, rest) => sum + rest.perDiemPay, 0);
   
   const asbyCount = flightDuties.filter(flight => flight.dutyType === 'asby').length;
-  const asbyPay = asbyCount * calculateAsbyPay(position);
+  const asbyPay = asbyCount * calculateAsbyPay(position, year, month);
 
   const totalVariable = flightPay + perDiemPay;
   const totalSalary = totalFixed + totalVariable;

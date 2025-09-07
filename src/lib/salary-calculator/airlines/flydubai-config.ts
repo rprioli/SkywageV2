@@ -5,7 +5,7 @@
  */
 
 import { AirlineConfig, CSVColumnMapping, CSVValidationRules } from '@/types/airline-config';
-import { FLYDUBAI_RATES } from '../calculation-engine';
+import { FLYDUBAI_RATES, getPositionRatesForDate } from '../calculation-engine';
 import { FlydubaiCSVParser } from './flydubai-parser';
 
 // CSV column mapping for Flydubai roster format
@@ -159,10 +159,18 @@ export function isLikelyTurnaround(sectors: string[]): boolean {
 
 /**
  * Gets salary rate for a specific position
+ * Overloaded to support date-aware rate selection
  */
-export function getFlydubaiRate(position: 'CCM' | 'SCCM', rateType: 'hourly' | 'perDiem' | 'basic' | 'housing' | 'transport'): number {
-  const rates = FLYDUBAI_RATES[position];
-  
+export function getFlydubaiRate(
+  position: 'CCM' | 'SCCM',
+  rateType: 'hourly' | 'perDiem' | 'basic' | 'housing' | 'transport',
+  year?: number,
+  month?: number
+): number {
+  const rates = year && month
+    ? getPositionRatesForDate(position, year, month)
+    : FLYDUBAI_RATES[position];
+
   switch (rateType) {
     case 'hourly':
       return rates.hourlyRate;
@@ -181,11 +189,18 @@ export function getFlydubaiRate(position: 'CCM' | 'SCCM', rateType: 'hourly' | '
 
 /**
  * Calculates expected monthly minimums for Flydubai crew
+ * Overloaded to support date-aware rate selection
  */
-export function getFlydubaiMonthlyMinimums(position: 'CCM' | 'SCCM') {
-  const rates = FLYDUBAI_RATES[position];
+export function getFlydubaiMonthlyMinimums(
+  position: 'CCM' | 'SCCM',
+  year?: number,
+  month?: number
+) {
+  const rates = year && month
+    ? getPositionRatesForDate(position, year, month)
+    : FLYDUBAI_RATES[position];
   const fixedSalary = rates.basicSalary + rates.housingAllowance + rates.transportAllowance;
-  
+
   return {
     fixedSalary,
     minimumFlightHours: 80, // Typical minimum flight hours

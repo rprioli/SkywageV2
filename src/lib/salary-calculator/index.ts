@@ -9,11 +9,16 @@ export {
   calculateFlightPay,
   calculatePerDiemPay,
   calculateAsbyPay,
+  calculateRecurrentPay,
   calculateDutyHours,
   calculateFlightDuty,
   calculateLayoverRestPeriods,
   calculateMonthlySalary,
-  FLYDUBAI_RATES
+  FLYDUBAI_RATES,
+  FLYDUBAI_RATES_LEGACY,
+  FLYDUBAI_RATES_NEW,
+  getRatesForDate,
+  getPositionRatesForDate
 } from './calculation-engine';
 
 // Time calculation utilities
