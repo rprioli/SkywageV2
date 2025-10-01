@@ -331,7 +331,7 @@ export function FlightEntryForm({
   const showFlightFields = formData.dutyType !== 'asby' && formData.dutyType !== 'recurrent' && formData.dutyType !== 'sby' && formData.dutyType !== 'off';
 
   return (
-    <form onSubmit={handleSubmit} className={cn('space-y-6', className)}>
+    <form onSubmit={handleSubmit} className={cn('space-y-3 md:space-y-4', className)}>
           {/* Flight Type - Moved to top */}
           <FlightTypeSelector
             value={formData.dutyType}
@@ -349,8 +349,8 @@ export function FlightEntryForm({
           )}
 
           {/* Date - Below outbound header for layover, below duty type for others */}
-          <div className="space-y-2">
-            <label htmlFor="date" className="block text-sm font-medium">
+          <div className="form-field-spacing-sm">
+            <label htmlFor="date" className="form-label-responsive block">
               Date
             </label>
             <div className="relative">
@@ -378,7 +378,7 @@ export function FlightEntryForm({
               )}
             </div>
             {validation.fieldErrors.date && submitAttempted && (
-              <p className="text-destructive text-sm">{validation.fieldErrors.date}</p>
+              <p className="text-destructive form-error-responsive">{validation.fieldErrors.date}</p>
             )}
           </div>
 
@@ -391,7 +391,7 @@ export function FlightEntryForm({
                 <div className="space-y-2">
                   <label className="block text-sm font-medium">Flight Number</label>
                   <div className="relative">
-                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                    <div className="input-icon-left">
                       <Plane className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <Input
@@ -404,7 +404,7 @@ export function FlightEntryForm({
                       }}
                       placeholder="123"
                       disabled={isFormDisabled}
-                      className="pl-10"
+                      className="input-with-left-icon"
                       maxLength={4}
                     />
                   </div>
@@ -416,7 +416,7 @@ export function FlightEntryForm({
                   <div className="grid grid-cols-2 gap-3">
                     {[0, 1].map((index) => (
                       <div key={index} className="relative">
-                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                        <div className="input-icon-left">
                           <MapPin className="h-4 w-4 text-muted-foreground" />
                         </div>
                         <Input
@@ -432,7 +432,7 @@ export function FlightEntryForm({
                           }}
                           placeholder={index === 0 ? 'DXB' : 'KHI'}
                           disabled={isFormDisabled}
-                          className="pl-10"
+                          className="input-with-left-icon"
                           maxLength={3}
                         />
                       </div>
@@ -498,7 +498,7 @@ export function FlightEntryForm({
                 <div className="space-y-2">
                   <label className="block text-sm font-medium">Flight Number</label>
                   <div className="relative">
-                    <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                    <div className="input-icon-left">
                       <Plane className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <Input
@@ -514,7 +514,7 @@ export function FlightEntryForm({
                       }}
                       placeholder="124"
                       disabled={isFormDisabled}
-                      className="pl-10"
+                      className="input-with-left-icon"
                       maxLength={4}
                     />
                   </div>
@@ -526,7 +526,7 @@ export function FlightEntryForm({
                   <div className="grid grid-cols-2 gap-3">
                     {[2, 3].map((index) => (
                       <div key={index} className="relative">
-                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                        <div className="input-icon-left">
                           <MapPin className="h-4 w-4 text-muted-foreground" />
                         </div>
                         <Input
@@ -542,7 +542,7 @@ export function FlightEntryForm({
                           }}
                           placeholder={index === 2 ? 'KHI' : 'DXB'}
                           disabled={isFormDisabled}
-                          className="pl-10"
+                          className="input-with-left-icon"
                           maxLength={3}
                         />
                       </div>
@@ -582,7 +582,7 @@ export function FlightEntryForm({
 
           {/* Flight Details for Non-Layover duties */}
           {showFlightFields && formData.dutyType !== 'layover' && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Flight Numbers */}
               <div className="space-y-3">
                 <label className="block text-sm font-medium">
@@ -591,7 +591,7 @@ export function FlightEntryForm({
                 <div className="grid grid-cols-2 gap-3">
                   {formData.flightNumbers.slice(0, 4).map((flightNumber, index) => (
                     <div key={index} className="relative">
-                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                      <div className="input-icon-left">
                         <Plane className="h-4 w-4 text-muted-foreground" />
                       </div>
                       <Input
@@ -604,7 +604,7 @@ export function FlightEntryForm({
                         }}
                         placeholder={index === 0 ? '123' : '124'}
                         disabled={isFormDisabled}
-                        className="pl-10"
+                        className="input-with-left-icon"
                         maxLength={4}
                       />
                     </div>
@@ -627,7 +627,7 @@ export function FlightEntryForm({
 
                     return (
                       <div key={index} className="relative">
-                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                        <div className="input-icon-left">
                           <MapPin className="h-4 w-4 text-muted-foreground" />
                         </div>
                         <Input
@@ -643,7 +643,7 @@ export function FlightEntryForm({
                           }}
                           placeholder={placeholders[index]}
                           disabled={isFormDisabled}
-                          className="pl-10"
+                          className="input-with-left-icon"
                           maxLength={3}
                         />
                       </div>
@@ -719,6 +719,7 @@ export function FlightEntryForm({
               <Button
                 type="button"
                 variant="secondary"
+                size="touch"
                 onClick={onSaveBatchOnly}
                 disabled={loading}
                 className="w-full flex items-center justify-center gap-2 cursor-pointer hover:opacity-90"
@@ -742,6 +743,7 @@ export function FlightEntryForm({
               {/* Submit Button - Primary action comes first */}
               <Button
                 type="submit"
+                size="touch"
                 disabled={isFormDisabled}
                 className="flex-1 flex items-center justify-center gap-2 cursor-pointer hover:opacity-90"
               >
@@ -765,6 +767,7 @@ export function FlightEntryForm({
                 <Button
                   type="button"
                   variant="outline"
+                  size="touch"
                   onClick={handleAddToBatch}
                   disabled={isFormDisabled}
                   className="flex-1 flex items-center justify-center gap-2 cursor-pointer hover:bg-transparent hover:opacity-80"

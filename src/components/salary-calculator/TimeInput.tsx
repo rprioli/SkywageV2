@@ -131,19 +131,19 @@ export function TimeInput({
 
 
   return (
-    <div className={cn('space-y-2', className)}>
+    <div className={cn('form-field-spacing-sm', className)}>
       {label && (
-        <label className="block text-sm font-medium">
+        <label className="form-label-responsive block">
           {label}
           {required && <span className="text-destructive ml-1">*</span>}
         </label>
       )}
       
       <div className="relative">
-        <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+        <div className="input-icon-left">
           <Clock className="h-4 w-4 text-muted-foreground" />
         </div>
-        
+
         <Input
           type="text"
           value={internalValue}
@@ -154,7 +154,7 @@ export function TimeInput({
           placeholder={placeholder}
           disabled={disabled}
           className={cn(
-            'pl-10',
+            'input-with-left-icon',
             error && 'border-destructive focus-visible:border-destructive',
             warning && !error && 'border-orange-500 focus-visible:border-orange-500'
           )}
@@ -164,7 +164,7 @@ export function TimeInput({
 
       {/* Error message */}
       {error && (
-        <p className="text-destructive text-sm flex items-center gap-1">
+        <p className="text-destructive form-error-responsive flex items-center gap-1">
           <span className="text-destructive">•</span>
           {error}
         </p>
@@ -172,7 +172,7 @@ export function TimeInput({
 
       {/* Warning message */}
       {warning && !error && (
-        <p className="text-orange-600 text-sm flex items-center gap-1">
+        <p className="text-orange-600 form-error-responsive flex items-center gap-1">
           <span className="text-orange-600">•</span>
           {warning}
         </p>

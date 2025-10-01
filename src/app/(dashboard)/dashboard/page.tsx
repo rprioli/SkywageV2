@@ -24,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Upload, FileText, BarChart3, Plane, Calendar, Trash2, Plus, Clock, TrendingUp } from 'lucide-react';
+import { Upload, FileText, BarChart3, Plane, Calendar, Trash2, Plus, Clock, TrendingUp, Banknote, UtensilsCrossed, Menu } from 'lucide-react';
 import Link from 'next/link';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Bar, BarChart, Cell } from 'recharts';
 import { MonthlyCalculation, FlightDuty, Position } from '@/types/salary-calculator';
@@ -35,6 +35,7 @@ import { RosterUpload } from '@/components/salary-calculator/RosterUpload';
 import { ProcessingStatus } from '@/components/salary-calculator/ProcessingStatus';
 import { ManualFlightEntry } from '@/components/salary-calculator/ManualFlightEntry';
 import { useToast } from '@/hooks/use-toast';
+import { useMobileNavigation } from '@/contexts/MobileNavigationProvider';
 import {
   processFileUpload,
   processFileUploadWithReplacement,
@@ -130,18 +131,18 @@ const MonthlyOverviewCard = memo(({
 
   return (
     <Card className="bg-white rounded-3xl !border-0 !shadow-none overflow-hidden">
-      <CardContent className="p-7">
+      <CardContent className="card-responsive-padding">
         {/* Header */}
-        <div className="flex items-start justify-between mb-5">
-          <div>
-            <h2 className="text-2xl font-bold mb-3" style={{ color: '#3A3780' }}>Overview</h2>
-            <div className="text-5xl font-bold mb-2" style={{
+        <div className="flex items-start justify-between mb-4 md:mb-5">
+          <div className="min-w-0 flex-1 pr-4">
+            <h2 className="text-responsive-2xl font-bold space-responsive-md" style={{ color: '#3A3780' }}>Overview</h2>
+            <div className="text-responsive-5xl font-bold space-responsive-sm" style={{
               color: '#3A3780',
               transition: 'opacity 0.2s ease-in-out'
             }}>
               {monthlyDataLoading ? '...' : formatCurrency(selectedData.totalSalary)}
             </div>
-            <p className="text-sm text-gray-500">
+            <p className="text-responsive-sm text-gray-500">
               {selectedData.totalSalary === 0 && !monthlyDataLoading ?
                 `${months[selectedOverviewMonth]} - No Data` :
                 (() => {
@@ -152,34 +153,50 @@ const MonthlyOverviewCard = memo(({
               }
             </p>
           </div>
-          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-            <BarChart3 className="h-5 w-5 text-gray-600" />
+          <div className="w-8 h-8 md:w-10 md:h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+            <BarChart3 className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />
           </div>
         </div>
 
-        {/* Chart Area */}
-        <div className="h-48 w-full">
+        {/* Chart Area - Optimized for mobile with extended width */}
+        <div className="h-56 md:h-48 w-full -mx-2 md:mx-0">
           {monthlyDataLoading ? (
             <div className="flex items-center justify-center h-full">
-              <div className="text-gray-500 text-sm">Loading chart data...</div>
+              <div className="text-gray-500 text-responsive-sm">Loading chart data...</div>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <BarChart
+                data={chartData}
+                margin={{
+                  top: 20,
+                  right: 8,
+                  left: 8,
+                  bottom: 5
+                }}
+                barCategoryGap="12%"
+              >
                 <XAxis
                   dataKey="month"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 12, fill: '#6B7280' }}
+                  tick={{
+                    fontSize: 10,
+                    fill: '#6B7280',
+                    fontWeight: 500
+                  }}
+                  interval={0}
+                  tickMargin={8}
                 />
                 <Bar
                   dataKey="value"
-                  radius={[8, 8, 0, 0]}
+                  radius={[10, 10, 0, 0]}
                   isAnimationActive={!monthlyDataLoading}
                   animationDuration={400}
                   animationEasing="ease-in-out"
                   animationBegin={0}
                   cursor="pointer"
+                  maxBarSize={50}
                 >
                   {chartData.map((entry, index) => (
                     <Cell
@@ -998,6 +1015,14 @@ export default function DashboardPage() {
     }).format(amount);
   };
 
+  // Compact currency format for mobile metric cards (removes "AED" prefix)
+  const formatCurrencyCompact = (amount: number) => {
+    return new Intl.NumberFormat('en-AE', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }).format(amount);
+  };
+
   const getCurrentMonthName = () => {
     return new Date().toLocaleDateString('en-US', {
       month: 'long',
@@ -1063,18 +1088,41 @@ export default function DashboardPage() {
     return `${dayName} ${dayNumber}`;
   };
 
+  // Get mobile navigation context
+  const { isMobile, toggleSidebar, isSidebarOpen } = useMobileNavigation();
+
   return (
     <div className="space-y-4">
       {/* Header and Action Buttons - Grouped with consistent spacing */}
       <div className="space-y-6 px-6 pt-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold mb-1" style={{ color: '#3A3780' }}>
-            {getTimeBasedGreeting()}, {user?.user_metadata?.first_name || 'User'}
-          </h1>
-          <p className="text-primary font-bold">
-            {getCurrentDateInfo()}
-          </p>
+        {/* Header with integrated hamburger menu on mobile */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-responsive-3xl font-bold space-responsive-sm" style={{ color: '#3A3780' }}>
+              {getTimeBasedGreeting()}, {user?.user_metadata?.first_name || 'User'}
+            </h1>
+            <p className="text-responsive-base text-primary font-bold">
+              {getCurrentDateInfo()}
+            </p>
+          </div>
+
+          {/* Hamburger Menu - Mobile Only */}
+          {isMobile && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleSidebar}
+              className={`flex-shrink-0 p-3 rounded-lg touch-target transition-colors ${
+                isSidebarOpen
+                  ? 'bg-primary/10 hover:bg-primary/20 text-primary'
+                  : 'hover:bg-gray-100 active:bg-gray-200 text-gray-700'
+              }`}
+              aria-label="Toggle navigation menu"
+              aria-expanded={isSidebarOpen}
+            >
+              <Menu className="h-6 w-6" />
+            </Button>
+          )}
         </div>
 
         {/* Action Buttons */}
@@ -1098,9 +1146,9 @@ export default function DashboardPage() {
       </div>
 
       {/* Top Section - Monthly Overview + Side Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-6">
-        {/* Monthly Overview - Large Card (2/3 width) */}
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6 responsive-container">
+        {/* Monthly Overview - Large Card (2/3 width on desktop) */}
+        <div className="xl:col-span-2">
           <MonthlyOverviewCard
             allMonthlyCalculations={allMonthlyCalculations}
             selectedOverviewMonth={selectedOverviewMonth}
@@ -1113,56 +1161,70 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Side Cards - Stacked (1/3 width) */}
-        <div className="space-y-6">
-          {/* Flight Hours Card */}
+        {/* Side Cards - Responsive stacking: 3 cols on mobile, 2 cols on tablet, 1 col on desktop */}
+        <div className="grid grid-cols-3 sm:grid-cols-2 xl:grid-cols-1 gap-2 md:gap-6">
+          {/* Flight Hours Card - Purple (Primary Brand Color) */}
           <Card className="bg-white rounded-3xl !border-0 !shadow-none">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center">
-                  <Clock className="h-8 w-8 text-blue-600" />
+            <CardContent className="p-2 md:p-6">
+              <div className="flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-4">
+                <div className="w-9 h-9 md:w-16 md:h-16 rounded-xl md:rounded-2xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(76, 73, 237, 0.15)' }}>
+                  <Clock className="h-4 w-4 md:h-8 md:w-8" style={{ color: '#4C49ED' }} />
                 </div>
-                <div>
-                  <div className="text-3xl font-bold text-blue-900">
+                <div className="min-w-0 flex-1 text-center md:text-left overflow-hidden">
+                  {/* Mobile: Compact format */}
+                  <div className="md:hidden text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: '#3A3780' }}>
+                    {monthlyDataLoading || isMonthSwitching ? '...' : `${Math.floor(selectedData.dutyHours)}hr`}
+                  </div>
+                  {/* Desktop: Full format */}
+                  <div className="hidden md:block text-responsive-3xl font-bold" style={{ color: '#3A3780' }}>
                     {monthlyDataLoading || isMonthSwitching ? '...' : `${Math.floor(selectedData.dutyHours)}`}
                   </div>
-                  <div className="text-sm text-blue-700">Flight Hours</div>
-                  <div className="text-xs text-blue-600">This month</div>
+                  <div className="text-[10px] md:text-responsive-sm whitespace-nowrap" style={{ color: '#4C49ED' }}>Flight Hours</div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
 
-          {/* Flight Pay Card */}
+          {/* Flight Pay Card - Green (Accent Brand Color) */}
           <Card className="bg-white rounded-3xl !border-0 !shadow-none">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-green-500/20 rounded-2xl flex items-center justify-center">
-                  <TrendingUp className="h-8 w-8 text-green-600" />
+            <CardContent className="p-2 md:p-6">
+              <div className="flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-4">
+                <div className="w-9 h-9 md:w-16 md:h-16 rounded-xl md:rounded-2xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(109, 220, 145, 0.2)' }}>
+                  <Banknote className="h-4 w-4 md:h-8 md:w-8" style={{ color: '#6DDC91' }} />
                 </div>
-                <div>
-                  <div className="text-lg font-bold text-green-900">
+                <div className="min-w-0 flex-1 text-center md:text-left overflow-hidden">
+                  {/* Mobile: Compact format */}
+                  <div className="md:hidden text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: '#059669' }}>
+                    AED {currentMonthCalculation ? formatCurrencyCompact(currentMonthCalculation.flightPay) : formatCurrencyCompact(0)}
+                  </div>
+                  {/* Desktop: Full format */}
+                  <div className="hidden md:block text-responsive-xl font-bold" style={{ color: '#059669' }}>
                     {currentMonthCalculation ? formatCurrency(currentMonthCalculation.flightPay) : formatCurrency(0)}
                   </div>
-                  <div className="text-sm text-green-700">Flight Pay</div>
+                  <div className="text-[10px] md:text-responsive-sm whitespace-nowrap" style={{ color: '#10b981' }}>Flight Pay</div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Per Diem Card */}
+          {/* Per Diem Card - Teal (Complementary Color) */}
           <Card className="bg-white rounded-3xl !border-0 !shadow-none">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-emerald-500/20 rounded-2xl flex items-center justify-center">
-                  <TrendingUp className="h-8 w-8 text-emerald-600" />
+            <CardContent className="p-2 md:p-6">
+              <div className="flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-4">
+                <div className="w-9 h-9 md:w-16 md:h-16 rounded-xl md:rounded-2xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(20, 184, 166, 0.15)' }}>
+                  <UtensilsCrossed className="h-4 w-4 md:h-8 md:w-8" style={{ color: '#14b8a6' }} />
                 </div>
-                <div>
-                  <div className="text-lg font-bold text-emerald-900">
+                <div className="min-w-0 flex-1 text-center md:text-left overflow-hidden">
+                  {/* Mobile: Compact format */}
+                  <div className="md:hidden text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: '#0f766e' }}>
+                    AED {currentMonthCalculation ? formatCurrencyCompact(currentMonthCalculation.perDiemPay) : formatCurrencyCompact(0)}
+                  </div>
+                  {/* Desktop: Full format */}
+                  <div className="hidden md:block text-responsive-xl font-bold" style={{ color: '#0f766e' }}>
                     {currentMonthCalculation ? formatCurrency(currentMonthCalculation.perDiemPay) : formatCurrency(0)}
                   </div>
-                  <div className="text-sm text-emerald-700">Per Diem</div>
+                  <div className="text-[10px] md:text-responsive-sm whitespace-nowrap" style={{ color: '#14b8a6' }}>Per Diem</div>
                 </div>
               </div>
             </CardContent>
@@ -1170,8 +1232,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Flight Duties Section - Full Width */}
-      <div className="px-6">
+      {/* Flight Duties Section - Full Width with minimal horizontal padding */}
+      <div className="px-2 md:px-4">
         {flightDuties.length > 0 ? (
           <FlightDutiesManager
             flightDuties={flightDuties}
@@ -1183,13 +1245,13 @@ export default function DashboardPage() {
           />
         ) : (
           <Card className="bg-white rounded-3xl !border-0 !shadow-none overflow-hidden">
-            <CardContent className="p-7">
-              <div className="text-center py-8" role="status" aria-label="No flight duties available">
-                <Plane className="h-16 w-16 mx-auto mb-6 text-gray-400" />
-                <h3 className="text-2xl font-bold mb-3 tracking-tight" style={{ color: '#3A3780' }}>
+            <CardContent className="card-responsive-padding">
+              <div className="text-center py-6 md:py-8" role="status" aria-label="No flight duties available">
+                <Plane className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 md:mb-6 text-gray-400" />
+                <h3 className="text-responsive-2xl font-bold space-responsive-md tracking-tight" style={{ color: '#3A3780' }}>
                   No Flight Duties Yet
                 </h3>
-                <p className="text-sm text-gray-500 max-w-sm mx-auto leading-relaxed">
+                <p className="text-responsive-sm text-gray-500 max-w-sm mx-auto leading-relaxed">
                   Upload your roster file or add flights manually to see them here
                 </p>
               </div>
@@ -1200,7 +1262,7 @@ export default function DashboardPage() {
 
       {/* Upload Roster Modal */}
       <Dialog open={uploadModalOpen} onOpenChange={handleUploadModalClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="modal-xl modal-touch-friendly max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Upload className="h-5 w-5 text-primary" />
@@ -1261,7 +1323,7 @@ export default function DashboardPage() {
 
       {/* Manual Entry Modal */}
       <Dialog open={manualEntryModalOpen} onOpenChange={setManualEntryModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="modal-xl modal-form-compact max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />

@@ -106,11 +106,11 @@ export function LayoverConnectedCard({
   if (!layoverPair) {
     return (
       <div className="relative">
-        <Card 
-          className={`rounded-2xl border-0 bg-white shadow-none hover:shadow-lg transition-all duration-300 border-gray-100 hover:border-gray-200 ${
+        <Card
+          className={`rounded-2xl border-0 bg-white shadow-none hover:shadow-lg transition-all duration-300 border-gray-100 hover:border-gray-200 flight-card-uniform-height ${
             isSelected ? 'ring-2 ring-primary ring-offset-2' : ''
-          }`}
-          style={{ minHeight: '120px', maxHeight: '120px' }}
+          } ${bulkMode ? 'cursor-pointer' : ''}`}
+          onClick={bulkMode ? handleToggleSelection : undefined}
         >
           <div className="px-4 py-3 h-full flex flex-col">
             {/* Single layover card content */}
@@ -127,30 +127,23 @@ export function LayoverConnectedCard({
     <div className="relative">
       {/* Card container */}
       <div className="relative">
-        <Card 
-          className={`rounded-2xl border-0 bg-white shadow-none hover:shadow-lg transition-all duration-300 border-gray-100 hover:border-gray-200 ${
+        <Card
+          className={`rounded-2xl border-0 bg-white shadow-none hover:shadow-lg transition-all duration-300 border-gray-100 hover:border-gray-200 flight-card-uniform-height ${
             isSelected ? 'ring-2 ring-primary ring-offset-2' : ''
-          }`}
-          style={{ minHeight: '120px', maxHeight: '120px' }}
+          } ${bulkMode ? 'cursor-pointer' : ''}`}
+          onClick={bulkMode ? handleToggleSelection : undefined}
         >
-          <div className="px-4 py-3 h-full flex flex-col">
-            {/* Bulk Selection Checkbox */}
-            {bulkMode && onToggleSelection && currentDuty.id && (
-              <div className="absolute top-2 left-2 z-10">
-                <Checkbox
-                  checked={isSelected}
-                  onCheckedChange={handleToggleSelection}
-                  className="h-4 w-4"
-                />
-              </div>
-            )}
+          <div className="card-mobile-optimized h-full flex flex-col">
 
             {/* Navigation Arrows - Inside Card */}
             {layoverPair && (
               <>
                 {/* Left Arrow */}
                 <button
-                  onClick={() => setCurrentSegment('outbound')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentSegment('outbound');
+                  }}
                   disabled={currentSegment === 'outbound'}
                   className={`absolute left-2 top-1/2 transform -translate-y-1/2 p-1 transition-colors z-10 ${
                     currentSegment === 'outbound'
@@ -164,7 +157,10 @@ export function LayoverConnectedCard({
 
                 {/* Right Arrow */}
                 <button
-                  onClick={() => setCurrentSegment('inbound')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentSegment('inbound');
+                  }}
                   disabled={currentSegment === 'inbound'}
                   className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1 transition-colors z-10 ${
                     currentSegment === 'inbound'
@@ -180,7 +176,7 @@ export function LayoverConnectedCard({
 
             {/* Actions Menu - Bottom Right */}
             {showActions && onDelete && (
-              <div className="absolute bottom-2 right-2 z-10">
+              <div className="absolute bottom-2 right-2 z-10" onClick={(e) => e.stopPropagation()}>
                 <DropdownMenu>
                   <DropdownMenuTrigger className="p-1 hover:bg-gray-100 rounded-full transition-colors">
                     <MoreVertical className="h-4 w-4 text-gray-500" />
@@ -197,32 +193,37 @@ export function LayoverConnectedCard({
               </div>
             )}
 
-            {/* Flight number, Payment badge, and Total duty badge - same line */}
-            <div className="relative flex items-center justify-between mb-1">
+            {/* Top row - Flight number and payment badge */}
+            <div className="flex items-center justify-between mb-1">
               <span className="text-xs text-gray-500 font-bold">{cardData.flightNumber}</span>
-              <div 
-                className="absolute left-1/2 transform -translate-x-1/2 text-xs font-semibold text-white rounded-full px-2 py-0.5" 
+              <div
+                className="text-xs font-semibold text-white rounded-full px-2 py-0.5"
                 style={{ backgroundColor: BRAND.accent }}
               >
                 {cardData.pay}
               </div>
-              <span 
-                className="inline-block text-white text-xs font-bold px-3 py-1 rounded-full" 
+            </div>
+
+            {/* Duty badge - separate row */}
+            <div className="flex justify-center mb-1">
+              <span
+                className="inline-block text-white text-xs font-bold px-2 py-0.5 rounded-full"
                 style={{ backgroundColor: BRAND.primary }}
               >
                 {cardData.totalDuty} Duty
               </span>
             </div>
             
-            {/* Main routing section */}
-            <div className="grid grid-cols-3 items-center gap-2 mb-1 flex-1">
+            {/* Main routing section - flex-based alignment */}
+            <div className="flight-card-main-content">
+              <div className="grid grid-cols-3 items-center gap-2">
               <div className="text-center">
                 <div className="text-lg font-bold tracking-wide text-gray-900">{from}</div>
                 <div className="text-xs text-gray-500 mt-0.5">{cardData.reporting}</div>
               </div>
-              
+
               <div className="flex flex-col items-center justify-center">
-                <div className="flex items-center gap-1 mb-0.5">
+                <div className="flex items-center gap-1 mb-1">
                   <div className="h-px w-6" style={{ backgroundColor: BRAND.primary }}></div>
                   <div className="text-sm" style={{ color: BRAND.primary }}>✈</div>
                   <div className="h-px w-6" style={{ backgroundColor: BRAND.primary }}></div>
@@ -231,19 +232,23 @@ export function LayoverConnectedCard({
                   Layover
                 </div>
               </div>
-              
+
               <div className="text-center">
                 <div className="text-lg font-bold tracking-wide text-gray-900">{to}</div>
                 <div className="text-xs text-gray-500 mt-0.5">{cardData.debriefing}</div>
               </div>
+              </div>
             </div>
 
-            {/* Layover details - only show on outbound */}
-            {isOutbound && layoverPair && (
-              <div className="text-xs text-gray-600 text-center mt-0.5">
-                {layoverPair.destination} {formatDutyHours(layoverPair.restHours)} - {formatCurrency(layoverPair.perDiemPay)}
-              </div>
-            )}
+            {/* Bottom space reserved for layover details */}
+            <div className="flex-1 flex items-end justify-center">
+              {/* Layover details - only show on outbound */}
+              {isOutbound && layoverPair && (
+                <div className="text-xs text-gray-600 text-center">
+                  {layoverPair.destination} {formatDutyHours(layoverPair.restHours)} - {formatCurrency(layoverPair.perDiemPay)}
+                </div>
+              )}
+            </div>
           </div>
         </Card>
       </div>

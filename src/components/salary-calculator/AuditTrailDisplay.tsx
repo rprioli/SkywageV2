@@ -298,7 +298,7 @@ export function AuditTrailModal({
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="modal-lg modal-touch-friendly max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Audit Trail</DialogTitle>
           <DialogDescription>

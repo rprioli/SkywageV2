@@ -215,10 +215,10 @@ export function FlightNumberInput({
             <div key={index} className="relative">
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
-                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                  <div className="input-icon-left">
                     <Plane className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  
+
                   <Input
                     ref={el => inputRefs.current[index] = el}
                     type="text"
@@ -230,9 +230,9 @@ export function FlightNumberInput({
                     placeholder={index === 0 ? '123' : '124'}
                     disabled={disabled}
                     className={cn(
-                      'pl-10',
+                      'input-with-left-icon',
                       !validation.isValid && 'border-destructive focus-visible:border-destructive',
-                      flightNumbers.length > 1 && 'pr-10'
+                      flightNumbers.length > 1 && 'input-with-right-icon'
                     )}
                     maxLength={6}
                   />

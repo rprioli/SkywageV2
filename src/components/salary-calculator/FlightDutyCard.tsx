@@ -446,20 +446,20 @@ export function FlightDutyCard({
           {/* Flight Numbers and Sectors - always reserve space for consistent card height */}
           <div className="text-center min-h-[3rem] flex flex-col justify-center">
             {flightDuty.dutyType === 'recurrent' ? (
-              <h4 className="font-semibold text-base text-gray-800 mb-1">
+              <h4 className="font-semibold text-responsive-base text-gray-800 space-responsive-sm">
                 Recurrent Training
               </h4>
             ) : flightDuty.dutyType === 'sby' ? (
               <>
-                <h4 className="font-semibold text-base text-gray-800 mb-1">
+                <h4 className="font-semibold text-responsive-base text-gray-800 space-responsive-sm">
                   SBY
                 </h4>
-                <div className="text-sm text-gray-500">
+                <div className="text-responsive-sm text-gray-500">
                   DXB
                 </div>
               </>
             ) : flightDuty.flightNumbers.length > 0 ? (
-              <h4 className="font-semibold text-base text-gray-800 mb-1">
+              <h4 className="font-semibold text-responsive-base text-gray-800 space-responsive-sm">
                 {flightDuty.dutyType === 'asby'
                   ? flightDuty.flightNumbers.join(' ') // No FZ prefix for standby duties
                   : flightDuty.flightNumbers.map(num => num.startsWith('FZ') ? num : `FZ${num}`).join(' ')

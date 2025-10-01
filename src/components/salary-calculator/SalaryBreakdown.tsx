@@ -185,13 +185,13 @@ export function SalaryBreakdownCompact({ calculation, position }: SalaryBreakdow
     <Card>
       <CardContent className="pt-6">
         <div className="text-center">
-          <div className="text-2xl font-bold text-primary mb-1">
+          <div className="text-responsive-2xl font-bold text-primary space-responsive-sm">
             {formatCurrency(calculation.totalSalary)}
           </div>
-          <div className="text-sm text-muted-foreground mb-4">
-            {new Date(calculation.year, calculation.month - 1).toLocaleDateString('en-US', { 
-              month: 'long', 
-              year: 'numeric' 
+          <div className="text-responsive-sm text-muted-foreground space-responsive-lg">
+            {new Date(calculation.year, calculation.month - 1).toLocaleDateString('en-US', {
+              month: 'long',
+              year: 'numeric'
             })} • {position}
           </div>
           

@@ -158,10 +158,10 @@ export function FlightDutiesTable({
   if (loading) {
     return (
       <Card className="border-0 shadow-none bg-transparent">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-xl font-semibold">Flight Duties</CardTitle>
+        <CardHeader className="pb-4 px-2 md:px-4">
+          <CardTitle className="text-responsive-xl font-semibold">Flight Duties</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-2 md:px-4">
           <div className="space-y-6">
             {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="p-6 bg-gray-50/50 rounded-xl border border-gray-100">
@@ -193,16 +193,16 @@ export function FlightDutiesTable({
   if (filteredFlightDuties.length === 0) {
     return (
       <Card className="border-0 shadow-none bg-transparent">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-xl font-semibold">Flight Duties</CardTitle>
+        <CardHeader className="pb-4 px-2 md:px-4">
+          <CardTitle className="text-responsive-xl font-semibold">Flight Duties</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-2 md:px-4">
           <div className="text-center py-16">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <Plane className="h-8 w-8 text-gray-400" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No flight duties found</h3>
-            <p className="text-gray-500 max-w-sm mx-auto">
+            <h3 className="text-responsive-lg font-medium text-gray-900 space-responsive-sm">No flight duties found</h3>
+            <p className="text-responsive-sm text-gray-500 max-w-sm mx-auto">
               Upload a roster CSV file or add flights manually to get started with your salary calculations.
             </p>
           </div>
@@ -215,12 +215,12 @@ export function FlightDutiesTable({
 
   return (
     <Card className="border-0 shadow-none bg-transparent">
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-2 px-2 md:px-4">
         <div className="flex flex-col space-y-4">
           {/* Header Row */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h2 className="text-2xl font-bold" style={{ color: '#3A3780' }}>Flight Duties</h2>
+              <h2 className="text-responsive-2xl font-bold" style={{ color: '#3A3780' }}>Flight Duties</h2>
               {bulkMode && isSomeSelected && (
                 <Badge variant="default" className="px-3 py-1 text-sm font-medium bg-primary">
                   {selectedFlights.size} selected
@@ -273,9 +273,9 @@ export function FlightDutiesTable({
 
 
 
-          {/* Bulk Actions Bar */}
+          {/* Bulk Actions Bar - Fixed height to prevent layout shift */}
           {bulkMode && (
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex items-center justify-between p-3 md:p-4 bg-gray-50 rounded-lg border border-gray-200 min-h-[56px] md:min-h-[64px]">
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -289,45 +289,47 @@ export function FlightDutiesTable({
                     }}
                   />
                   <span className="text-sm text-gray-700">
-                    Select all visible ({flightDuties.length})
+                    Select All
                   </span>
                 </div>
                 {isSomeSelected && (
                   <span className="text-sm text-gray-500">
-                    {selectedFlights.size} of {flightDuties.length} selected
+                    {selectedFlights.size} of {flightDuties.length}
                   </span>
                 )}
               </div>
 
-              {isSomeSelected && (
-                <div className="flex items-center space-x-2">
+              {/* Always render button container to maintain fixed height */}
+              <div className={`flex items-center space-x-2 transition-opacity duration-200 ${
+                isSomeSelected ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={clearSelection}
+                  className="h-8 px-3 text-xs cursor-pointer hover:bg-transparent hover:opacity-80"
+                  disabled={!isSomeSelected}
+                >
+                  Clear<span className="hidden md:inline"> Selection</span>
+                </Button>
+                {onBulkDelete && (
                   <Button
-                    variant="outline"
+                    variant="destructive"
                     size="sm"
-                    onClick={clearSelection}
+                    onClick={handleBulkDelete}
                     className="h-8 px-3 text-xs cursor-pointer hover:bg-transparent hover:opacity-80"
+                    disabled={!isSomeSelected}
                   >
-                    Clear Selection
+                    Delete
                   </Button>
-                  {onBulkDelete && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={handleBulkDelete}
-                      className="h-8 px-3 text-xs cursor-pointer hover:bg-transparent hover:opacity-80"
-                    >
-                      <Trash className="h-3 w-3 mr-1" />
-                      Delete Selected ({selectedFlights.size})
-                    </Button>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
         </div>
       </CardHeader>
-      <CardContent className="pt-2 pb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-8">
+      <CardContent className="pt-2 pb-8 px-2 md:px-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-4 md:gap-x-6">
           {filteredFlightDuties.map((duty, index) => {
             // Skip rendering off days when using new card design
             if (useNewCardDesign && duty.dutyType === 'off') {

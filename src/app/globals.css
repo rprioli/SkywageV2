@@ -166,6 +166,317 @@
     animation: fadeIn 0.5s ease-out forwards;
     opacity: 0;
   }
+
+  /* Mobile navigation utilities */
+  .sidebar-slide-in {
+    animation: slideInFromLeft 0.3s ease-out forwards;
+  }
+
+  .sidebar-slide-out {
+    animation: slideOutToLeft 0.3s ease-in forwards;
+  }
+
+  /* Prevent scroll when mobile sidebar is open */
+  .no-scroll {
+    overflow: hidden;
+  }
+
+  /* Touch-friendly tap targets */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Responsive Typography System */
+  .text-responsive-xs {
+    font-size: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem); /* 12px - 14px */
+    line-height: 1.4;
+  }
+
+  .text-responsive-sm {
+    font-size: clamp(0.875rem, 0.8rem + 0.375vw, 1rem); /* 14px - 16px */
+    line-height: 1.5;
+  }
+
+  .text-responsive-base {
+    font-size: clamp(1rem, 0.9rem + 0.5vw, 1.125rem); /* 16px - 18px */
+    line-height: 1.6;
+  }
+
+  .text-responsive-lg {
+    font-size: clamp(1.125rem, 1rem + 0.625vw, 1.25rem); /* 18px - 20px */
+    line-height: 1.5;
+  }
+
+  .text-responsive-xl {
+    font-size: clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem); /* 20px - 24px */
+    line-height: 1.4;
+  }
+
+  .text-responsive-2xl {
+    font-size: clamp(1.5rem, 1.3rem + 1vw, 2rem); /* 24px - 32px */
+    line-height: 1.3;
+  }
+
+  .text-responsive-3xl {
+    font-size: clamp(1.875rem, 1.5rem + 1.875vw, 2.5rem); /* 30px - 40px */
+    line-height: 1.2;
+  }
+
+  .text-responsive-4xl {
+    font-size: clamp(2rem, 1.5rem + 2.5vw, 3rem); /* 32px - 48px */
+    line-height: 1.1;
+  }
+
+  .text-responsive-5xl {
+    font-size: clamp(2.25rem, 1.75rem + 2.5vw, 3.5rem); /* 36px - 56px */
+    line-height: 1;
+  }
+
+  /* Responsive spacing utilities */
+  .space-responsive-sm {
+    margin-bottom: clamp(0.5rem, 0.4rem + 0.5vw, 0.75rem); /* 8px - 12px */
+  }
+
+  .space-responsive-md {
+    margin-bottom: clamp(0.75rem, 0.6rem + 0.75vw, 1.25rem); /* 12px - 20px */
+  }
+
+  .space-responsive-lg {
+    margin-bottom: clamp(1rem, 0.8rem + 1vw, 1.5rem); /* 16px - 24px */
+  }
+
+  /* Responsive layout utilities */
+  .responsive-container {
+    padding-left: clamp(1rem, 2vw, 1.5rem);
+    padding-right: clamp(1rem, 2vw, 1.5rem);
+  }
+
+  .responsive-gap {
+    gap: clamp(1rem, 2vw, 1.5rem);
+  }
+
+  .responsive-gap-lg {
+    gap: clamp(1.5rem, 3vw, 2rem);
+  }
+
+  /* Card responsive utilities */
+  .card-responsive-padding {
+    padding: clamp(1rem, 2vw, 1.5rem);
+  }
+
+  .card-responsive-padding-sm {
+    padding: clamp(0.75rem, 1.5vw, 1rem);
+  }
+
+  /* Grid responsive utilities */
+  .grid-responsive-auto {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+
+  .grid-responsive-cards {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  }
+
+  /* Mobile-optimized card utilities */
+  .card-mobile-optimized {
+    padding: clamp(0.5rem, 1vw, 0.75rem);
+  }
+
+  .flight-card-spacing {
+    margin-bottom: clamp(0.25rem, 0.5vw, 0.5rem);
+  }
+
+  /* Uniform flight card height */
+  .flight-card-uniform-height {
+    height: 150px;
+  }
+
+  /* Main content area - consistent flex behavior for perfect alignment */
+  .flight-card-main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 60px;
+  }
+
+  /* Modal responsive utilities */
+  .modal-responsive {
+    width: 100%;
+    max-width: calc(100vw - 1rem);
+    max-height: calc(100vh - 1rem);
+  }
+
+  @media (min-width: 640px) {
+    .modal-responsive {
+      max-width: 32rem; /* sm:max-w-lg */
+    }
+  }
+
+  @media (min-width: 768px) {
+    .modal-responsive {
+      max-width: 42rem; /* md:max-w-2xl */
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .modal-responsive {
+      max-width: 48rem; /* lg:max-w-3xl */
+    }
+  }
+
+  /* Full-screen mobile modal */
+  .modal-fullscreen-mobile {
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+    border-radius: 0;
+    top: 0;
+    left: 0;
+    transform: none;
+  }
+
+  @media (min-width: 640px) {
+    .modal-fullscreen-mobile {
+      width: auto;
+      height: auto;
+      max-width: 32rem;
+      max-height: calc(100vh - 2rem);
+      border-radius: 0.5rem;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+  }
+
+  /* Modal size variants */
+  .modal-sm {
+    max-width: 24rem; /* 384px */
+  }
+
+  .modal-md {
+    max-width: 32rem; /* 512px */
+  }
+
+  .modal-lg {
+    max-width: 42rem; /* 672px */
+  }
+
+  .modal-xl {
+    max-width: 48rem; /* 768px */
+  }
+
+  .modal-2xl {
+    max-width: 56rem; /* 896px */
+  }
+
+  /* Touch-friendly modal spacing */
+  .modal-touch-friendly {
+    padding: clamp(1rem, 3vw, 1.5rem);
+    gap: clamp(1rem, 2vw, 1.5rem);
+  }
+
+  /* Compact modal spacing for forms */
+  .modal-form-compact {
+    padding: clamp(1rem, 3vw, 1.5rem);
+  }
+
+  /* Form responsive utilities */
+  .form-field-spacing {
+    margin-bottom: clamp(1rem, 2vw, 1.5rem);
+  }
+
+  .form-field-spacing-sm {
+    margin-bottom: clamp(0.75rem, 1.5vw, 1rem);
+  }
+
+  .form-input-touch {
+    min-height: 44px; /* iOS/Android touch target minimum */
+    padding: clamp(0.75rem, 2vw, 1rem);
+    font-size: clamp(1rem, 2vw, 1.125rem); /* Prevent zoom on iOS */
+  }
+
+  .form-button-touch {
+    min-height: 44px;
+    min-width: 44px;
+    padding: clamp(0.75rem, 2vw, 1rem) clamp(1.5rem, 3vw, 2rem);
+    font-size: clamp(0.875rem, 1.5vw, 1rem);
+  }
+
+  .form-label-responsive {
+    font-size: clamp(0.875rem, 1.5vw, 1rem);
+    margin-bottom: clamp(0.5rem, 1vw, 0.75rem);
+    font-weight: 500;
+  }
+
+  .form-error-responsive {
+    font-size: clamp(0.75rem, 1.25vw, 0.875rem);
+    margin-top: clamp(0.25rem, 0.5vw, 0.5rem);
+  }
+
+  /* Mobile keyboard optimization */
+  .input-mobile-optimized {
+    /* Prevent zoom on iOS when input is focused */
+    font-size: max(16px, 1rem);
+  }
+
+  @media (max-width: 767px) {
+    .input-mobile-optimized {
+      font-size: 16px; /* Exactly 16px to prevent iOS zoom */
+    }
+  }
+
+  /* Enhanced error states */
+  .form-field-error {
+    border-color: rgb(239 68 68); /* red-500 */
+    box-shadow: 0 0 0 3px rgb(239 68 68 / 0.1);
+  }
+
+  .form-field-error:focus-visible {
+    border-color: rgb(239 68 68);
+    box-shadow: 0 0 0 3px rgb(239 68 68 / 0.2);
+  }
+
+  /* Success states */
+  .form-field-success {
+    border-color: rgb(34 197 94); /* green-500 */
+  }
+
+  .form-field-success:focus-visible {
+    border-color: rgb(34 197 94);
+    box-shadow: 0 0 0 3px rgb(34 197 94 / 0.1);
+  }
+
+  /* Input icon positioning - matches form-input-touch padding */
+  .input-icon-left {
+    position: absolute;
+    left: clamp(0.75rem, 2vw, 1rem);
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .input-icon-right {
+    position: absolute;
+    right: clamp(0.75rem, 2vw, 1rem);
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* Input with left icon needs extra left padding */
+  .input-with-left-icon {
+    padding-left: clamp(2.5rem, 4vw, 3rem); /* icon space + padding */
+  }
+
+  /* Input with right icon needs extra right padding */
+  .input-with-right-icon {
+    padding-right: clamp(2.5rem, 4vw, 3rem); /* icon space + padding */
+  }
 }
 
 @keyframes fadeIn {
@@ -176,5 +487,23 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutToLeft {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
   }
 }

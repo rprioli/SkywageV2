@@ -7,7 +7,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, TrendingUp, TrendingDown, ArrowUp, ArrowDown, Award, AlertTriangle } from 'lucide-react';
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from 'recharts';
 import { MonthlyComparison, MonthlyTrendData } from '@/types/statistics';
 import { formatCurrency, formatPercentage, CHART_COLORS, getMonthName } from '@/lib/statistics/chartHelpers';
 
@@ -44,15 +44,15 @@ export function MonthlyComparisonCard({ data, monthlyTrends, loading = false }: 
     );
   }
 
-  // Prepare chart data (last 12 months)
+  // Prepare chart data (last 12 months) - Match Dashboard styling
   const chartData = monthlyTrends
     .slice(-12)
     .map(trend => ({
       month: trend.monthName,
       earnings: trend.totalEarnings,
-      fill: trend.month === data.currentMonth.month && trend.year === data.currentMonth.year 
-        ? CHART_COLORS.primary 
-        : CHART_COLORS.neutral
+      fill: trend.month === data.currentMonth.month && trend.year === data.currentMonth.year
+        ? '#4C49ED' // Active: Dark purple (matches Dashboard)
+        : 'rgba(76, 73, 237, 0.08)' // Inactive: Light purple (matches Dashboard)
     }));
 
   // Custom tooltip for the chart
@@ -80,33 +80,33 @@ export function MonthlyComparisonCard({ data, monthlyTrends, loading = false }: 
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Current vs Previous Month */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3 md:gap-4">
           {/* Current Month */}
-          <div className="bg-primary/5 rounded-2xl p-4">
+          <div className="bg-primary/5 rounded-2xl p-3 md:p-4">
             <div className="text-center">
-              <div className="text-lg font-bold text-primary mb-1">
+              <div className="text-sm md:text-lg font-bold text-primary mb-1 overflow-hidden text-ellipsis">
                 {formatCurrency(data.currentMonth.totalEarnings)}
               </div>
-              <div className="text-xs text-primary/70 mb-2">
+              <div className="text-sm md:text-xs text-primary/70 mb-2">
                 {getMonthName(data.currentMonth.month)} {data.currentMonth.year}
               </div>
-              <div className="text-xs text-primary/50">Current Month</div>
+              <div className="text-sm md:text-xs text-primary/50">Current Month</div>
             </div>
           </div>
 
           {/* Previous Month */}
-          <div className="bg-white rounded-2xl p-4 border border-gray-100">
+          <div className="bg-white rounded-2xl p-3 md:p-4 border border-gray-100">
             <div className="text-center">
-              <div className="text-lg font-bold text-gray-700 mb-1">
+              <div className="text-sm md:text-lg font-bold text-gray-700 mb-1 overflow-hidden text-ellipsis">
                 {data.previousMonth ? formatCurrency(data.previousMonth.totalEarnings) : 'N/A'}
               </div>
-              <div className="text-xs text-gray-500 mb-2">
+              <div className="text-sm md:text-xs text-gray-500 mb-2">
                 {data.previousMonth
                   ? `${getMonthName(data.previousMonth.month)} ${data.previousMonth.year}`
                   : 'No Data'
                 }
               </div>
-              <div className="text-xs text-gray-400">Previous Month</div>
+              <div className="text-sm md:text-xs text-gray-400">Previous Month</div>
             </div>
           </div>
         </div>
@@ -135,30 +135,42 @@ export function MonthlyComparisonCard({ data, monthlyTrends, loading = false }: 
           </div>
         )}
 
-        {/* Monthly Trend Chart */}
+        {/* Monthly Trend Chart - Optimized for mobile with Dashboard styling */}
         <div className="space-y-3">
           <h4 className="text-sm font-medium text-gray-700">Last 12 Months Trend</h4>
-          <div className="h-32">
+          <div className="h-64 md:h-32 -mx-2 md:mx-0">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <XAxis 
-                  dataKey="month" 
+              <BarChart
+                data={chartData}
+                margin={{
+                  top: 20,
+                  right: 8,
+                  left: 8,
+                  bottom: 5
+                }}
+                barCategoryGap="12%"
+              >
+                <XAxis
+                  dataKey="month"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 10, fill: '#6B7280' }}
-                />
-                <YAxis 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 10, fill: '#6B7280' }}
-                  tickFormatter={(value) => formatCurrency(value, true)}
+                  tick={{ fontSize: 10, fill: '#6B7280', fontWeight: 500 }}
+                  interval={0}
+                  tickMargin={8}
                 />
                 <Tooltip content={<CustomTooltip />} />
-                <Bar 
-                  dataKey="earnings" 
-                  radius={[4, 4, 0, 0]}
-                  fill={CHART_COLORS.neutral}
-                />
+                <Bar
+                  dataKey="earnings"
+                  radius={[10, 10, 0, 0]}
+                  maxBarSize={50}
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry.fill}
+                    />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>

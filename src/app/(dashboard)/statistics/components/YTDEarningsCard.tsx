@@ -135,25 +135,25 @@ export function YTDEarningsCard({ data, loading = false }: YTDEarningsCardProps)
         </div>
 
         {/* Fixed vs Variable Breakdown */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3 md:gap-4">
           {/* Fixed Earnings */}
-          <div className="bg-white rounded-2xl p-4 text-center border border-gray-100">
-            <div className="text-lg font-bold text-gray-700 mb-1">
+          <div className="bg-white rounded-2xl p-3 md:p-4 text-center border border-gray-100">
+            <div className="text-sm md:text-lg font-bold text-gray-700 mb-1 overflow-hidden text-ellipsis">
               {formatCurrency(data.fixedEarnings)}
             </div>
-            <div className="text-xs text-gray-500 mb-2">Fixed Pay</div>
-            <div className="text-xs text-gray-400">
+            <div className="text-sm md:text-xs text-gray-500 mb-2">Fixed Pay</div>
+            <div className="text-sm md:text-xs text-gray-400">
               {data.totalEarnings > 0 ? formatPercentage((data.fixedEarnings / data.totalEarnings) * 100) : '0%'}
             </div>
           </div>
 
           {/* Variable Earnings */}
-          <div className="bg-primary/5 rounded-2xl p-4 text-center">
-            <div className="text-lg font-bold text-primary mb-1">
+          <div className="bg-primary/5 rounded-2xl p-3 md:p-4 text-center">
+            <div className="text-sm md:text-lg font-bold text-primary mb-1 overflow-hidden text-ellipsis">
               {formatCurrency(data.variableEarnings)}
             </div>
-            <div className="text-xs text-primary/70 mb-2">Variable Pay</div>
-            <div className="text-xs text-primary/50">
+            <div className="text-sm md:text-xs text-primary/70 mb-2">Variable Pay</div>
+            <div className="text-sm md:text-xs text-primary/50">
               {data.totalEarnings > 0 ? formatPercentage((data.variableEarnings / data.totalEarnings) * 100) : '0%'}
             </div>
           </div>

@@ -5,14 +5,19 @@ import { AvatarUpload } from '@/components/profile/AvatarUpload';
 import { NationalityUpdate } from '@/components/profile/NationalityUpdate';
 import { PositionUpdate } from '@/components/profile/PositionUpdate';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { UserCircle, Info, Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { UserCircle, Info, Settings, Menu } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { setupAvatarsBucket } from '@/lib/setupStorage';
+import { useMobileNavigation } from '@/contexts/MobileNavigationProvider';
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const [avatarUpdated, setAvatarUpdated] = useState(false);
   const [bucketError, setBucketError] = useState<string | null>(null);
+
+  // Get mobile navigation context
+  const { isMobile, toggleSidebar, isSidebarOpen } = useMobileNavigation();
 
   // Check if avatars bucket exists
   useEffect(() => {
@@ -47,12 +52,32 @@ export default function ProfilePage() {
     <div className="space-y-4">
       {/* Header and Profile - Grouped with consistent spacing */}
       <div className="space-y-6 px-6 pt-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold mb-1" style={{ color: '#3A3780' }}>Your Profile</h1>
-          <p className="text-primary font-bold">
-            Manage your account information and preferences
-          </p>
+        {/* Header with integrated hamburger menu on mobile */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-3xl font-bold mb-1" style={{ color: '#3A3780' }}>Your Profile</h1>
+            <p className="text-primary font-bold">
+              Manage your account information and preferences
+            </p>
+          </div>
+
+          {/* Hamburger Menu - Mobile Only */}
+          {isMobile && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleSidebar}
+              className={`flex-shrink-0 p-3 rounded-lg touch-target transition-colors ${
+                isSidebarOpen
+                  ? 'bg-primary/10 hover:bg-primary/20 text-primary'
+                  : 'hover:bg-gray-100 active:bg-gray-200 text-gray-700'
+              }`}
+              aria-label="Toggle navigation menu"
+              aria-expanded={isSidebarOpen}
+            >
+              <Menu className="h-6 w-6" />
+            </Button>
+          )}
         </div>
       </div>
 
