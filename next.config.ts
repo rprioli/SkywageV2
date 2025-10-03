@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   /* config options here */
@@ -15,8 +16,19 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   // Ensure webpack resolves modules correctly
-  webpack: (config) => {
-    config.resolve.fallback = { fs: false, path: false };
+  webpack: (config, { isServer }) => {
+    // Add path aliases explicitly
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.resolve(__dirname, './src'),
+    };
+
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      path: false
+    };
+
     return config;
   },
 };
