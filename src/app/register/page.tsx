@@ -8,7 +8,7 @@ import Link from 'next/link';
 export default function RegisterPage() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <main className="flex-grow flex flex-col justify-center p-4 md:p-8">
+      <main className="flex-grow flex flex-col justify-start pt-[8vh] md:pt-[12vh] p-4 md:p-8">
         <div className="w-full max-w-md mx-auto">
           {/* Centered Logo */}
           <div className="flex justify-center mb-8">
@@ -17,7 +17,7 @@ export default function RegisterPage() {
 
           {/* Register Header */}
           <div className="mb-8 text-center">
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">Create your account</h1>
+            <h1 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: 'rgb(58, 55, 128)' }}>Create your account</h1>
             <p className="text-muted-foreground">
               Join Skywage to calculate and track your airline salary
             </p>
