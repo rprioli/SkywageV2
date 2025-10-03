@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
     // !! WARN !!
     ignoreBuildErrors: true,
   },
+  // Image configuration for Netlify
+  images: {
+    unoptimized: true, // Disable image optimization for static export compatibility
+  },
   // Ensure webpack resolves modules correctly
   webpack: (config, { isServer }) => {
     // Add path aliases explicitly
