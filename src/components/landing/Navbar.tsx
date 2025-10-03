@@ -20,38 +20,10 @@ export function Navbar({ className }: NavbarProps) {
           <Logo variant="color" width={150} height={40} />
         </Link>
 
-        {/* Navigation Links */}
-        <nav className="hidden md:flex items-center space-x-8">
-          <Link
-            href="/app"
-            className="text-foreground hover:text-primary transition-colors font-medium"
-          >
-            App
-          </Link>
-          <Link
-            href="/about"
-            className="text-foreground hover:text-primary transition-colors font-medium"
-          >
-            About
-          </Link>
-          <Link
-            href="/support"
-            className="text-foreground hover:text-primary transition-colors font-medium"
-          >
-            Support
-          </Link>
-          <Link
-            href="/contact"
-            className="text-foreground hover:text-primary transition-colors font-medium"
-          >
-            Contact
-          </Link>
-        </nav>
-
         {/* CTA Buttons and Theme Toggle */}
         <div className="flex items-center space-x-4">
           <Button variant="outline" asChild className="rounded-hd">
-            <Link href="/login">
+            <Link href="/">
               Sign In
             </Link>
           </Button>

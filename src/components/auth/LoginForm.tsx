@@ -65,7 +65,7 @@ export function LoginForm() {
   };
   
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {/* Email */}
       <div className="space-y-2">
         <label htmlFor="email" className="block text-sm font-medium">
@@ -109,14 +109,7 @@ export function LoginForm() {
           <p className="text-destructive text-sm">{validationErrors.password}</p>
         )}
       </div>
-      
-      {/* Forgot password link */}
-      <div className="text-right">
-        <a href="#" className="text-sm text-primary hover:underline">
-          Forgot password?
-        </a>
-      </div>
-      
+
       {/* Error message from API with retry status */}
       {error && (
         <div className="p-3 bg-destructive/10 border border-destructive rounded-md">
@@ -142,7 +135,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+        className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
       >
         {loading ? (
           <span className="flex items-center justify-center">

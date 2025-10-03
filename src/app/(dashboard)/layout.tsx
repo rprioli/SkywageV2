@@ -6,7 +6,7 @@ import { MobileHeader } from '@/components/dashboard/MobileHeader';
 import { MobileNavigationProvider, useMobileNavigation } from '@/contexts/MobileNavigationProvider';
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
-  const { isMobile, isTablet, isSidebarOpen, closeSidebar } = useMobileNavigation();
+  const { isMobile, isTablet, isDesktop, isSidebarOpen, closeSidebar } = useMobileNavigation();
 
   return (
     <div className="flex h-screen" style={{ backgroundColor: 'rgba(76, 73, 237, 0.05)' }}>
@@ -14,7 +14,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       {/* Kept for other pages that might need it */}
       {/* {isMobile && <MobileHeader />} */}
 
-      {/* Sidebar */}
+      {/* Sidebar - Fixed on desktop, overlay on mobile/tablet */}
       <DashboardSidebar />
 
       {/* Mobile Overlay - Only visible when sidebar is open on mobile */}
@@ -26,12 +26,18 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      {/* Main Content - No top padding on mobile since MobileHeader is hidden */}
+      {/* Main Content - Centered on desktop, full-width on mobile/tablet */}
       <main className={`
         flex-1 overflow-auto transition-all duration-300
-        ${isMobile ? 'p-3' : isTablet ? 'p-4' : 'p-6'}
+        ${isDesktop ? 'ml-[280px]' : ''}
       `}>
-        {children}
+        {/* Centered content wrapper - only applies max-width on desktop */}
+        <div className={`
+          ${isDesktop ? 'max-w-[1600px] mx-auto' : ''}
+          ${isMobile ? 'px-3 py-3' : isTablet ? 'px-4 py-4' : 'px-6 py-6'}
+        `}>
+          {children}
+        </div>
       </main>
     </div>
   );

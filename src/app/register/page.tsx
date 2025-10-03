@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { Navbar } from '@/components/landing/Navbar';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { Logo } from '@/components/ui/Logo';
 import Link from 'next/link';
@@ -9,9 +8,14 @@ import Link from 'next/link';
 export default function RegisterPage() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
-      <main className="flex-grow flex flex-col justify-start pt-[10vh] p-4 md:p-8">
+      <main className="flex-grow flex flex-col justify-center p-4 md:p-8">
         <div className="w-full max-w-md mx-auto">
+          {/* Centered Logo */}
+          <div className="flex justify-center mb-8">
+            <Logo variant="color" width={180} height={48} />
+          </div>
+
+          {/* Register Header */}
           <div className="mb-8 text-center">
             <h1 className="text-2xl md:text-3xl font-bold mb-2">Create your account</h1>
             <p className="text-muted-foreground">
@@ -19,12 +23,14 @@ export default function RegisterPage() {
             </p>
           </div>
 
+          {/* Register Form */}
           <RegisterForm />
 
+          {/* Sign In Link */}
           <div className="mt-8 text-center text-sm">
             <p className="text-muted-foreground">
               Already have an account?{' '}
-              <Link href="/login" className="text-primary hover:underline">
+              <Link href="/" className="text-primary hover:underline">
                 Sign in
               </Link>
             </p>

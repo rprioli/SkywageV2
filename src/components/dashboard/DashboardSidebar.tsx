@@ -34,7 +34,6 @@ export default function DashboardSidebar() {
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Statistics', href: '/statistics', icon: BarChart },
     { name: 'Profile', href: '/profile', icon: User },
-    { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
   // Handle navigation link clicks on mobile - close sidebar
@@ -48,14 +47,17 @@ export default function DashboardSidebar() {
     <div
       ref={sidebarRef}
       className={cn(
-        "bg-primary text-white flex flex-col h-full shadow-lg transition-all duration-300 z-50",
-        // Desktop: Fixed width, always visible
-        isDesktop && "w-[280px] rounded-r-3xl",
-        // Tablet: Slightly smaller width
-        isTablet && "w-[240px] rounded-r-2xl",
-        // Mobile: Full height, slide in from left
+        "bg-primary text-white flex flex-col shadow-lg transition-all duration-300 z-50",
+        // Desktop: Fixed positioning, always visible
+        isDesktop && "fixed top-0 left-0 h-screen w-[280px] rounded-r-3xl",
+        // Tablet: Overlay sidebar (fixed positioning with slide animation)
+        isTablet && [
+          "fixed top-0 left-0 h-screen w-[240px] rounded-r-2xl",
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        ],
+        // Mobile: Overlay sidebar (fixed positioning with slide animation)
         isMobile && [
-          "fixed top-0 left-0 w-[280px] rounded-r-3xl",
+          "fixed top-0 left-0 h-screen w-[280px] rounded-r-3xl",
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         ]
       )}
