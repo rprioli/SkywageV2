@@ -229,7 +229,7 @@ export function FlightDutyCard({
     if (dutyType === 'sby' || dutyType === 'asby') {
       // For standby duties, extract just the base airport (usually DXB)
       const baseAirport = sectors[0]?.split('-')[0]?.trim() || 'DXB';
-      return <span>{baseAirport}</span>;
+      return <span style={{ color: 'rgb(58, 55, 128)' }}>{baseAirport}</span>;
     }
 
     // Check if this looks like a turnaround pattern regardless of duty type
@@ -258,7 +258,7 @@ export function FlightDutyCard({
           <span className="flex items-center justify-center gap-1.5">
             {turnaroundRoute.map((airport, index) => (
               <span key={index} className="flex items-center gap-1.5">
-                <span>{airport}</span>
+                <span style={{ color: 'rgb(58, 55, 128)' }}>{airport}</span>
                 {index < turnaroundRoute.length - 1 && (
                   <ArrowRight className="h-3 w-3 text-[#4C49ED]" />
                 )}
@@ -278,13 +278,13 @@ export function FlightDutyCard({
             if (airports.length === 2) {
               return (
                 <span key={index} className="flex items-center justify-center gap-1.5">
-                  <span>{airports[0]}</span>
+                  <span style={{ color: 'rgb(58, 55, 128)' }}>{airports[0]}</span>
                   <ArrowRight className="h-3 w-3 text-[#4C49ED]" />
-                  <span>{airports[1]}</span>
+                  <span style={{ color: 'rgb(58, 55, 128)' }}>{airports[1]}</span>
                 </span>
               );
             }
-            return <span key={index}>{sector}</span>;
+            return <span key={index} style={{ color: 'rgb(58, 55, 128)' }}>{sector}</span>;
           })}
         </div>
       );
@@ -296,16 +296,16 @@ export function FlightDutyCard({
       if (airports.length === 2) {
         return (
           <span className="flex items-center justify-center gap-1.5">
-            <span>{airports[0]}</span>
+            <span style={{ color: 'rgb(58, 55, 128)' }}>{airports[0]}</span>
             <ArrowRight className="h-3 w-3 text-[#4C49ED]" />
-            <span>{airports[1]}</span>
+            <span style={{ color: 'rgb(58, 55, 128)' }}>{airports[1]}</span>
           </span>
         );
       }
     }
 
     // Final fallback: show sectors as-is
-    return <span>{sectors.join(', ')}</span>;
+    return <span style={{ color: 'rgb(58, 55, 128)' }}>{sectors.join(', ')}</span>;
   };
 
   const getDutyTypeConfig = (dutyType: string) => {

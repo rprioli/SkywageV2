@@ -120,7 +120,7 @@ export function TurnaroundCard({
           <div className="flight-card-main-content">
             <div className="grid grid-cols-3 items-center gap-2">
             <div className="text-center">
-              <div className="text-lg font-bold tracking-wide text-gray-900">{from}</div>
+              <div className="text-lg font-bold tracking-wide" style={{ color: 'rgb(58, 55, 128)' }}>{from}</div>
               <div className="text-xs text-gray-500 mt-0.5">{cardData.reporting}</div>
             </div>
 
@@ -136,7 +136,7 @@ export function TurnaroundCard({
             </div>
 
             <div className="text-center">
-              <div className="text-lg font-bold tracking-wide text-gray-900">{to}</div>
+              <div className="text-lg font-bold tracking-wide" style={{ color: 'rgb(58, 55, 128)' }}>{to}</div>
               <div className="text-xs text-gray-500 mt-0.5">{cardData.debriefing}</div>
             </div>
             </div>

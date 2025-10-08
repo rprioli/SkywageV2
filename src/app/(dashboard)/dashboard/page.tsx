@@ -134,7 +134,7 @@ const MonthlyOverviewCard = memo(({
       <CardContent className="card-responsive-padding">
         {/* Header */}
         <div className="flex items-start justify-between mb-4 md:mb-5">
-          <div className="min-w-0 flex-1 pr-4">
+          <div className="min-w-0 flex-1">
             <h2 className="text-responsive-2xl font-bold space-responsive-md" style={{ color: '#3A3780' }}>Overview</h2>
             <div className="text-responsive-5xl font-bold space-responsive-sm" style={{
               color: '#3A3780',
@@ -152,9 +152,6 @@ const MonthlyOverviewCard = memo(({
                 })()
               }
             </p>
-          </div>
-          <div className="w-8 h-8 md:w-10 md:h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-            <BarChart3 className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />
           </div>
         </div>
 
