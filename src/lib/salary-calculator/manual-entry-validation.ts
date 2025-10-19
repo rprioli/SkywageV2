@@ -97,11 +97,11 @@ export function validateDate(date: string): FieldValidationResult {
  * Validates flight numbers based on duty type
  */
 export function validateFlightNumbers(
-  flightNumbers: string[], 
+  flightNumbers: string[],
   dutyType: DutyType
 ): FieldValidationResult {
-  if (dutyType === 'asby' || dutyType === 'recurrent' || dutyType === 'sby' || dutyType === 'off') {
-    // ASBY/Recurrent/SBY/OFF duties don't require flight numbers
+  if (dutyType === 'asby' || dutyType === 'recurrent' || dutyType === 'sby' || dutyType === 'off' || dutyType === 'business_promotion') {
+    // ASBY/Recurrent/SBY/OFF/Business Promotion duties don't require flight numbers
     return { valid: true };
   }
 
@@ -184,8 +184,8 @@ export function validateSectors(
   airportCodes: string[],
   dutyType: DutyType
 ): FieldValidationResult {
-  if (dutyType === 'asby' || dutyType === 'recurrent' || dutyType === 'sby' || dutyType === 'off') {
-    // ASBY/Recurrent/SBY/OFF duties don't require sectors
+  if (dutyType === 'asby' || dutyType === 'recurrent' || dutyType === 'sby' || dutyType === 'off' || dutyType === 'business_promotion') {
+    // ASBY/Recurrent/SBY/OFF/Business Promotion duties don't require sectors
     return { valid: true };
   }
 

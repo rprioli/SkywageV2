@@ -151,6 +151,21 @@ export function calculateRecurrentPay(
 }
 
 /**
+ * Calculates Business Promotion pay (5 hours at flight rate)
+ * Overloaded to support date-aware rate selection
+ */
+export function calculateBusinessPromotionPay(
+  position: Position,
+  year?: number,
+  month?: number
+): number {
+  const rates = year && month
+    ? getPositionRatesForDate(position, year, month)
+    : FLYDUBAI_RATES[position];
+  return 5 * rates.hourlyRate; // 5 hours at hourly rate
+}
+
+/**
  * Calculates duty hours for a flight
  */
 export function calculateDutyHours(flightDuty: FlightDuty): number {
@@ -227,6 +242,10 @@ export function calculateFlightDuty(
         } else {
           flightPay = calculateRecurrentPay(position, calculationYear, calculationMonth); // Other recurrent training is paid at 4 hours at flight rate
         }
+        break;
+
+      case 'business_promotion':
+        flightPay = calculateBusinessPromotionPay(position, calculationYear, calculationMonth);
         break;
 
       case 'sby':
@@ -464,7 +483,11 @@ export function calculateMonthlySalary(
   const totalFixed = basicSalary + housingAllowance + transportAllowance;
 
   // Variable components
-  let totalDutyHours = flightDuties.reduce((sum, flight) => sum + flight.dutyHours, 0);
+  // Only count duty hours for actual flight duties (turnaround, layover, asby)
+  // Exclude recurrent and business_promotion from flight hours total
+  let totalDutyHours = flightDuties
+    .filter(flight => !['recurrent', 'business_promotion'].includes(flight.dutyType))
+    .reduce((sum, flight) => sum + flight.dutyHours, 0);
 
   // Apply precision adjustment to match Excel calculations
   // Excel shows 119h for August 2025, but floating-point arithmetic gives us ~120h
@@ -485,8 +508,9 @@ export function calculateMonthlySalary(
   const totalSalary = totalFixed + totalVariable;
 
   // Calculate summary statistics
+  // Only count actual flight duties (exclude recurrent and business_promotion)
   const totalFlights = flightDuties.filter(flight =>
-    ['turnaround', 'layover', 'asby', 'recurrent'].includes(flight.dutyType)
+    ['turnaround', 'layover', 'asby'].includes(flight.dutyType)
   ).length;
   
   const totalTurnarounds = flightDuties.filter(flight => flight.dutyType === 'turnaround').length;

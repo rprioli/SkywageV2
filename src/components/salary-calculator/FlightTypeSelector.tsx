@@ -13,7 +13,8 @@ import {
   ArrowRightLeft,
   MapPin,
   Clock,
-  BookOpen
+  BookOpen,
+  Camera
 } from 'lucide-react';
 
 interface FlightTypeOption {
@@ -52,6 +53,11 @@ const flightTypeOptions: FlightTypeOption[] = [
     value: 'recurrent',
     label: 'Recurrent',
     icon: <BookOpen className="h-4 w-4" />
+  },
+  {
+    value: 'business_promotion',
+    label: 'Business Promotion',
+    icon: <Camera className="h-4 w-4" />
   }
 ];
 

@@ -145,8 +145,8 @@ export function FlightEntryForm({
     setFormData(prev => {
       const newData = { ...prev, dutyType };
 
-      // Clear flight numbers and sectors for ASBY, Recurrent, SBY, OFF
-      if (dutyType === 'asby' || dutyType === 'recurrent' || dutyType === 'sby' || dutyType === 'off') {
+      // Clear flight numbers and sectors for ASBY, Recurrent, SBY, OFF, Business Promotion
+      if (dutyType === 'asby' || dutyType === 'recurrent' || dutyType === 'sby' || dutyType === 'off' || dutyType === 'business_promotion') {
         newData.flightNumbers = [];
         newData.sectors = [];
       } else if (dutyType === 'layover') {
@@ -328,7 +328,7 @@ export function FlightEntryForm({
   const turnaroundNextDayDate = getNextDayDate(formData.date);
 
   const isFormDisabled = disabled || loading;
-  const showFlightFields = formData.dutyType !== 'asby' && formData.dutyType !== 'recurrent' && formData.dutyType !== 'sby' && formData.dutyType !== 'off';
+  const showFlightFields = formData.dutyType !== 'asby' && formData.dutyType !== 'recurrent' && formData.dutyType !== 'sby' && formData.dutyType !== 'off' && formData.dutyType !== 'business_promotion';
 
   return (
     <form onSubmit={handleSubmit} className={cn('space-y-3 md:space-y-4', className)}>

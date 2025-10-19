@@ -420,6 +420,12 @@ export class FlydubaiExcelParser {
     if (dutiesUpper.includes('XSBY') || dutiesUpper.includes('SBY')) return 'sby';
     if (dutiesUpper.includes('OFF')) return 'off';
 
+    // Business Promotion detection
+    if (dutiesUpper.includes('BP') || detailsUpper.includes('BUSINESS PROMOTION')) {
+      console.log(`✅ Classified as business promotion`);
+      return 'business_promotion';
+    }
+
     // Enhanced recurrent training detection
     if (dutiesUpper.includes('RECURRENT') || dutiesUpper.includes('TRAINING') ||
         detailsUpper.includes('RECURRENT') || detailsUpper.includes('TRAINING') ||
@@ -573,6 +579,45 @@ export class FlydubaiExcelParser {
         actualDutyHours = 8;
         console.log(`⚠️ Using default times: 08:00 - 16:00, 8 hours`);
       }
+    } else if (excelDuty.dutyType === 'business_promotion') {
+      // For Business Promotion, parse time ranges from actualTimes column
+      const actualTimesStr = excelDuty.actualTimes || '';
+      console.log(`💼 BUSINESS PROMOTION TIME DEBUG: Row ${excelDuty.rowNumber}`);
+      console.log(`💼 actualTimesStr = "${actualTimesStr}"`);
+      console.log(`💼 actualTimesStr type = ${typeof actualTimesStr}`);
+      console.log(`💼 actualTimesStr length = ${actualTimesStr.length}`);
+
+      if (actualTimesStr && actualTimesStr.trim().length > 0) {
+        try {
+          const bpTime = parseTrainingTimeRange(actualTimesStr);
+          console.log(`✅ Parsed Business Promotion time successfully:`, bpTime);
+
+          // Set report time to start time and debrief time to end time
+          const [startHour, startMin] = bpTime.startTime.split(':').map(Number);
+          const [endHour, endMin] = bpTime.endTime.split(':').map(Number);
+
+          reportTime = createTimeValue(startHour, startMin);
+          debriefTime = createTimeValue(endHour, endMin);
+          actualDutyHours = bpTime.totalHours;
+
+          console.log(`✅ Set BP times: report ${startHour}:${startMin}, debrief ${endHour}:${endMin}, hours ${actualDutyHours}`);
+        } catch (error) {
+          console.error(`❌ Failed to parse Business Promotion time range for row ${excelDuty.rowNumber}:`, error);
+          console.error(`❌ Raw actualTimes data: "${actualTimesStr}"`);
+          // Fallback to default times
+          reportTime = createTimeValue(8, 0);  // Default 08:00
+          debriefTime = createTimeValue(16, 0); // Default 16:00
+          actualDutyHours = 8; // Default 8 hours
+          console.log(`⚠️ Using fallback BP times: 08:00 - 16:00, 8 hours`);
+        }
+      } else {
+        console.warn(`⚠️ No actualTimes provided for Business Promotion row ${excelDuty.rowNumber}, using defaults`);
+        // Default Business Promotion times if no actual times provided
+        reportTime = createTimeValue(8, 0);
+        debriefTime = createTimeValue(16, 0);
+        actualDutyHours = 8;
+        console.log(`⚠️ Using default BP times: 08:00 - 16:00, 8 hours`);
+      }
     } else if (excelDuty.dutyType === 'asby') {
       // For ASBY duties, use fixed 4-hour calculation regardless of actual times
       reportTime = excelDuty.reportTime ?
@@ -684,7 +729,7 @@ export class FlydubaiExcelParser {
     flightDuty.dutyHours = classificationResult.dutyHours;
     flightDuty.flightPay = classificationResult.flightPay;
 
-    // Debug final times for recurrent training and SBY duties
+    // Debug final times for recurrent training, SBY, and Business Promotion duties
     if (flightDuty.dutyType === 'recurrent') {
       console.log(`🕐 FINAL RECURRENT TRAINING TIMES for row ${excelDuty.rowNumber}:`);
       console.log(`  Report Time: ${flightDuty.reportTime.hours}:${flightDuty.reportTime.minutes.toString().padStart(2, '0')}`);
@@ -694,6 +739,13 @@ export class FlydubaiExcelParser {
     }
     if (flightDuty.dutyType === 'sby') {
       console.log(`🏠 FINAL SBY TIMES for row ${excelDuty.rowNumber}:`);
+      console.log(`  Report Time: ${flightDuty.reportTime.hours}:${flightDuty.reportTime.minutes.toString().padStart(2, '0')}`);
+      console.log(`  Debrief Time: ${flightDuty.debriefTime.hours}:${flightDuty.debriefTime.minutes.toString().padStart(2, '0')}`);
+      console.log(`  Duty Hours: ${flightDuty.dutyHours}`);
+      console.log(`  Flight Pay: ${flightDuty.flightPay}`);
+    }
+    if (flightDuty.dutyType === 'business_promotion') {
+      console.log(`💼 FINAL BUSINESS PROMOTION TIMES for row ${excelDuty.rowNumber}:`);
       console.log(`  Report Time: ${flightDuty.reportTime.hours}:${flightDuty.reportTime.minutes.toString().padStart(2, '0')}`);
       console.log(`  Debrief Time: ${flightDuty.debriefTime.hours}:${flightDuty.debriefTime.minutes.toString().padStart(2, '0')}`);
       console.log(`  Duty Hours: ${flightDuty.dutyHours}`);

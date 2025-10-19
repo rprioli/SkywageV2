@@ -5,7 +5,7 @@
  */
 
 import { DutyType, FlightClassificationResult, Position, TimeValue } from '@/types/salary-calculator';
-import { calculateRecurrentPay, calculateAsbyPay, FLYDUBAI_RATES } from './calculation-engine';
+import { calculateRecurrentPay, calculateAsbyPay, calculateBusinessPromotionPay, FLYDUBAI_RATES } from './calculation-engine';
 import { createTimeValue, calculateDuration } from './time-calculator';
 
 /**
@@ -53,6 +53,25 @@ export function classifyFlightDuty(
       dutyType: 'sby',
       confidence: 1.0,
       reasoning: 'Contains SBY (Home Standby) in duties column',
+      warnings: [],
+      dutyHours,
+      flightPay
+    };
+  }
+
+  // Check for Business Promotion
+  if (dutiesUpper.includes('BP') || detailsUpper.includes('BUSINESS PROMOTION')) {
+    let dutyHours = actualDutyHours || 8; // Default to 8 hours if not provided
+    let flightPay = 0;
+
+    if (position) {
+      flightPay = calculateBusinessPromotionPay(position); // 5 hours × position rate
+    }
+
+    return {
+      dutyType: 'business_promotion',
+      confidence: 1.0,
+      reasoning: 'Contains BP or Business Promotion in duties/details column',
       warnings: [],
       dutyHours,
       flightPay

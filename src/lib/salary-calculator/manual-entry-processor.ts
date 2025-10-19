@@ -180,6 +180,8 @@ function convertToFlightDutyLegacy(
       } else {
         flightPay = calculateFlightPay(4, position); // Other recurrent training is equivalent to 4 flying hours
       }
+    } else if (data.dutyType === 'business_promotion') {
+      flightPay = calculateFlightPay(5, position); // Business Promotion is equivalent to 5 flying hours
     } else if (data.dutyType !== 'sby' && data.dutyType !== 'off') {
       flightPay = calculateFlightPay(dutyHours, position);
     }
@@ -397,6 +399,10 @@ export function convertToFlightDuty(
         const rates = { CCM: { hourlyRate: 50 }, SCCM: { hourlyRate: 62 } };
         flightPay = 4 * rates[position].hourlyRate;
       }
+    } else if (data.dutyType === 'business_promotion') {
+      // Business Promotion is paid at fixed 5 hours at hourly rate
+      const rates = { CCM: { hourlyRate: 50 }, SCCM: { hourlyRate: 62 } };
+      flightPay = 5 * rates[position].hourlyRate;
     } else if (data.dutyType === 'turnaround' || data.dutyType === 'layover') {
       // Regular flight duties are paid at hourly rate for actual duty hours
       flightPay = calculateFlightPay(dutyHours, position);
@@ -427,14 +433,19 @@ export function convertToFlightDuty(
       updatedAt: new Date()
     };
 
-    // Classify the flight duty based on flight numbers and sectors
-    const dutiesString = flightNumbers.join(' ');
-    const sectorsString = sectors.join(' ');
-    const classification = classifyFlightDuty(dutiesString, sectorsString, data.reportTime, data.debriefTime);
+    // Only classify flight duties (not ground duties like asby, recurrent, sby, off, business_promotion)
+    const isGroundDuty = ['asby', 'recurrent', 'sby', 'off', 'business_promotion'].includes(data.dutyType);
 
-    // Update duty type based on classification if needed
-    if (classification.dutyType !== flightDuty.dutyType) {
-      flightDuty.dutyType = classification.dutyType;
+    if (!isGroundDuty) {
+      // Classify the flight duty based on flight numbers and sectors
+      const dutiesString = flightNumbers.join(' ');
+      const sectorsString = sectors.join(' ');
+      const classification = classifyFlightDuty(dutiesString, sectorsString, data.reportTime, data.debriefTime);
+
+      // Update duty type based on classification if needed
+      if (classification.dutyType !== flightDuty.dutyType) {
+        flightDuty.dutyType = classification.dutyType;
+      }
     }
 
     return [flightDuty];

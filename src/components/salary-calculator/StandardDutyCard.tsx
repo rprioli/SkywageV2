@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreVertical, Trash2, Timer, BookOpen, Clock, Calendar } from 'lucide-react';
+import { MoreVertical, Trash2, Timer, BookOpen, Clock, Calendar, Camera } from 'lucide-react';
 import { FlightDuty } from '@/types/salary-calculator';
 import { mapFlightDutyToCardData } from '@/lib/salary-calculator/card-data-mapper';
 
@@ -69,6 +69,11 @@ export function StandardDutyCard({
         return {
           icon: Clock,
           label: 'Home Standby'
+        };
+      case 'business_promotion':
+        return {
+          icon: Camera,
+          label: 'Business Promotion'
         };
       default:
         return {
