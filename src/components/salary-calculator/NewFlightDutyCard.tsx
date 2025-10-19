@@ -56,6 +56,7 @@ export function NewFlightDutyCard({
     case 'asby':
     case 'recurrent':
     case 'sby':
+    case 'business_promotion':
     default:
       return <StandardDutyCard {...commonProps} />;
   }

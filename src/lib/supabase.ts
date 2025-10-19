@@ -130,7 +130,7 @@ export type Database = {
           // New schema columns (salary calculator)
           flight_numbers: string[];
           sectors: string[];
-          duty_type: 'turnaround' | 'layover' | 'asby' | 'sby' | 'off';
+          duty_type: 'turnaround' | 'layover' | 'asby' | 'sby' | 'off' | 'business_promotion';
           report_time: string;
           debrief_time: string;
           duty_hours: number;
@@ -163,7 +163,7 @@ export type Database = {
           // New schema columns (salary calculator)
           flight_numbers?: string[];
           sectors?: string[];
-          duty_type?: 'turnaround' | 'layover' | 'asby' | 'sby' | 'off';
+          duty_type?: 'turnaround' | 'layover' | 'asby' | 'sby' | 'off' | 'business_promotion';
           report_time?: string;
           debrief_time?: string;
           duty_hours?: number;
@@ -196,7 +196,7 @@ export type Database = {
           // New schema columns (salary calculator)
           flight_numbers?: string[];
           sectors?: string[];
-          duty_type?: 'turnaround' | 'layover' | 'asby' | 'sby' | 'off';
+          duty_type?: 'turnaround' | 'layover' | 'asby' | 'sby' | 'off' | 'business_promotion';
           report_time?: string;
           debrief_time?: string;
           duty_hours?: number;

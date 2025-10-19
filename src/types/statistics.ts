@@ -116,7 +116,7 @@ export interface DutyTypeStats {
 
 // Individual duty type breakdown
 export interface DutyTypeBreakdownItem {
-  dutyType: 'turnaround' | 'layover' | 'asby' | 'recurrent' | 'sby' | 'off';
+  dutyType: 'turnaround' | 'layover' | 'asby' | 'recurrent' | 'sby' | 'off' | 'business_promotion';
   count: number;
   totalEarnings: number;
   totalHours: number;
@@ -127,7 +127,7 @@ export interface DutyTypeBreakdownItem {
 
 // Duty type profitability analysis
 export interface DutyTypeProfitability {
-  dutyType: 'turnaround' | 'layover' | 'asby' | 'recurrent' | 'sby' | 'off';
+  dutyType: 'turnaround' | 'layover' | 'asby' | 'recurrent' | 'sby' | 'off' | 'business_promotion';
   earningsPerHour: number;
   efficiency: 'high' | 'medium' | 'low';
   rank: number;

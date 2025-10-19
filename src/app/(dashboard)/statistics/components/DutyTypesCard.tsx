@@ -23,7 +23,8 @@ const DUTY_TYPE_COLORS = {
   asby: CHART_COLORS.secondary,
   recurrent: CHART_COLORS.tertiary,
   sby: CHART_COLORS.neutral,
-  off: CHART_COLORS.light
+  off: CHART_COLORS.light,
+  business_promotion: CHART_COLORS.tertiary
 };
 
 // Icon mapping for duty types
@@ -33,7 +34,8 @@ const DUTY_TYPE_ICONS = {
   asby: Users,
   recurrent: Clock,
   sby: Users,
-  off: Clock
+  off: Clock,
+  business_promotion: Clock
 };
 
 export function DutyTypesCard({ data, loading = false }: DutyTypesCardProps) {

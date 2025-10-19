@@ -346,6 +346,12 @@ export function FlightDutyCard({
           icon: Clock,
           label: 'Home Standby'
         };
+      case 'business_promotion':
+        return {
+          ...baseConfig,
+          icon: BookOpen,
+          label: 'Business Promotion'
+        };
       case 'off':
         return {
           ...baseConfig,

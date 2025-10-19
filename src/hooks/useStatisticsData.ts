@@ -164,9 +164,10 @@ function getDutyTypeColor(dutyType: string): string {
     asby: '#FF6B6B',       // Red
     recurrent: '#4ECDC4',  // Teal
     sby: '#95A5A6',        // Gray
-    off: '#BDC3C7'         // Light gray
+    off: '#BDC3C7',        // Light gray
+    business_promotion: '#4ECDC4'  // Teal (same as recurrent)
   };
-  
+
   return colors[dutyType as keyof typeof colors] || '#95A5A6';
 }
 
