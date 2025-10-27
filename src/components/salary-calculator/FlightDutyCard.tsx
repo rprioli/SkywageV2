@@ -380,7 +380,6 @@ export function FlightDutyCard({
 
   const dutyConfig = getDutyTypeConfig(flightDuty.dutyType);
   const DutyIcon = dutyConfig.icon;
-  const dataSourceBadge = getDataSourceBadge(flightDuty.dataSource);
 
   return (
     <div className="relative">

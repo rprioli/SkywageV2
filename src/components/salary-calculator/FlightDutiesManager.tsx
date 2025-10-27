@@ -6,7 +6,7 @@
  * Integrates FlightDutiesTable and delete operations
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState } from 'react';
 import { FlightDuty, Position } from '@/types/salary-calculator';
 import { deleteFlightDuty } from '@/lib/database/flights';
 import { FlightDutiesTable } from './FlightDutiesTable';
@@ -23,7 +23,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
 
 interface FlightDutiesManagerProps {
@@ -31,17 +30,14 @@ interface FlightDutiesManagerProps {
   position: Position;
   userId: string;
   loading?: boolean;
-  onFlightUpdated?: (updatedFlight: FlightDuty) => void;
   onFlightDeleted?: (deletedFlightId: string) => void;
   onRecalculationComplete?: () => void;
 }
 
 export function FlightDutiesManager({
   flightDuties,
-  position,
   userId,
   loading = false,
-  onFlightUpdated,
   onFlightDeleted,
   onRecalculationComplete
 }: FlightDutiesManagerProps) {

@@ -6,7 +6,6 @@
  * Following existing dialog patterns and .augment-guidelines.md principles
  */
 
-import { useState } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,8 +24,6 @@ interface RosterReplacementDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   month: number;
-  year: number;
-  existingFlightCount: number;
   onConfirm: () => void;
   onCancel: () => void;
   isProcessing?: boolean;
@@ -36,8 +33,6 @@ export function RosterReplacementDialog({
   open,
   onOpenChange,
   month,
-  year,
-  existingFlightCount,
   onConfirm,
   onCancel,
   isProcessing = false

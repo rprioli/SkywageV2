@@ -7,14 +7,13 @@
 
 import React from 'react';
 import { Card } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreVertical, Trash2, Timer, BookOpen, Clock, Calendar, Camera } from 'lucide-react';
+import { MoreVertical, Trash2, Timer, BookOpen, Clock, Camera } from 'lucide-react';
 import { FlightDuty } from '@/types/salary-calculator';
 import { mapFlightDutyToCardData } from '@/lib/salary-calculator/card-data-mapper';
 
