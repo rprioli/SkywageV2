@@ -6,12 +6,10 @@
  * Preserves all existing flight duty components and Phase 6 functionality
  */
 
-import React, { useState, useEffect, useMemo, useRef, memo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useMemo, memo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -24,25 +22,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Upload, FileText, BarChart3, Plane, Calendar, Trash2, Plus, Clock, TrendingUp, Banknote, UtensilsCrossed, Menu } from 'lucide-react';
-import Link from 'next/link';
-import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Bar, BarChart, Cell } from 'recharts';
+import { Upload, FileText, Plane, Trash2, Plus, Clock, Banknote, UtensilsCrossed, Menu } from 'lucide-react';
+import { ResponsiveContainer, XAxis, Bar, BarChart, Cell } from 'recharts';
 import { MonthlyCalculation, FlightDuty, Position } from '@/types/salary-calculator';
 import { getMonthlyCalculation, getAllMonthlyCalculations } from '@/lib/database/calculations';
 import { getFlightDutiesByMonth, deleteFlightDuty } from '@/lib/database/flights';
 import { FlightDutiesManager } from '@/components/salary-calculator/FlightDutiesManager';
-import { RosterUpload } from '@/components/salary-calculator/RosterUpload';
 import { ProcessingStatus } from '@/components/salary-calculator/ProcessingStatus';
 import { ManualFlightEntry } from '@/components/salary-calculator/ManualFlightEntry';
 import { useToast } from '@/hooks/use-toast';
 import { useMobileNavigation } from '@/contexts/MobileNavigationProvider';
 import {
-  processFileUpload,
   processFileUploadWithReplacement,
   checkForExistingData,
   ProcessingStatus as ProcessingStatusType,
   validateFileQuick,
-  detectFileType,
   type ExistingDataCheck
 } from '@/lib/salary-calculator/upload-processor';
 import { recalculateMonthlyTotals } from '@/lib/salary-calculator/recalculation-engine';
@@ -224,12 +218,10 @@ const MonthlyOverviewCard = memo(({
 MonthlyOverviewCard.displayName = 'MonthlyOverviewCard';
 
 export default function DashboardPage() {
-  const router = useRouter();
   const { user } = useAuth();
-  const { salaryCalculator, showError, showSuccess } = useToast();
+  const { salaryCalculator, showError } = useToast();
   const [currentMonthCalculation, setCurrentMonthCalculation] = useState<MonthlyCalculation | null>(null);
   const [flightDuties, setFlightDuties] = useState<FlightDuty[]>([]);
-  const [selectedMonth, setSelectedMonth] = useState<string>('current');
   const [loading, setLoading] = useState(true);
   const [allMonthlyCalculations, setAllMonthlyCalculations] = useState<MonthlyCalculation[]>([]);
   const [monthlyDataLoading, setMonthlyDataLoading] = useState(true);
@@ -290,10 +282,8 @@ export default function DashboardPage() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [manualEntryModalOpen, setManualEntryModalOpen] = useState(false);
   const [selectedUploadMonth, setSelectedUploadMonth] = useState<number | null>(null);
-  const [showMonthSelector, setShowMonthSelector] = useState(false);
 
   // Upload states
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadState, setUploadState] = useState<'month' | 'upload' | 'processing'>('month');
   const [processingStatus, setProcessingStatus] = useState<ProcessingStatusType | null>(null);
 
@@ -306,7 +296,6 @@ export default function DashboardPage() {
   // User position state - load from database profile (source of truth)
   const [userPosition, setUserPosition] = useState<Position>('CCM');
   const [userPositionLoading, setUserPositionLoading] = useState(true);
-  const userAirline = user?.user_metadata?.airline || 'Flydubai';
 
   // Load user position from database profile (source of truth)
   useEffect(() => {
@@ -379,14 +368,11 @@ export default function DashboardPage() {
         const currentYear = currentDate.getFullYear();
 
         // First try to fetch current month calculation
-        let calculationResult = await getMonthlyCalculation(
+        const calculationResult = await getMonthlyCalculation(
           user.id,
           currentMonth,
           currentYear
         );
-
-        let displayMonth = currentMonth;
-        let displayYear = currentYear;
 
         // If no current month data, try to find the most recent month with data
         if (!calculationResult.data || calculationResult.error) {
@@ -398,8 +384,6 @@ export default function DashboardPage() {
               return b.month - a.month;
             });
             const mostRecent = sortedCalculations[0];
-            displayMonth = mostRecent.month;
-            displayYear = mostRecent.year;
             setCurrentMonthCalculation(mostRecent);
           }
         } else {
@@ -479,7 +463,6 @@ export default function DashboardPage() {
     setUploadModalOpen(true);
     setUploadState('month');
     setSelectedUploadMonth(null);
-    setSelectedFile(null);
     setProcessingStatus(null);
   };
 
@@ -608,7 +591,6 @@ export default function DashboardPage() {
   const processFileUpload = async (file: File, userId: string, performReplacement: boolean) => {
     if (!selectedUploadMonth) return;
 
-    setSelectedFile(file);
     setUploadState('processing');
 
     // Show loading toast
@@ -665,7 +647,6 @@ export default function DashboardPage() {
     setUploadModalOpen(false);
     setUploadState('month');
     setSelectedUploadMonth(null);
-    setSelectedFile(null);
     setProcessingStatus(null);
     // Reset replacement state
     setReplacementDialogOpen(false);
@@ -773,18 +754,6 @@ export default function DashboardPage() {
   const handleRecalculationComplete = async () => {
     // Refresh all data after recalculation
     await refreshDataAfterDelete();
-  };
-
-  // Handle flight deletion (legacy - kept for any remaining direct usage)
-  const handleFlightDelete = (flight: FlightDuty) => {
-    setSelectedFlightForDelete(flight);
-    setDeleteDialogOpen(true);
-  };
-
-  // Handle bulk flight deletion (legacy - kept for any remaining direct usage)
-  const handleBulkFlightDelete = (flights: FlightDuty[]) => {
-    setSelectedFlightsForBulkDelete(flights);
-    setBulkDeleteDialogOpen(true);
   };
 
   // Confirm single flight deletion
@@ -1018,13 +987,6 @@ export default function DashboardPage() {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2
     }).format(amount);
-  };
-
-  const getCurrentMonthName = () => {
-    return new Date().toLocaleDateString('en-US', {
-      month: 'long',
-      year: 'numeric'
-    });
   };
 
   const getMonthName = (monthNumber: number) => {
