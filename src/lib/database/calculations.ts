@@ -10,7 +10,6 @@ import { MonthlyCalculation, LayoverRestPeriod } from '@/types/salary-calculator
 // Database types
 type MonthlyCalculationRow = Database['public']['Tables']['monthly_calculations']['Row'];
 type MonthlyCalculationInsert = Database['public']['Tables']['monthly_calculations']['Insert'];
-type MonthlyCalculationUpdate = Database['public']['Tables']['monthly_calculations']['Update'];
 
 type LayoverRestPeriodRow = Database['public']['Tables']['layover_rest_periods']['Row'];
 type LayoverRestPeriodInsert = Database['public']['Tables']['layover_rest_periods']['Insert'];

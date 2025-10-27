@@ -4,10 +4,10 @@
  * Following existing utility patterns in the codebase
  */
 
-import { CSVParseResult, FlightDuty, ValidationResult } from '@/types/salary-calculator';
-import { parseTimeString, createTimeValue, parseTimeStringWithCrossDay } from './time-calculator';
+import { CSVParseResult, FlightDuty } from '@/types/salary-calculator';
+import { parseTimeString, parseTimeStringWithCrossDay } from './time-calculator';
 import { classifyFlightDuty, extractFlightNumbers, extractSectors } from './flight-classifier';
-import { validateCSVRow, validateFlightNumbers, validateSectors } from './csv-validator';
+import { validateFlightNumbers, validateSectors } from './csv-validator';
 import Papa from 'papaparse';
 
 /**
@@ -667,7 +667,6 @@ export function parseFlightDutiesFromCSV(
 
     // Skip header rows and start from actual data
     const dataRows = rows.slice(dataStartRow);
-    let processedRows = 0;
 
     let i = 0;
     while (i < dataRows.length) {
@@ -704,7 +703,6 @@ export function parseFlightDutiesFromCSV(
 
       if (result.flightDuty) {
         flightDuties.push(result.flightDuty);
-        processedRows++;
       }
 
       // Skip the rows that were merged

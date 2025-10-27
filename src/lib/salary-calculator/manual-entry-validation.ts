@@ -5,7 +5,6 @@
  */
 
 import {
-  FlightDuty,
   DutyType,
   ValidationResult,
   Position
@@ -19,8 +18,7 @@ import {
 } from '@/lib/salary-calculator';
 import {
   transformFlightNumbers,
-  transformSectors,
-  validateAndTransformInput
+  transformSectors
 } from './input-transformers';
 
 // Manual entry form data
@@ -143,7 +141,7 @@ export function validateFlightNumbers(
         };
       }
     }
-  } catch (error) {
+  } catch {
     return {
       valid: false,
       error: 'Error validating flight numbers',
@@ -225,7 +223,7 @@ export function validateSectors(
         };
       }
     }
-  } catch (error) {
+  } catch {
     return {
       valid: false,
       error: 'Error validating route',
@@ -328,7 +326,7 @@ export function validateTimeSequence(
     }
 
     return { valid: true };
-  } catch (error) {
+  } catch {
     return { valid: false, error: 'Error calculating duty duration' };
   }
 }
@@ -417,7 +415,7 @@ export function validateManualEntry(
           estimatedPay = calculatedDutyHours * rates.hourlyRate;
         }
       }
-    } catch (error) {
+    } catch {
       warnings.push('Could not calculate estimated pay');
     }
   }

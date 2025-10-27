@@ -10,16 +10,14 @@ import {
   MonthlyCalculationResult,
   Position 
 } from '@/types/salary-calculator';
-import { 
+import {
   calculateMonthlySalary,
-  calculateLayoverRestPeriods 
+  calculateLayoverRestPeriods
 } from '@/lib/salary-calculator';
-import { 
-  getFlightDutiesByMonth,
-  updateFlightDuty 
+import {
+  getFlightDutiesByMonth
 } from '@/lib/database/flights';
 import {
-  getLayoverRestPeriodsByMonth,
   createLayoverRestPeriods,
   deleteLayoverRestPeriods,
   upsertMonthlyCalculation
@@ -41,8 +39,7 @@ export async function recalculateMonthlyTotals(
   userId: string,
   month: number,
   year: number,
-  position: Position,
-  modifiedFlightId?: string
+  position: Position
 ): Promise<RecalculationResult> {
   const errors: string[] = [];
   const warnings: string[] = [];

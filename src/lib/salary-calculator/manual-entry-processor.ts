@@ -4,12 +4,10 @@
  * Following existing patterns from upload-processor.ts
  */
 
-import { 
-  FlightDuty, 
-  LayoverRestPeriod, 
+import {
+  FlightDuty,
   MonthlyCalculationResult,
-  Position,
-  DutyType
+  Position
 } from '@/types/salary-calculator';
 import {
   calculateMonthlySalary,
@@ -474,7 +472,6 @@ export async function processManualEntry(
   userId: string,
   position: Position
 ): Promise<ManualEntryResult> {
-  const errors: string[] = [];
   const warnings: string[] = [];
 
   try {
@@ -726,7 +723,7 @@ export async function processManualEntryBatch(
     const { recalculateMonthlyTotals } = await import('@/lib/salary-calculator/recalculation-engine');
     let monthlyCalculation;
 
-    for (const [key, duties] of monthlyGroups) {
+    for (const duties of monthlyGroups.values()) {
       const firstDuty = duties[0];
       const recalcResult = await recalculateMonthlyTotals(
         userId,

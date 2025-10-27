@@ -600,7 +600,7 @@ export function detectExcelStructureFlexible(worksheet: XLSX.WorkSheet): Flexibl
       employeeInfoLocation
     };
 
-  } catch (error) {
+  } catch {
     return null;
   }
 }

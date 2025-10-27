@@ -4,7 +4,6 @@
  */
 
 import { supabase } from './supabase';
-import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from './fileValidation';
 
 /**
  * Checks if the avatars bucket exists in Supabase Storage
@@ -14,7 +13,7 @@ export async function setupAvatarsBucket(): Promise<{ success: boolean; error: s
   try {
     // Try to access the avatars bucket directly instead of listing all buckets
     // This approach works better with the anon key which may not have permission to list all buckets
-    const { data: objects, error: listObjectsError } = await supabase.storage
+    const { error: listObjectsError } = await supabase.storage
       .from('avatars')
       .list('', { limit: 1 }); // Just try to list one object to check access
 

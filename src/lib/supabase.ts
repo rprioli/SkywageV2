@@ -137,7 +137,7 @@ export type Database = {
           flight_pay: number;
           is_cross_day: boolean;
           data_source: 'csv' | 'manual' | 'edited';
-          original_data?: any;
+          original_data?: unknown;
           last_edited_at?: string;
           last_edited_by?: string;
           month: number;
@@ -170,7 +170,7 @@ export type Database = {
           flight_pay?: number;
           is_cross_day?: boolean;
           data_source?: 'csv' | 'manual' | 'edited';
-          original_data?: any;
+          original_data?: unknown;
           last_edited_at?: string;
           last_edited_by?: string;
           month: number;
@@ -203,7 +203,7 @@ export type Database = {
           flight_pay?: number;
           is_cross_day?: boolean;
           data_source?: 'csv' | 'manual' | 'edited';
-          original_data?: any;
+          original_data?: unknown;
           last_edited_at?: string;
           last_edited_by?: string;
           month?: number;
@@ -219,8 +219,8 @@ export type Database = {
           flight_id: string;
           user_id: string;
           action: 'created' | 'updated' | 'deleted';
-          old_data?: any;
-          new_data?: any;
+          old_data?: unknown;
+          new_data?: unknown;
           change_reason?: string;
           created_at: string;
         };
@@ -229,8 +229,8 @@ export type Database = {
           flight_id: string;
           user_id: string;
           action: 'created' | 'updated' | 'deleted';
-          old_data?: any;
-          new_data?: any;
+          old_data?: unknown;
+          new_data?: unknown;
           change_reason?: string;
           created_at?: string;
         };
@@ -239,8 +239,8 @@ export type Database = {
           flight_id?: string;
           user_id?: string;
           action?: 'created' | 'updated' | 'deleted';
-          old_data?: any;
-          new_data?: any;
+          old_data?: unknown;
+          new_data?: unknown;
           change_reason?: string;
           created_at?: string;
         };
@@ -354,21 +354,21 @@ export type Database = {
         Row: {
           id: string;
           user_id: string;
-          settings: Record<string, any>;
+          settings: Record<string, unknown>;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
           user_id: string;
-          settings: Record<string, any>;
+          settings: Record<string, unknown>;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
           user_id?: string;
-          settings?: Record<string, any>;
+          settings?: Record<string, unknown>;
           created_at?: string;
           updated_at?: string;
         };
