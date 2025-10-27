@@ -4,7 +4,7 @@
  * Based on real-world analysis of Jul25ScheduleReport.xlsx
  */
 
-import { Position, DutyType, DataSource } from './salary-calculator';
+import { Position, DutyType } from './salary-calculator';
 
 // Excel file format types
 export type ExcelFileFormat = 'xlsx' | 'xlsm';
@@ -64,7 +64,7 @@ export interface ExcelFlightDuty {
   sectors: string[];
   isCrossDay: boolean;
   originalData: {
-    row: any[];
+    row: unknown[];
     cellReferences: { [key: string]: string };
   };
 }
