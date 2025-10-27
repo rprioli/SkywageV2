@@ -34,7 +34,7 @@ export interface FlightDuty {
   flightPay: number; // AED
   isCrossDay: boolean;
   dataSource: DataSource;
-  originalData?: Record<string, any>; // Store original CSV data
+  originalData?: Record<string, unknown>; // Store original CSV data
   lastEditedAt?: Date;
   lastEditedBy?: string;
   month: number;
@@ -147,8 +147,8 @@ export interface AuditTrailEntry {
   flightId: string;
   userId: string;
   action: 'created' | 'deleted';
-  oldData?: Record<string, any>;
-  newData?: Record<string, any>;
+  oldData?: Record<string, unknown>;
+  newData?: Record<string, unknown>;
   changeReason?: string;
   createdAt?: Date;
 }

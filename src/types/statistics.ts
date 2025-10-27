@@ -3,8 +3,6 @@
  * Defines interfaces for statistics data structures and calculations
  */
 
-import { MonthlyCalculation, FlightDuty } from './salary-calculator';
-
 // Year-to-Date earnings data
 export interface YTDData {
   totalEarnings: number;

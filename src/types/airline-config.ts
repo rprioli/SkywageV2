@@ -3,7 +3,7 @@
  * Supports multi-airline framework starting with Flydubai
  */
 
-import { Position, SalaryRates, FlightDuty, CSVParseResult, ValidationResult } from './salary-calculator';
+import { Position, SalaryRates, CSVParseResult, ValidationResult } from './salary-calculator';
 
 // Supported airlines
 export type SupportedAirline = 'flydubai';
