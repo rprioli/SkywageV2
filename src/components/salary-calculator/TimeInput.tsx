@@ -37,7 +37,6 @@ export function TimeInput({
   className
 }: TimeInputProps) {
   const [internalValue, setInternalValue] = useState(value);
-  const [isFocused, setIsFocused] = useState(false);
 
   // Update internal value when prop changes
   useEffect(() => {
@@ -82,8 +81,6 @@ export function TimeInput({
 
   // Handle blur - final validation and formatting
   const handleBlur = () => {
-    setIsFocused(false);
-
     if (internalValue && !validateTime(internalValue)) {
       // Try to auto-correct common mistakes
       const digits = internalValue.replace(/\D/g, '');
@@ -103,11 +100,6 @@ export function TimeInput({
     if (onBlur) {
       onBlur();
     }
-  };
-
-  // Handle focus
-  const handleFocus = () => {
-    setIsFocused(true);
   };
 
   // Handle key press for better UX
@@ -149,7 +141,6 @@ export function TimeInput({
           value={internalValue}
           onChange={handleChange}
           onBlur={handleBlur}
-          onFocus={handleFocus}
           onKeyDown={handleKeyPress}
           placeholder={placeholder}
           disabled={disabled}

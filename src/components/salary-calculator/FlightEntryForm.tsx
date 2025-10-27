@@ -9,7 +9,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -19,14 +18,10 @@ import {
   Plane,
   MapPin,
   Plus,
-  Sunrise,
-  Calendar,
-  X
+  Sunrise
 } from 'lucide-react';
 
 import { FlightTypeSelector } from './FlightTypeSelector';
-import { FlightNumberInput } from './FlightNumberInput';
-import { SectorInput } from './SectorInput';
 import { TimeInput } from './TimeInput';
 
 import { DutyType, Position } from '@/types/salary-calculator';

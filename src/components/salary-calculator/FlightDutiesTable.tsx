@@ -7,14 +7,13 @@
  */
 
 import { useState } from 'react';
-import { FlightDuty, DutyType } from '@/types/salary-calculator';
+import { FlightDuty } from '@/types/salary-calculator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Trash2, Clock, Plane, MapPin, Calendar, CheckSquare, Square, Trash, X, MoreHorizontal } from 'lucide-react';
+import { Trash2, Plane, CheckSquare, X, MoreHorizontal } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,

@@ -32,7 +32,6 @@ export type CountrySelectProps = {
   onValueChange?: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
-  required?: boolean;
   className?: string;
 };
 
@@ -41,7 +40,6 @@ export function CountrySelect({
   onValueChange,
   placeholder = 'Select your nationality',
   disabled = false,
-  required = false,
   className,
 }: CountrySelectProps) {
   const [open, setOpen] = React.useState(false);
