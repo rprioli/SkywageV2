@@ -17,9 +17,9 @@ import {
 } from '@/lib/salary-calculator';
 
 export default function DebugRatesPage() {
-  const [debugResults, setDebugResults] = useState<any[]>([]);
+  const [debugResults, setDebugResults] = useState<{ step: string; result: unknown; timestamp: string }[]>([]);
 
-  const addDebugResult = (step: string, result: any) => {
+  const addDebugResult = (step: string, result: unknown) => {
     setDebugResults(prev => [...prev, { step, result, timestamp: new Date().toISOString() }]);
   };
 
