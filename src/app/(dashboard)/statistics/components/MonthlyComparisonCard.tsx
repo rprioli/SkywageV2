@@ -7,9 +7,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, TrendingUp, TrendingDown, ArrowUp, ArrowDown, Award, AlertTriangle } from 'lucide-react';
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from 'recharts';
+import { Bar, BarChart, ResponsiveContainer, XAxis, Tooltip, Cell } from 'recharts';
 import { MonthlyComparison, MonthlyTrendData } from '@/types/statistics';
-import { formatCurrency, formatPercentage, CHART_COLORS, getMonthName } from '@/lib/statistics/chartHelpers';
+import { formatCurrency, formatPercentage, getMonthName } from '@/lib/statistics/chartHelpers';
 
 interface MonthlyComparisonCardProps {
   data: MonthlyComparison;
@@ -56,7 +56,7 @@ export function MonthlyComparisonCard({ data, monthlyTrends, loading = false }: 
     }));
 
   // Custom tooltip for the chart
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg">

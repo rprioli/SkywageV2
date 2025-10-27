@@ -6,8 +6,8 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, ArrowUp, ArrowDown } from 'lucide-react';
-import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from 'recharts';
+import { TrendingUp, ArrowUp, ArrowDown } from 'lucide-react';
+import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { YTDData } from '@/types/statistics';
 import { formatCurrency, formatPercentage, CHART_COLORS } from '@/lib/statistics/chartHelpers';
 
@@ -44,7 +44,7 @@ export function YTDEarningsCard({ data, loading = false }: YTDEarningsCardProps)
   const { comparisonToPreviousYear } = data;
 
   // Custom tooltip for the chart
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number; payload: { monthlyEarnings: number } }[]; label?: string }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg">

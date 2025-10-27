@@ -2,7 +2,6 @@
 
 import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
-import { MobileHeader } from '@/components/dashboard/MobileHeader';
 import { MobileNavigationProvider, useMobileNavigation } from '@/contexts/MobileNavigationProvider';
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {

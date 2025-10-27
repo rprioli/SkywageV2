@@ -41,7 +41,6 @@ import {
 } from '@/lib/salary-calculator/upload-processor';
 import { recalculateMonthlyTotals } from '@/lib/salary-calculator/recalculation-engine';
 import { RosterReplacementDialog } from '@/components/salary-calculator/RosterReplacementDialog';
-import { cn } from '@/lib/utils';
 import { getProfile } from '@/lib/db';
 
 // Monthly Overview Card Component - Extracted to prevent recreation on parent re-renders
@@ -52,7 +51,6 @@ const MonthlyOverviewCard = memo(({
   setHasUserSelectedMonth,
   setIsMonthSwitching,
   monthlyDataLoading,
-  isMonthSwitching,
   selectedData
 }: {
   allMonthlyCalculations: MonthlyCalculation[];
