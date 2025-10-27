@@ -5,16 +5,13 @@
  * Optimized for small files (<25KB typical size)
  */
 
-import * as XLSX from 'xlsx';
 import {
   ExcelParsingConfig,
   ExcelParseResult,
   ExcelFlightDuty,
   ExcelEmployeeInfo,
   ExcelParsingContext,
-  DEFAULT_EXCEL_CONFIG,
-  ExcelErrorType,
-  ExcelError
+  DEFAULT_EXCEL_CONFIG
 } from '@/types/excel-config';
 import {
   FlightDuty,
@@ -795,7 +792,7 @@ export class FlydubaiExcelParser {
       const timeResult = parseExcelTime(safeTimeStr);
       const [hours, minutes] = timeResult.time.split(':').map(Number);
       return createTimeValue(hours, minutes);
-    } catch (error) {
+    } catch {
       // Fallback to manual parsing
       const safeTimeStr = timeStr ? String(timeStr) : '';
       const timeMatch = safeTimeStr.match(/(\d{1,2}):(\d{2})/);

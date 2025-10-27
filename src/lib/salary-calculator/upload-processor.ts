@@ -14,7 +14,6 @@ import {
 import {
   validateCompleteCSV,
   FlydubaiCSVParser,
-  FlydubaiExcelParser,
   parseFlydubaiExcelFile,
   calculateMonthlySalary,
   calculateLayoverRestPeriods
@@ -84,7 +83,6 @@ export async function processCSVUpload(
   targetMonth?: number,
   targetYear?: number
 ): Promise<ProcessingResult> {
-  const errors: string[] = [];
   const warnings: string[] = [];
 
   try {
@@ -190,7 +188,7 @@ export async function processCSVUpload(
       year = targetYear;
 
       // Override month/year for all flight duties (preserve original dates for display)
-      flightDuties.forEach((duty, index) => {
+      flightDuties.forEach((duty) => {
         // Keep original date for display purposes, only change month/year for calculations and database organization
         duty.month = month;
         duty.year = year;
@@ -270,7 +268,7 @@ export async function processCSVUpload(
         // Verify flight IDs exist in saved flights
         const savedFlightIds = savedFlightDuties.map(f => f.id);
 
-        validRestPeriods.forEach((period, index) => {
+        validRestPeriods.forEach((period) => {
           const outboundExists = savedFlightIds.includes(period.outboundFlightId);
           const inboundExists = savedFlightIds.includes(period.inboundFlightId);
 
@@ -653,7 +651,6 @@ export async function processFileUpload(
   targetMonth?: number,
   targetYear?: number
 ): Promise<ProcessingResult> {
-  const errors: string[] = [];
   const warnings: string[] = [];
   const fileType = detectFileType(file);
 
@@ -777,7 +774,7 @@ export async function processFileUpload(
 
     // Override month/year for all flight duties if using target values
     if (targetMonth && targetYear) {
-      flightDuties.forEach((duty, index) => {
+      flightDuties.forEach((duty) => {
         // Keep original date for display purposes, only change month/year for calculations and database organization
         duty.month = month;
         duty.year = year;
@@ -857,7 +854,7 @@ export async function processFileUpload(
         // Verify flight IDs exist in saved flights
         const savedFlightIds = savedFlightDuties.map(f => f.id);
 
-        validRestPeriods.forEach((period, index) => {
+        validRestPeriods.forEach((period) => {
           const outboundExists = savedFlightIds.includes(period.outboundFlightId);
           const inboundExists = savedFlightIds.includes(period.inboundFlightId);
 

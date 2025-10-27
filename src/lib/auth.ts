@@ -2,8 +2,7 @@ import { supabase } from './supabase';
 import {
   AuthError,
   Session,
-  User,
-  AuthResponse
+  User
 } from '@supabase/supabase-js';
 
 // Connection health check
@@ -314,7 +313,7 @@ export async function refreshSession(): Promise<{
 
 // Update user metadata
 export async function updateUserMetadata(
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
 ): Promise<{ error: AuthError | null }> {
   try {
     const { error } = await supabase.auth.updateUser({

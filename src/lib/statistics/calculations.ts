@@ -311,8 +311,7 @@ export function calculateDutyTypeStats(
  * Main statistics calculation function
  */
 export function calculateStatistics(
-  monthlyCalculations: MonthlyCalculation[],
-  flightDuties: FlightDuty[] = []
+  monthlyCalculations: MonthlyCalculation[]
 ): StatisticsCalculationResult {
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear();

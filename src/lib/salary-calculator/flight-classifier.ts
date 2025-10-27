@@ -4,9 +4,9 @@
  * Following existing utility patterns in the codebase
  */
 
-import { DutyType, FlightClassificationResult, Position, TimeValue } from '@/types/salary-calculator';
+import { FlightClassificationResult, Position, TimeValue } from '@/types/salary-calculator';
 import { calculateRecurrentPay, calculateAsbyPay, calculateBusinessPromotionPay, FLYDUBAI_RATES } from './calculation-engine';
-import { createTimeValue, calculateDuration } from './time-calculator';
+import { calculateDuration } from './time-calculator';
 
 /**
  * Classifies flight duty type based on flight data
@@ -26,7 +26,7 @@ export function classifyFlightDuty(
   
   // Check for Airport Standby (ASBY)
   if (dutiesUpper.includes('ASBY')) {
-    let dutyHours = 4; // ASBY is always 4 hours
+    const dutyHours = 4; // ASBY is always 4 hours
     let flightPay = 0;
 
     if (position) {
@@ -46,8 +46,8 @@ export function classifyFlightDuty(
   // Check for Home Standby (SBY)
   if (dutiesUpper.includes('SBY') && !dutiesUpper.includes('ASBY')) {
     // Use actualDutyHours if provided
-    let dutyHours = actualDutyHours || 0;
-    let flightPay = 0; // SBY duties (including XSBY) have no payment
+    const dutyHours = actualDutyHours || 0;
+    const flightPay = 0; // SBY duties (including XSBY) have no payment
 
     return {
       dutyType: 'sby',
@@ -61,7 +61,7 @@ export function classifyFlightDuty(
 
   // Check for Business Promotion
   if (dutiesUpper.includes('BP') || detailsUpper.includes('BUSINESS PROMOTION')) {
-    let dutyHours = actualDutyHours || 8; // Default to 8 hours if not provided
+    const dutyHours = actualDutyHours || 8; // Default to 8 hours if not provided
     let flightPay = 0;
 
     if (position) {
@@ -83,7 +83,7 @@ export function classifyFlightDuty(
   console.log(`🔍 DUTY CLASSIFICATION: duties="${duties}", details="${details}", isTraining=${isTraining}`);
 
   if (isTraining) {
-    let dutyHours = actualDutyHours || 8; // Default to 8 hours if not provided
+    const dutyHours = actualDutyHours || 8; // Default to 8 hours if not provided
     let flightPay = 0;
 
     if (position) {
@@ -130,7 +130,7 @@ export function classifyFlightDuty(
   if (flightNumbers.length === 0) {
     // Check if this might be recurrent training that wasn't caught earlier
     if (isRecurrentTraining(dutiesUpper, detailsUpper)) {
-      let dutyHours = actualDutyHours || 8;
+      const dutyHours = actualDutyHours || 8;
       let flightPay = 0;
 
       if (position) {

@@ -4,7 +4,6 @@
  */
 
 import { MonthlyCalculation } from '@/types/salary-calculator';
-import { ChartDataPoint, AreaChartDataPoint, BarChartDataPoint } from '@/types/statistics';
 
 /**
  * Format currency for chart displays
@@ -108,7 +107,7 @@ export function formatTooltipCurrency(value: number, name: string): [string, str
 /**
  * Custom label formatter for month/year
  */
-export function formatMonthYearLabel(label: string, payload: any[]): string {
+export function formatMonthYearLabel(label: string, payload: unknown[]): string {
   if (payload && payload.length > 0 && payload[0].payload) {
     const data = payload[0].payload;
     if (data.year && data.month) {
@@ -265,7 +264,7 @@ export function getPerformanceColor(value: number, benchmarks: { good: number; a
 /**
  * Debounce function for chart resize events
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: never[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {

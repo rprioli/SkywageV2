@@ -5,13 +5,12 @@
  */
 
 import { supabase, Database } from '@/lib/supabase';
-import { FlightDuty, AuditTrailEntry, ValidationResult } from '@/types/salary-calculator';
-import { formatTimeValue, createTimestamp } from '@/lib/salary-calculator';
+import { FlightDuty } from '@/types/salary-calculator';
+import { formatTimeValue } from '@/lib/salary-calculator';
 
 // Database types
 type FlightRow = Database['public']['Tables']['flights']['Row'];
 type FlightInsert = Database['public']['Tables']['flights']['Insert'];
-type FlightUpdate = Database['public']['Tables']['flights']['Update'];
 
 /**
  * Converts FlightDuty to database insert format
@@ -244,7 +243,7 @@ export async function checkExistingFlightData(
   year: number
 ): Promise<{ exists: boolean; count: number; error: string | null }> {
   try {
-    const { data, error, count } = await supabase
+    const { error, count } = await supabase
       .from('flights')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
@@ -338,8 +337,8 @@ async function createAuditTrailEntry(entry: {
   flightId: string;
   userId: string;
   action: 'created' | 'deleted';
-  oldData?: any;
-  newData?: any;
+  oldData?: unknown;
+  newData?: unknown;
   changeReason?: string;
 }): Promise<void> {
   try {

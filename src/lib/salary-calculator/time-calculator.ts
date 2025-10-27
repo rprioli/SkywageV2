@@ -87,7 +87,7 @@ export function calculateDuration(
   endTime: TimeValue,
   isEndTimeCrossDay: boolean = false
 ): number {
-  let startMinutes = startTime.totalMinutes;
+  const startMinutes = startTime.totalMinutes;
   let endMinutes = endTime.totalMinutes;
 
   // Handle cross-day scenario

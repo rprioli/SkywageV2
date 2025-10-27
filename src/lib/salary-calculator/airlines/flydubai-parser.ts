@@ -6,13 +6,11 @@
 
 import { CSVParser, ValidationResult } from '@/types/airline-config';
 import { CSVParseResult } from '@/types/salary-calculator';
-import { validateCompleteCSV } from '../csv-validator';
 import { parseFlightDutiesFromCSV, extractMonthFromCSV, parseCSVContent } from '../csv-parser';
-import { 
-  FLYDUBAI_CSV_VALIDATION, 
+import {
   FLYDUBAI_TIME_FORMATS,
   isValidFlydubaiFlightNumber,
-  isValidFlydubaiSector 
+  isValidFlydubaiSector
 } from './flydubai-config';
 
 export class FlydubaiCSVParser implements CSVParser {
