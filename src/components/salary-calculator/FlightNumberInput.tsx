@@ -120,19 +120,19 @@ export function FlightNumberInput({
   };
 
   // Handle keyboard navigation in suggestions
-  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!showSuggestions) return;
 
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setActiveSuggestionIndex(prev => 
+        setActiveSuggestionIndex(prev =>
           prev < suggestions.length - 1 ? prev + 1 : 0
         );
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setActiveSuggestionIndex(prev => 
+        setActiveSuggestionIndex(prev =>
           prev > 0 ? prev - 1 : suggestions.length - 1
         );
         break;
@@ -156,7 +156,7 @@ export function FlightNumberInput({
   };
 
   // Handle input blur
-  const handleBlur = (index: number) => {
+  const handleBlur = () => {
     // Delay hiding suggestions to allow for clicks
     setTimeout(() => {
       setShowSuggestions(false);
@@ -225,8 +225,8 @@ export function FlightNumberInput({
                     value={flightNumber}
                     onChange={e => handleInputChange(index, e.target.value)}
                     onFocus={() => handleFocus(index)}
-                    onBlur={() => handleBlur(index)}
-                    onKeyDown={e => handleKeyDown(e, index)}
+                    onBlur={handleBlur}
+                    onKeyDown={handleKeyDown}
                     placeholder={index === 0 ? '123' : '124'}
                     disabled={disabled}
                     className={cn(

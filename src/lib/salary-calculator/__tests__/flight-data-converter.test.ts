@@ -6,7 +6,6 @@
 import {
   flightDutyToFormData,
   convertLayoverPairToFormData,
-  convertFlightDutyForEditing,
   safeConvertFlightDutyForEditing,
   formatTimeForInput,
   formatDateForInput,

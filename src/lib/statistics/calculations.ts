@@ -3,7 +3,7 @@
  * Transforms raw monthly calculation data into statistics insights
  */
 
-import { MonthlyCalculation, FlightDuty } from '@/types/salary-calculator';
+import { MonthlyCalculation } from '@/types/salary-calculator';
 import {
   YTDData,
   MonthlyComparison,

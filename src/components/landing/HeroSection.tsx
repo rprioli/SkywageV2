@@ -1,15 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { BRAND } from '@/lib/brand';
 
-interface HeroSectionProps {
-  className?: string;
-}
-
-export function HeroSection({ className }: HeroSectionProps) {
+export function HeroSection() {
   const [email, setEmail] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {

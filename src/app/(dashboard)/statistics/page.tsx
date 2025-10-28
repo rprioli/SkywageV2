@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BarChart3, Calendar, Loader2, AlertCircle, Menu } from 'lucide-react';
+import { BarChart3, Loader2, AlertCircle, Menu } from 'lucide-react';
 import { useStatisticsData } from '@/hooks/useStatisticsData';
 import { useMobileNavigation } from '@/contexts/MobileNavigationProvider';
 import { YTDEarningsCard } from './components/YTDEarningsCard';
