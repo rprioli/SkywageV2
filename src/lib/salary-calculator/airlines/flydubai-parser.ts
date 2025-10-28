@@ -5,7 +5,7 @@
  */
 
 import { CSVParser, ValidationResult } from '@/types/airline-config';
-import { CSVParseResult } from '@/types/salary-calculator';
+import { CSVParseResult, FlightDuty } from '@/types/salary-calculator';
 import { parseFlightDutiesFromCSV, extractMonthFromCSV, parseCSVContent } from '../csv-parser';
 import {
   FLYDUBAI_TIME_FORMATS,
@@ -182,7 +182,7 @@ export class FlydubaiCSVParser implements CSVParser {
   /**
    * Post-processes parsed data with Flydubai-specific rules
    */
-  private postProcessFlydubaiData(flightDuties: any[]): any[] {
+  private postProcessFlydubaiData(flightDuties: FlightDuty[]): FlightDuty[] {
     return flightDuties.map(duty => {
       // Apply Flydubai-specific business rules
       

@@ -46,7 +46,7 @@ describe('Excel Parser Utilities', () => {
     
     test('throws error for empty input', () => {
       expect(() => parseExcelTime('')).toThrow('Invalid time string provided');
-      expect(() => parseExcelTime(null as any)).toThrow('Invalid time string provided');
+      expect(() => parseExcelTime(null as unknown as string)).toThrow('Invalid time string provided');
     });
   });
   

@@ -95,14 +95,14 @@ export interface ExcelValidationResult {
 // Excel cell reference with value
 export interface ExcelCellReference {
   address: string; // e.g., "A1", "G4"
-  value: any;
+  value: unknown; // Excel cell values can be string, number, date, boolean, or formula
   formattedValue?: string;
   type?: 'string' | 'number' | 'date' | 'boolean' | 'formula';
 }
 
 // Excel parsing context
 export interface ExcelParsingContext {
-  worksheet: any; // XLSX worksheet object
+  worksheet: unknown; // XLSX worksheet object (external library type)
   config: ExcelParsingConfig;
   currentRow: number;
   totalRows: number;
@@ -176,7 +176,7 @@ export interface ExcelError {
 export type ExcelCellAddress = string; // e.g., "A1", "G4", "L14"
 
 // Export type for Excel row data
-export type ExcelRowData = { [column: string]: any };
+export type ExcelRowData = { [column: string]: unknown }; // Excel cells can contain any value type
 
 // Flexible Excel structure detection types
 export interface FlexibleExcelStructure {

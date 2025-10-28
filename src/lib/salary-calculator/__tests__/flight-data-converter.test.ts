@@ -85,12 +85,12 @@ describe('Flight Data Converter', () => {
 
     it('should detect missing required fields', () => {
       const flightDuty = createBasicFlightDuty({
-        date: undefined as any,
-        reportTime: undefined as any
+        date: undefined as unknown as Date,
+        reportTime: undefined as unknown as TimeValue
       });
-      
+
       const result = validateFlightDutyForConversion(flightDuty);
-      
+
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Flight duty date is required');
       expect(result.errors).toContain('Report time is required for non-off duties');
@@ -205,7 +205,7 @@ describe('Flight Data Converter', () => {
     });
 
     it('should return error for invalid input', () => {
-      const result = safeConvertFlightDutyForEditing(null as any);
+      const result = safeConvertFlightDutyForEditing(null as unknown as FlightDuty);
 
       expect(result.success).toBe(false);
       expect(result.errors).toContain('FlightDuty object is required');

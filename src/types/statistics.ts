@@ -136,7 +136,7 @@ export interface ChartDataPoint {
   name: string;
   value: number;
   fill?: string;
-  [key: string]: any;
+  [key: string]: unknown; // Allow additional chart properties (e.g., tooltips, metadata)
 }
 
 export interface AreaChartDataPoint {

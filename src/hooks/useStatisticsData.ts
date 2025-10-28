@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
 import { getAllMonthlyCalculations } from '@/lib/database/calculations';
 import { calculateStatistics } from '@/lib/statistics/calculations';
-import { StatisticsCalculationResult, UseStatisticsDataReturn } from '@/types/statistics';
+import { StatisticsCalculationResult, UseStatisticsDataReturn, MonthlyTrendData } from '@/types/statistics';
 
 /**
  * Hook for managing statistics data
@@ -204,7 +204,7 @@ export function useStatisticsSummary(statisticsData: StatisticsCalculationResult
  * Calculate current month's rank among all months
  */
 function calculateCurrentMonthRank(
-  monthlyTrends: any[],
+  monthlyTrends: MonthlyTrendData[],
   currentMonth: { month: number; year: number; totalEarnings: number }
 ): number {
   const sortedMonths = monthlyTrends
