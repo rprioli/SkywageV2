@@ -6,7 +6,7 @@
  * Following existing component patterns in the codebase
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AuditTrailEntry } from '@/types/salary-calculator';
 import { getFlightAuditTrail, getUserAuditTrail } from '@/lib/database/audit';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,12 +51,7 @@ export function AuditTrailDisplay({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load audit trail data
-  useEffect(() => {
-    loadAuditTrail();
-  }, [flightId, userId, maxEntries]);
-
-  const loadAuditTrail = async () => {
+  const loadAuditTrail = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -85,7 +80,12 @@ export function AuditTrailDisplay({
     } finally {
       setLoading(false);
     }
-  };
+  }, [flightId, userId, maxEntries]);
+
+  // Load audit trail data
+  useEffect(() => {
+    loadAuditTrail();
+  }, [loadAuditTrail]);
 
   // Toggle entry expansion
   const toggleExpanded = (entryId: string) => {

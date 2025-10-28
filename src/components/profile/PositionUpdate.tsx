@@ -37,7 +37,7 @@ export function PositionUpdate() {
     };
 
     loadPosition();
-  }, [user?.id]);
+  }, [user?.id, user?.user_metadata?.position]);
 
   // Cleanup timeout on unmount
   useEffect(() => {

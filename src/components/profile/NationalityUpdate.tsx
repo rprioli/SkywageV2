@@ -34,7 +34,7 @@ export function NationalityUpdate() {
     };
 
     loadNationality();
-  }, [user?.id]);
+  }, [user?.id, user?.user_metadata?.nationality]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
