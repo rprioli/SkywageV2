@@ -325,6 +325,76 @@ export default function DashboardPage() {
     loadUserPosition();
   }, [user?.id, user?.user_metadata?.position]);
 
+  // Refresh data after deletion and trigger recalculation
+  const refreshDataAfterDelete = useCallback(async () => {
+    if (!user?.id) return;
+
+    // Wait for user position to be loaded
+    if (userPositionLoading) {
+      showError("Loading Profile", {
+        description: "Please wait for user profile to load before refreshing data.",
+      });
+      return;
+    }
+
+    try {
+      const currentYear = new Date().getFullYear();
+      const selectedMonth = selectedOverviewMonth + 1; // Convert from 0-based to 1-based
+
+      console.log('🔄 REFRESH AFTER DELETE: Starting refresh for month', selectedMonth, 'year', currentYear);
+
+      // CRITICAL FIX: Trigger recalculation FIRST before fetching updated data
+      const recalcResult = await recalculateMonthlyTotals(user.id, selectedMonth, currentYear, userPosition as Position);
+
+      if (!recalcResult.success) {
+        console.log('🚨 REFRESH AFTER DELETE: Recalculation failed:', recalcResult.errors);
+        showError("Recalculation Failed", {
+          description: `Failed to recalculate monthly totals: ${recalcResult.errors.join(', ')}`,
+        });
+        return;
+      }
+
+      console.log('✅ REFRESH AFTER DELETE: Recalculation successful');
+
+      // Now refresh monthly calculation for the currently selected month
+      const calculationResult = await getMonthlyCalculation(
+        user.id,
+        selectedMonth,
+        currentYear
+      );
+
+      if (calculationResult.data && !calculationResult.error) {
+        setCurrentMonthCalculation(calculationResult.data);
+        console.log('✅ REFRESH AFTER DELETE: Updated monthly calculation - Total Salary:', calculationResult.data.totalSalary, 'Per Diem:', calculationResult.data.perDiemPay);
+      } else {
+        console.log('⚠️ REFRESH AFTER DELETE: No monthly calculation found or error:', calculationResult.error);
+        setCurrentMonthCalculation(null);
+      }
+
+      // Refresh all monthly calculations for chart data
+      const allCalculationsResult = await getAllMonthlyCalculations(user.id);
+      if (allCalculationsResult.data && !allCalculationsResult.error) {
+        setAllMonthlyCalculations(allCalculationsResult.data);
+        console.log('✅ REFRESH AFTER DELETE: Updated all monthly calculations count:', allCalculationsResult.data.length);
+      }
+
+      // Force refresh flight duties for the selected month
+      const flightDutiesResult = await getFlightDutiesByMonth(user.id, selectedMonth, currentYear);
+      if (flightDutiesResult.data && !flightDutiesResult.error) {
+        setFlightDuties(flightDutiesResult.data);
+        console.log('✅ REFRESH AFTER DELETE: Updated flight duties count:', flightDutiesResult.data.length);
+      } else {
+        setFlightDuties([]);
+        console.log('⚠️ REFRESH AFTER DELETE: No flight duties found');
+      }
+
+    } catch (error) {
+      showError("Refresh Failed", {
+        description: error instanceof Error ? error.message : 'Unknown error occurred during refresh',
+      });
+    }
+  }, [user?.id, userPositionLoading, selectedOverviewMonth, userPosition, showError]);
+
   // Refresh user position (can be called when position is updated)
   const refreshUserPosition = useCallback(async () => {
     if (!user?.id) return;
@@ -829,76 +899,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Refresh data after deletion and trigger recalculation
-  const refreshDataAfterDelete = useCallback(async () => {
-    if (!user?.id) return;
-
-    // Wait for user position to be loaded
-    if (userPositionLoading) {
-      showError("Loading Profile", {
-        description: "Please wait for user profile to load before refreshing data.",
-      });
-      return;
-    }
-
-    try {
-      const currentYear = new Date().getFullYear();
-      const selectedMonth = selectedOverviewMonth + 1; // Convert from 0-based to 1-based
-
-      console.log('🔄 REFRESH AFTER DELETE: Starting refresh for month', selectedMonth, 'year', currentYear);
-
-      // CRITICAL FIX: Trigger recalculation FIRST before fetching updated data
-      const recalcResult = await recalculateMonthlyTotals(user.id, selectedMonth, currentYear, userPosition as Position);
-
-      if (!recalcResult.success) {
-        console.log('🚨 REFRESH AFTER DELETE: Recalculation failed:', recalcResult.errors);
-        showError("Recalculation Failed", {
-          description: `Failed to recalculate monthly totals: ${recalcResult.errors.join(', ')}`,
-        });
-        return;
-      }
-
-      console.log('✅ REFRESH AFTER DELETE: Recalculation successful');
-
-      // Now refresh monthly calculation for the currently selected month
-      const calculationResult = await getMonthlyCalculation(
-        user.id,
-        selectedMonth,
-        currentYear
-      );
-
-      if (calculationResult.data && !calculationResult.error) {
-        setCurrentMonthCalculation(calculationResult.data);
-        console.log('✅ REFRESH AFTER DELETE: Updated monthly calculation - Total Salary:', calculationResult.data.totalSalary, 'Per Diem:', calculationResult.data.perDiemPay);
-      } else {
-        console.log('⚠️ REFRESH AFTER DELETE: No monthly calculation found or error:', calculationResult.error);
-        setCurrentMonthCalculation(null);
-      }
-
-      // Refresh all monthly calculations for chart data
-      const allCalculationsResult = await getAllMonthlyCalculations(user.id);
-      if (allCalculationsResult.data && !allCalculationsResult.error) {
-        setAllMonthlyCalculations(allCalculationsResult.data);
-        console.log('✅ REFRESH AFTER DELETE: Updated all monthly calculations count:', allCalculationsResult.data.length);
-      }
-
-      // Force refresh flight duties for the selected month
-      const flightDutiesResult = await getFlightDutiesByMonth(user.id, selectedMonth, currentYear);
-      if (flightDutiesResult.data && !flightDutiesResult.error) {
-        setFlightDuties(flightDutiesResult.data);
-        console.log('✅ REFRESH AFTER DELETE: Updated flight duties count:', flightDutiesResult.data.length);
-      } else {
-        setFlightDuties([]);
-        console.log('⚠️ REFRESH AFTER DELETE: No flight duties found');
-      }
-
-    } catch (error) {
-      showError("Refresh Failed", {
-        description: error instanceof Error ? error.message : 'Unknown error occurred during refresh',
-      });
-    }
-  };
-
   // Refresh data after bulk deletion and trigger recalculation for affected months
   const refreshDataAfterBulkDelete = async (deletedFlights: FlightDuty[]) => {
     if (!user?.id) return;
@@ -942,11 +942,6 @@ export default function DashboardPage() {
       const selectedMonth = selectedOverviewMonth + 1;
       const currentMonthKey = `${selectedMonth}-${currentYear}`;
 
-      // Get unique months/years from the flights being deleted
-      const affectedMonths = new Set(
-        selectedFlightsForBulkDelete.map(flight => `${flight.month}-${flight.year}`)
-      );
-
       if (affectedMonths.has(currentMonthKey)) {
         const calculationResult = await getMonthlyCalculation(user.id, selectedMonth, currentYear);
         if (calculationResult.data && !calculationResult.error) {
@@ -969,7 +964,7 @@ export default function DashboardPage() {
         description: error instanceof Error ? error.message : 'Unknown error occurred during refresh',
       });
     }
-  }, [user?.id, userPositionLoading, selectedOverviewMonth, userPosition]);
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-AE', {
