@@ -3,8 +3,6 @@
  * Formatting and utility functions for statistics charts
  */
 
-import { MonthlyCalculation } from '@/types/salary-calculator';
-
 /**
  * Format currency for chart displays
  */

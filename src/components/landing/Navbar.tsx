@@ -5,13 +5,8 @@ import Link from 'next/link';
 import { Logo } from '@/components/ui/Logo';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { Button } from '@/components/ui/button';
-import { BRAND } from '@/lib/brand';
 
-interface NavbarProps {
-  className?: string;
-}
-
-export function Navbar({ className }: NavbarProps) {
+export function Navbar() {
   return (
     <header className="w-full py-4 px-4 md:px-8">
       <div className="max-w-7xl mx-auto flex items-center justify-between">

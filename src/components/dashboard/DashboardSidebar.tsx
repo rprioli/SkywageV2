@@ -12,7 +12,6 @@ import {
   LayoutDashboard,
   BarChart,
   User,
-  Settings,
   LogOut,
   X
 } from 'lucide-react';

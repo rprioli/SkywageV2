@@ -367,17 +367,6 @@ export function FlightDutyCard({
     }
   };
 
-  const getDataSourceBadge = (dataSource: string) => {
-    switch (dataSource) {
-      case 'csv':
-        return { label: 'CSV', variant: 'secondary' as const };
-      case 'manual':
-        return { label: 'Manual', variant: 'outline' as const };
-      default:
-        return { label: dataSource.toUpperCase(), variant: 'secondary' as const };
-    }
-  };
-
   const dutyConfig = getDutyTypeConfig(flightDuty.dutyType);
   const DutyIcon = dutyConfig.icon;
 
