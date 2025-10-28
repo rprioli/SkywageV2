@@ -119,7 +119,8 @@ export function FlightEntryForm({
         sectors: formData.dutyType === 'layover' ? ['', '', '', ''] : ['', '', '']
       }));
     }
-  }, []); // Only run on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- Only run on mount to initialize form
+  }, []);
 
   // Handle form field changes
   const handleFieldChange = <K extends keyof ManualFlightEntryData>(

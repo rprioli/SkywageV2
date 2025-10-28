@@ -25,7 +25,8 @@ export function FormField({
   className,
   id
 }: FormFieldProps) {
-  const fieldId = id || React.useId()
+  const generatedId = React.useId()
+  const fieldId = id || generatedId
   const hasError = !!error
   const hasSuccess = !!success && !hasError
 

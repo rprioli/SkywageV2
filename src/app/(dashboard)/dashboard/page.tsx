@@ -25,6 +25,9 @@ import {
 import { Upload, FileText, Plane, Trash2, Plus, Clock, Banknote, UtensilsCrossed, Menu } from 'lucide-react';
 import { ResponsiveContainer, XAxis, Bar, BarChart, Cell } from 'recharts';
 import { MonthlyCalculation, FlightDuty, Position } from '@/types/salary-calculator';
+
+// Constants
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 import { getMonthlyCalculation, getAllMonthlyCalculations } from '@/lib/database/calculations';
 import { getFlightDutiesByMonth, deleteFlightDuty } from '@/lib/database/flights';
 import { FlightDutiesManager } from '@/components/salary-calculator/FlightDutiesManager';
@@ -64,7 +67,6 @@ const MonthlyOverviewCard = memo(({
 }) => {
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear();
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   // Hover state for enhanced interactivity
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -94,13 +96,13 @@ const MonthlyOverviewCard = memo(({
       const normalizedValue = monthCalc ? Math.round((monthCalc.totalSalary / maxSalary) * 100) : 0;
 
       data.push({
-        month: months[i],
+        month: MONTHS[i],
         value: normalizedValue
       });
     }
 
     return data;
-  }, [allMonthlyCalculations, currentYear, months]);
+  }, [allMonthlyCalculations, currentYear]);
 
   // Enhanced color logic for smooth transitions
   const getBarColor = (index: number) => {
@@ -136,11 +138,11 @@ const MonthlyOverviewCard = memo(({
             </div>
             <p className="text-responsive-sm text-gray-500">
               {selectedData.totalSalary === 0 && !monthlyDataLoading ?
-                `${months[selectedOverviewMonth]} - No Data` :
+                `${MONTHS[selectedOverviewMonth]} - No Data` :
                 (() => {
                   const nextMonth = selectedOverviewMonth === 11 ? 0 : selectedOverviewMonth + 1;
                   const nextYear = selectedOverviewMonth === 11 ? new Date().getFullYear() + 1 : new Date().getFullYear();
-                  return `Expected Salary for ${months[nextMonth]}, ${nextYear}`;
+                  return `Expected Salary for ${MONTHS[nextMonth]}, ${nextYear}`;
                 })()
               }
             </p>
@@ -324,7 +326,7 @@ export default function DashboardPage() {
   }, [user?.id, user?.user_metadata?.position]);
 
   // Refresh user position (can be called when position is updated)
-  const refreshUserPosition = async () => {
+  const refreshUserPosition = useCallback(async () => {
     if (!user?.id) return;
 
     try {
@@ -339,7 +341,7 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error refreshing user position:', error);
     }
-  };
+  }, [user?.id, refreshDataAfterDelete]);
 
   // Listen for position updates from profile page
   useEffect(() => {
@@ -352,7 +354,7 @@ export default function DashboardPage() {
     return () => {
       window.removeEventListener('userPositionUpdated', handlePositionUpdate);
     };
-  }, [user?.id]);
+  }, [user?.id, refreshUserPosition]);
 
   // Fetch current month's salary calculation and all monthly data
   useEffect(() => {
@@ -794,13 +796,6 @@ export default function DashboardPage() {
 
     setDeleteProcessing(true);
     try {
-      // Get unique months/years from the flights being deleted
-      const affectedMonths = new Set(
-        selectedFlightsForBulkDelete.map(flight => `${flight.month}-${flight.year}`)
-      );
-
-
-
       const deletePromises = selectedFlightsForBulkDelete.map(flight =>
         deleteFlightDuty(
           flight.id,
@@ -835,7 +830,7 @@ export default function DashboardPage() {
   };
 
   // Refresh data after deletion and trigger recalculation
-  const refreshDataAfterDelete = async () => {
+  const refreshDataAfterDelete = useCallback(async () => {
     if (!user?.id) return;
 
     // Wait for user position to be loaded
@@ -947,6 +942,11 @@ export default function DashboardPage() {
       const selectedMonth = selectedOverviewMonth + 1;
       const currentMonthKey = `${selectedMonth}-${currentYear}`;
 
+      // Get unique months/years from the flights being deleted
+      const affectedMonths = new Set(
+        selectedFlightsForBulkDelete.map(flight => `${flight.month}-${flight.year}`)
+      );
+
       if (affectedMonths.has(currentMonthKey)) {
         const calculationResult = await getMonthlyCalculation(user.id, selectedMonth, currentYear);
         if (calculationResult.data && !calculationResult.error) {
@@ -969,7 +969,7 @@ export default function DashboardPage() {
         description: error instanceof Error ? error.message : 'Unknown error occurred during refresh',
       });
     }
-  };
+  }, [user?.id, userPositionLoading, selectedOverviewMonth, userPosition]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-AE', {
