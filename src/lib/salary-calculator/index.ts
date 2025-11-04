@@ -98,7 +98,6 @@ export {
   processCSVUploadWithReplacement,
   processFileUpload,
   processFileUploadWithReplacement,
-  validateCSVFileQuick,
   validateFileQuick,
   detectFileType,
   parseFileContent,

@@ -427,35 +427,7 @@ export function validateFileQuick(file: File): ValidationResult {
   };
 }
 
-/**
- * Validates CSV file before processing (backward compatibility)
- */
-export function validateCSVFileQuick(file: File): ValidationResult {
-  const errors: string[] = [];
-  const warnings: string[] = [];
 
-  // Check file type
-  if (!file.name.toLowerCase().endsWith('.csv')) {
-    errors.push('File must be a CSV file (.csv extension)');
-  }
-
-  // Check file size (max 10MB)
-  const maxSize = 10 * 1024 * 1024; // 10MB
-  if (file.size > maxSize) {
-    errors.push(`File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size (10MB)`);
-  }
-
-  // Check if file is empty
-  if (file.size === 0) {
-    errors.push('File is empty');
-  }
-
-  return {
-    valid: errors.length === 0,
-    errors,
-    warnings
-  };
-}
 
 /**
  * Unified file parsing for both CSV and Excel files
