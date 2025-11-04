@@ -34,8 +34,8 @@ function rowToAuditTrailEntry(row: AuditTrailRow): AuditTrailEntry {
     flightId: row.flight_id,
     userId: row.user_id,
     action: row.action,
-    oldData: row.old_data,
-    newData: row.new_data,
+    oldData: row.old_data as Record<string, unknown> | undefined,
+    newData: row.new_data as Record<string, unknown> | undefined,
     changeReason: row.change_reason || undefined,
     createdAt: new Date(row.created_at)
   };

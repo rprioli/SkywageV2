@@ -47,10 +47,10 @@ export function FormField({
       )}
       
       <div className="relative">
-        {React.cloneElement(children as React.ReactElement, {
+        {React.cloneElement(children as React.ReactElement<React.HTMLAttributes<HTMLElement>>, {
           id: fieldId,
           className: cn(
-            (children as React.ReactElement).props.className,
+            (children as React.ReactElement<{ className?: string }>).props.className,
             hasError && "form-field-error",
             hasSuccess && "form-field-success"
           ),

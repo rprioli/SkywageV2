@@ -232,7 +232,7 @@ export function SectorInput({
                   </div>
                   
                   <Input
-                    ref={el => inputRefs.current[index] = el}
+                    ref={el => { inputRefs.current[index] = el; }}
                     type="text"
                     value={sector}
                     onChange={e => handleInputChange(index, e.target.value)}

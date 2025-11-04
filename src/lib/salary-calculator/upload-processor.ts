@@ -30,6 +30,9 @@ import {
   type ReplacementResult
 } from './roster-replacement';
 
+// Re-export types that are used by consumers
+export type { ExistingDataCheck, ReplacementResult };
+
 // Processing status for real-time feedback
 export interface ProcessingStatus {
   step: 'validating' | 'parsing' | 'calculating' | 'saving' | 'complete' | 'error';
@@ -472,7 +475,7 @@ export async function parseFileContent(
 
       return {
         success: excelResult.success,
-        data: excelResult.data,
+        data: excelResult.data as FlightDuty[] | undefined,
         errors: excelResult.errors,
         warnings: excelResult.warnings,
         totalRows: excelResult.totalRows,
@@ -588,7 +591,7 @@ export async function processCSVUploadWithReplacement(
 
       // Step 3: Now process and save the new data (for real this time)
       onProgress?.({
-        step: 'processing',
+        step: 'saving',
         progress: 75,
         message: 'Saving new roster data...',
         details: 'Creating new flights and calculations'
@@ -992,10 +995,10 @@ export async function processFileUploadWithReplacement(
         `Roster replacement via ${fileType.toUpperCase()} upload - ${file.name}`
       );
 
-      if (replacementResult.error) {
+      if (!replacementResult.success) {
         return {
           success: false,
-          errors: [`Failed to delete existing data: ${replacementResult.error}`],
+          errors: replacementResult.errors.length > 0 ? replacementResult.errors : ['Failed to delete existing data'],
           replacementPerformed: false,
           replacementResult: undefined
         };
@@ -1003,7 +1006,7 @@ export async function processFileUploadWithReplacement(
 
       // Step 3: Now process and save the new data (for real this time)
       onProgress?.({
-        step: 'processing',
+        step: 'saving',
         progress: 75,
         message: 'Saving new roster data...',
         details: 'Creating new flights and calculations'

@@ -5,6 +5,7 @@
  * Optimized for small files (<25KB typical size)
  */
 
+import * as XLSX from 'xlsx';
 import {
   ExcelParsingConfig,
   ExcelParseResult,
@@ -187,7 +188,7 @@ export class FlydubaiExcelParser {
         year = dateRange.year;
       } else {
         // Fall back to hardcoded location
-        const dateRangeCell = getCellValue(this.context.worksheet, this.config.dateRangeCell);
+        const dateRangeCell = getCellValue(this.context.worksheet as XLSX.WorkSheet, this.config.dateRangeCell);
         if (dateRangeCell.value) {
           const dateRange = parseExcelDateRange(dateRangeCell.value.toString());
           month = dateRange.month;
@@ -204,7 +205,7 @@ export class FlydubaiExcelParser {
         employeeInfo = parseEmployeeInfo(this.flexibleStructure.employeeInfoLocation.value);
       } else {
         // Fall back to hardcoded location
-        const employeeCell = getCellValue(this.context.worksheet, this.config.employeeInfoCell);
+        const employeeCell = getCellValue(this.context.worksheet as XLSX.WorkSheet, this.config.employeeInfoCell);
         if (employeeCell.value) {
           employeeInfo = parseEmployeeInfo(employeeCell.value.toString());
         }
@@ -280,13 +281,14 @@ export class FlydubaiExcelParser {
 
 
     // Read row data using dynamic column positions
-    const dateCell = getCellValue(this.context.worksheet, `${dateColumn}${rowNumber}`);
-    const dutiesCell = getCellValue(this.context.worksheet, `${dutiesColumn}${rowNumber}`);
-    const detailsCell = getCellValue(this.context.worksheet, `${detailsColumn}${rowNumber}`);
-    const reportTimeCell = getCellValue(this.context.worksheet, `${reportTimeColumn}${rowNumber}`);
-    const debriefTimeCell = getCellValue(this.context.worksheet, `${debriefTimeColumn}${rowNumber}`);
-    const actualTimesCell = getCellValue(this.context.worksheet, `${actualTimesColumn}${rowNumber}`);
-    const indicatorsCell = getCellValue(this.context.worksheet, `${indicatorsColumn}${rowNumber}`);
+    const worksheet = this.context.worksheet as XLSX.WorkSheet;
+    const dateCell = getCellValue(worksheet, `${dateColumn}${rowNumber}`);
+    const dutiesCell = getCellValue(worksheet, `${dutiesColumn}${rowNumber}`);
+    const detailsCell = getCellValue(worksheet, `${detailsColumn}${rowNumber}`);
+    const reportTimeCell = getCellValue(worksheet, `${reportTimeColumn}${rowNumber}`);
+    const debriefTimeCell = getCellValue(worksheet, `${debriefTimeColumn}${rowNumber}`);
+    const actualTimesCell = getCellValue(worksheet, `${actualTimesColumn}${rowNumber}`);
+    const indicatorsCell = getCellValue(worksheet, `${indicatorsColumn}${rowNumber}`);
 
     // Skip empty rows
     if (!dateCell.value && !dutiesCell.value) {
@@ -693,13 +695,10 @@ export class FlydubaiExcelParser {
         rowNumber: excelDuty.rowNumber,
         processingNotes: []
       },
-      auditTrail: [{
-        action: 'created',
-        timestamp: new Date(),
-        source: 'excel-upload',
-        details: `Imported from Excel row ${excelDuty.rowNumber}`,
-        userId: 'system'
-      }]
+      month,
+      year,
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
 
     // Use flight classifier to finalize duty classification and calculations
@@ -722,8 +721,12 @@ export class FlydubaiExcelParser {
 
     // Update with classification results
     flightDuty.dutyType = classificationResult.dutyType;
-    flightDuty.dutyHours = classificationResult.dutyHours;
-    flightDuty.flightPay = classificationResult.flightPay;
+    if (classificationResult.dutyHours !== undefined) {
+      flightDuty.dutyHours = classificationResult.dutyHours;
+    }
+    if (classificationResult.flightPay !== undefined) {
+      flightDuty.flightPay = classificationResult.flightPay;
+    }
 
     // Debug final times for recurrent training, SBY, and Business Promotion duties
     if (flightDuty.dutyType === 'recurrent') {

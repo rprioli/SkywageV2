@@ -33,6 +33,9 @@ import {
 } from './input-transformers';
 import { FEATURE_FLAGS } from '@/lib/feature-flags';
 
+// Re-export types that are used by consumers
+export type { ManualFlightEntryData, FormValidationResult };
+
 // Processing result for manual entry
 export interface ManualEntryResult {
   success: boolean;
@@ -401,11 +404,11 @@ export function convertToFlightDuty(
       // Business Promotion is paid at fixed 5 hours at hourly rate
       const rates = { CCM: { hourlyRate: 50 }, SCCM: { hourlyRate: 62 } };
       flightPay = 5 * rates[position].hourlyRate;
-    } else if (data.dutyType === 'turnaround' || data.dutyType === 'layover') {
+    } else if (data.dutyType === 'turnaround') {
       // Regular flight duties are paid at hourly rate for actual duty hours
       flightPay = calculateFlightPay(dutyHours, position);
     }
-    // No pay for 'sby' or 'off' duty types
+    // No pay for 'sby' or 'off' duty types (layover is handled separately above)
 
     // Transform simplified input to expected format
     const flightNumbers = transformFlightNumbers(data.flightNumbers);
@@ -521,7 +524,7 @@ export async function processManualEntry(
       warnings.push('Flight saved but monthly calculation update failed');
     }
 
-    const monthlyCalculation = recalcResult.monthlyCalculation;
+    const monthlyCalculation = recalcResult.updatedCalculation ?? undefined;
 
     return {
       success: true,
@@ -578,7 +581,7 @@ export async function processBatchManualEntries(
       if (!flightDuty) {
         errors.push(`Entry ${i + 1}: Failed to convert to flight duty`);
       } else {
-        flightDuties.push(flightDuty);
+        flightDuties.push(...flightDuty);
       }
     }
 
@@ -626,7 +629,7 @@ export async function processBatchManualEntries(
 
     // Save monthly calculation
     const calculationSaveResult = await upsertMonthlyCalculation(
-      monthlyCalculation.calculation, 
+      monthlyCalculation.monthlyCalculation,
       userId
     );
     if (calculationSaveResult.error) {
@@ -738,7 +741,7 @@ export async function processManualEntryBatch(
 
       // Return the calculation for the first month (most common case)
       if (!monthlyCalculation) {
-        monthlyCalculation = recalcResult.monthlyCalculation;
+        monthlyCalculation = recalcResult.updatedCalculation ?? undefined;
       }
     }
 

@@ -71,8 +71,8 @@ export const MobileInput = React.forwardRef<
 
   // Auto-detect autoCapitalize based on type
   const getAutoCapitalize = () => {
-    if (props.autoCapitalize !== undefined) return autoCapitalize
-    
+    if (autoCapitalize !== undefined) return autoCapitalize
+
     switch (type) {
       case 'email':
       case 'url':
@@ -86,8 +86,8 @@ export const MobileInput = React.forwardRef<
 
   // Auto-detect autoCorrect based on type
   const getAutoCorrect = () => {
-    if (props.autoCorrect !== undefined) return autoCorrect
-    
+    if (autoCorrect !== undefined) return autoCorrect
+
     switch (type) {
       case 'email':
       case 'url':
@@ -102,8 +102,8 @@ export const MobileInput = React.forwardRef<
 
   // Auto-detect spellCheck based on type
   const getSpellCheck = () => {
-    if (props.spellCheck !== undefined) return spellCheck
-    
+    if (spellCheck !== undefined) return spellCheck
+
     switch (type) {
       case 'email':
       case 'url':

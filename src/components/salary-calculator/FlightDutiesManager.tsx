@@ -92,15 +92,17 @@ export function FlightDutiesManager({
       const flightsToDelete = layoverPair ? [selectedFlight, layoverPair] : [selectedFlight];
 
       // Delete all flights (main flight and its layover pair if applicable)
-      const deletePromises = flightsToDelete.map(flight =>
-        deleteFlightDuty(
-          flight.id,
-          userId,
-          layoverPair
-            ? 'Layover pair deletion - Flight duty deleted via manager'
-            : 'Flight duty deleted via manager'
-        )
-      );
+      const deletePromises = flightsToDelete
+        .filter(flight => flight.id) // Filter out flights without IDs
+        .map(flight =>
+          deleteFlightDuty(
+            flight.id!,
+            userId,
+            layoverPair
+              ? 'Layover pair deletion - Flight duty deleted via manager'
+              : 'Flight duty deleted via manager'
+          )
+        );
 
       const results = await Promise.all(deletePromises);
       const errors = results.filter(result => result.error).map(result => result.error);
@@ -116,7 +118,11 @@ export function FlightDutiesManager({
         }
 
         // Notify parent components for all deleted flights
-        flightsToDelete.forEach(flight => onFlightDeleted?.(flight.id));
+        flightsToDelete.forEach(flight => {
+          if (flight.id) {
+            onFlightDeleted?.(flight.id);
+          }
+        });
         onRecalculationComplete?.();
       }
     } catch (error) {
@@ -135,13 +141,15 @@ export function FlightDutiesManager({
 
     setProcessing(true);
     try {
-      const deletePromises = flightDuties.map(flight =>
-        deleteFlightDuty(
-          flight.id,
-          userId,
-          `Bulk delete operation - ${flightDuties.length} flights`
-        )
-      );
+      const deletePromises = flightDuties
+        .filter(flight => flight.id) // Filter out flights without IDs
+        .map(flight =>
+          deleteFlightDuty(
+            flight.id!,
+            userId,
+            `Bulk delete operation - ${flightDuties.length} flights`
+          )
+        );
 
       const results = await Promise.all(deletePromises);
       const errors = results.filter(result => result.error).map(result => result.error);
@@ -153,7 +161,11 @@ export function FlightDutiesManager({
         salaryCalculator.bulkDeleteSuccess(flightDuties.length);
 
         // Notify parent components
-        flightDuties.forEach(flight => onFlightDeleted?.(flight.id));
+        flightDuties.forEach(flight => {
+          if (flight.id) {
+            onFlightDeleted?.(flight.id);
+          }
+        });
         onRecalculationComplete?.();
       }
     } catch (error) {
@@ -170,13 +182,15 @@ export function FlightDutiesManager({
 
     setProcessing(true);
     try {
-      const deletePromises = flightDuties.map(flight =>
-        deleteFlightDuty(
-          flight.id,
-          userId,
-          `Delete all operation - ${flightDuties.length} flights`
-        )
-      );
+      const deletePromises = flightDuties
+        .filter(flight => flight.id) // Filter out flights without IDs
+        .map(flight =>
+          deleteFlightDuty(
+            flight.id!,
+            userId,
+            `Delete all operation - ${flightDuties.length} flights`
+          )
+        );
 
       const results = await Promise.all(deletePromises);
       const errors = results.filter(result => result.error).map(result => result.error);
@@ -188,7 +202,11 @@ export function FlightDutiesManager({
         salaryCalculator.bulkDeleteSuccess(flightDuties.length);
 
         // Notify parent components
-        flightDuties.forEach(flight => onFlightDeleted?.(flight.id));
+        flightDuties.forEach(flight => {
+          if (flight.id) {
+            onFlightDeleted?.(flight.id);
+          }
+        });
         onRecalculationComplete?.();
       }
     } catch (error) {

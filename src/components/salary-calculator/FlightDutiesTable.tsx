@@ -87,7 +87,7 @@ export function FlightDutiesTable({
   };
 
   const selectAllVisible = () => {
-    const visibleIds = new Set(flightDuties.map(flight => flight.id));
+    const visibleIds = new Set(flightDuties.map(flight => flight.id).filter((id): id is string => id !== undefined));
     setSelectedFlights(visibleIds);
   };
 
@@ -97,7 +97,7 @@ export function FlightDutiesTable({
 
   const handleBulkDelete = () => {
     if (selectedFlights.size > 0 && onBulkDelete) {
-      const selectedFlightDuties = flightDuties.filter(flight => selectedFlights.has(flight.id));
+      const selectedFlightDuties = flightDuties.filter(flight => flight.id && selectedFlights.has(flight.id));
       onBulkDelete(selectedFlightDuties);
       setSelectedFlights(new Set());
     }
@@ -149,7 +149,7 @@ export function FlightDutiesTable({
   };
 
   const filteredFlightDuties = getFilteredFlightDuties();
-  const isAllVisibleSelected = filteredFlightDuties.length > 0 && filteredFlightDuties.every(flight => selectedFlights.has(flight.id));
+  const isAllVisibleSelected = filteredFlightDuties.length > 0 && filteredFlightDuties.every(flight => flight.id && selectedFlights.has(flight.id));
   const isSomeSelected = selectedFlights.size > 0;
 
 
@@ -348,7 +348,7 @@ export function FlightDutiesTable({
                     onDelete={onDelete}
                     showActions={showActions}
                     bulkMode={bulkMode}
-                    isSelected={selectedFlights.has(duty.id)}
+                    isSelected={duty.id ? selectedFlights.has(duty.id) : false}
                     onToggleSelection={toggleFlightSelection}
                   />
                 ) : (
@@ -358,7 +358,7 @@ export function FlightDutiesTable({
                     onDelete={onDelete}
                     showActions={showActions}
                     bulkMode={bulkMode}
-                    isSelected={selectedFlights.has(duty.id)}
+                    isSelected={duty.id ? selectedFlights.has(duty.id) : false}
                     onToggleSelection={toggleFlightSelection}
                   />
                 )}

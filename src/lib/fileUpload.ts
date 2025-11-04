@@ -42,9 +42,7 @@ export async function uploadAvatar(file: File): Promise<{ url: string | null; er
     if (uploadError) {
       console.error('Supabase storage upload error:', {
         message: uploadError.message,
-        details: uploadError.details,
-        hint: uploadError.hint,
-        code: uploadError.code
+        name: uploadError.name
       });
 
       // Check for specific error types

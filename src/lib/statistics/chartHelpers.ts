@@ -106,10 +106,13 @@ export function formatTooltipCurrency(value: number, name: string): [string, str
  * Custom label formatter for month/year
  */
 export function formatMonthYearLabel(label: string, payload: unknown[]): string {
-  if (payload && payload.length > 0 && payload[0].payload) {
-    const data = payload[0].payload;
-    if (data.year && data.month) {
-      return `${getMonthName(data.month)} ${data.year}`;
+  if (payload && payload.length > 0) {
+    const firstItem = payload[0] as { payload?: { year?: number; month?: number } };
+    if (firstItem.payload) {
+      const data = firstItem.payload;
+      if (data.year && data.month) {
+        return `${getMonthName(data.month)} ${data.year}`;
+      }
     }
   }
   return label;

@@ -19,6 +19,9 @@ import {
 } from '@/types/excel-config';
 import { Position } from '@/types/salary-calculator';
 
+// Re-export types for convenience
+export type { FlexibleExcelStructure };
+
 /**
  * Reads Excel file and returns workbook
  */
@@ -81,7 +84,7 @@ export function getCellValue(
     return {
       address: cellAddress,
       value: null,
-      formattedValue: null,
+      formattedValue: undefined,
       type: 'string'
     };
   }
@@ -595,9 +598,17 @@ export function detectExcelStructureFlexible(worksheet: XLSX.WorkSheet): Flexibl
       scheduleDetailsRow,
       columnHeaderRow,
       dataStartRow,
-      columnMapping,
-      dateRangeLocation,
-      employeeInfoLocation
+      columnMapping: {
+        date: columnMapping.date,
+        duties: columnMapping.duties,
+        details: columnMapping.details || '',
+        reportTime: columnMapping.reportTime || '',
+        debriefTime: columnMapping.debriefTime || '',
+        actualTimes: columnMapping.actualTimes,
+        indicators: columnMapping.indicators
+      },
+      dateRangeLocation: dateRangeLocation || undefined,
+      employeeInfoLocation: employeeInfoLocation || undefined
     };
 
   } catch {

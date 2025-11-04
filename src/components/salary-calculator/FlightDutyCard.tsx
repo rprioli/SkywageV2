@@ -382,11 +382,11 @@ export function FlightDutyCard({
       <Card className={`relative group hover:shadow-lg transition-all duration-300 border-gray-100 hover:border-gray-200 rounded-3xl overflow-hidden bg-white ${isSelected ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
         <CardContent className="p-6 pt-12">
           {/* Bulk Selection Checkbox */}
-          {bulkMode && onToggleSelection && (
+          {bulkMode && onToggleSelection && flightDuty.id && (
             <div className="absolute top-4 left-4">
               <Checkbox
                 checked={isSelected}
-                onCheckedChange={() => onToggleSelection(flightDuty.id)}
+                onCheckedChange={() => onToggleSelection(flightDuty.id!)}
                 className="h-5 w-5"
               />
             </div>

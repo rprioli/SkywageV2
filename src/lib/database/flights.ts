@@ -6,7 +6,7 @@
 
 import { supabase, Database } from '@/lib/supabase';
 import { FlightDuty } from '@/types/salary-calculator';
-import { formatTimeValue } from '@/lib/salary-calculator';
+import { formatTimeValue, parseTimeString } from '@/lib/salary-calculator';
 
 // Database types
 type FlightRow = Database['public']['Tables']['flights']['Row'];
@@ -17,11 +17,17 @@ type FlightInsert = Database['public']['Tables']['flights']['Insert'];
  * Populates both old and new schema columns for backward compatibility
  */
 function flightDutyToInsert(flightDuty: FlightDuty, userId: string): FlightInsert {
-  const insertData = {
+  const insertData: FlightInsert = {
     user_id: userId,
     date: flightDuty.date.toISOString().split('T')[0], // YYYY-MM-DD format
-
-    // Salary calculator schema columns
+    // Old schema columns (for backward compatibility)
+    flight_number: flightDuty.flightNumbers[0] || '',
+    sector: flightDuty.sectors.join(' - '),
+    reporting_time: formatTimeValue(flightDuty.reportTime),
+    debriefing_time: formatTimeValue(flightDuty.debriefTime),
+    hours: flightDuty.dutyHours,
+    pay: flightDuty.flightPay,
+    // New schema columns (salary calculator)
     flight_numbers: flightDuty.flightNumbers,
     sectors: flightDuty.sectors,
     duty_type: flightDuty.dutyType,
@@ -44,36 +50,65 @@ function flightDutyToInsert(flightDuty: FlightDuty, userId: string): FlightInser
 /**
  * Converts database row to FlightDuty
  * Handles both old and new schema columns
+ * Prefers new schema columns when available, falls back to old schema
  */
 function rowToFlightDuty(row: FlightRow): FlightDuty {
+  // Prefer new schema columns, fall back to old schema
+  const flightNumbers = row.flight_numbers && row.flight_numbers.length > 0
+    ? row.flight_numbers
+    : [row.flight_number];
+
+  const sectors = row.sectors && row.sectors.length > 0
+    ? row.sectors
+    : (row.sector ? row.sector.split(' - ') : []);
+
+  const dutyType = row.duty_type || 'turnaround';
+
+  // Get time strings, preferring new schema columns
+  const reportTimeStr = row.report_time || row.reporting_time || '';
+  const debriefTimeStr = row.debrief_time || row.debriefing_time || '';
+
+  // Parse times with fallback for invalid formats
+  let reportTime = parseTimeString(reportTimeStr);
+  let debriefTime = parseTimeString(debriefTimeStr);
+
+  // If parsing fails, try to create a default time value from the string
+  if (!reportTime.success || !reportTime.timeValue) {
+    console.warn(`Invalid report time format in row ${row.id}: "${reportTimeStr}". Using default 00:00`);
+    reportTime = {
+      success: true,
+      timeValue: { hours: 0, minutes: 0, totalMinutes: 0, totalHours: 0 },
+      isCrossDay: false
+    };
+  }
+
+  if (!debriefTime.success || !debriefTime.timeValue) {
+    console.warn(`Invalid debrief time format in row ${row.id}: "${debriefTimeStr}". Using default 00:00`);
+    debriefTime = {
+      success: true,
+      timeValue: { hours: 0, minutes: 0, totalMinutes: 0, totalHours: 0 },
+      isCrossDay: false
+    };
+  }
+
   return {
     id: row.id,
     userId: row.user_id,
     date: new Date(row.date),
-    flightNumbers: row.flight_numbers,
-    sectors: row.sectors,
-    dutyType: row.duty_type,
-    reportTime: {
-      hours: parseInt(row.report_time.split(':')[0]),
-      minutes: parseInt(row.report_time.split(':')[1]),
-      totalMinutes: parseInt(row.report_time.split(':')[0]) * 60 + parseInt(row.report_time.split(':')[1]),
-      totalHours: (parseInt(row.report_time.split(':')[0]) * 60 + parseInt(row.report_time.split(':')[1])) / 60
-    },
-    debriefTime: {
-      hours: parseInt(row.debrief_time.split(':')[0]),
-      minutes: parseInt(row.debrief_time.split(':')[1]),
-      totalMinutes: parseInt(row.debrief_time.split(':')[0]) * 60 + parseInt(row.debrief_time.split(':')[1]),
-      totalHours: (parseInt(row.debrief_time.split(':')[0]) * 60 + parseInt(row.debrief_time.split(':')[1])) / 60
-    },
-    dutyHours: row.duty_hours,
-    flightPay: row.flight_pay,
-    isCrossDay: row.is_cross_day || false,
-    dataSource: row.data_source || 'csv',
-    originalData: row.original_data,
+    flightNumbers,
+    sectors,
+    dutyType,
+    reportTime: reportTime.timeValue!,
+    debriefTime: debriefTime.timeValue!,
+    dutyHours: row.duty_hours ?? row.hours,
+    flightPay: row.flight_pay ?? row.pay,
+    isCrossDay: row.is_cross_day ?? false,
+    dataSource: row.data_source ?? 'csv',
+    originalData: row.original_data as Record<string, unknown> | undefined,
     lastEditedAt: row.last_edited_at ? new Date(row.last_edited_at) : undefined,
-    lastEditedBy: row.last_edited_by || undefined,
-    month: row.month,
-    year: row.year,
+    lastEditedBy: row.last_edited_by,
+    month: row.month ?? new Date(row.date).getMonth() + 1,
+    year: row.year ?? new Date(row.date).getFullYear(),
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at)
   };
@@ -156,7 +191,17 @@ export async function getFlightDutiesByMonth(
       return { data: null, error: error.message };
     }
 
-    const flightDuties = data.map(rowToFlightDuty);
+    // Convert rows to FlightDuty, filtering out any that fail conversion
+    const flightDuties: FlightDuty[] = [];
+    for (const row of data) {
+      try {
+        flightDuties.push(rowToFlightDuty(row));
+      } catch (conversionError) {
+        console.error(`Failed to convert row ${row.id}:`, conversionError);
+        // Skip this row and continue with others
+      }
+    }
+
     return { data: flightDuties, error: null };
   } catch (error) {
     console.error('Error fetching flight duties:', error);

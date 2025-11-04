@@ -35,7 +35,7 @@ export function MobileHeader() {
 
         {/* Logo */}
         <div className="flex-1 flex justify-center">
-          <Logo variant="primary" width={120} height={32} />
+          <Logo variant="color" width={120} height={32} />
         </div>
 
         {/* Spacer to balance the layout */}

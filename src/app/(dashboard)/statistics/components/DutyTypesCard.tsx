@@ -98,7 +98,7 @@ export function DutyTypesCard({ data, loading = false }: DutyTypesCardProps) {
   // Custom tooltip for pie chart
   const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: unknown[] }) => {
     if (active && payload && payload.length) {
-      const data = (payload[0] as { payload: { name: string; value: number; percentage: number; color: string } }).payload;
+      const data = (payload[0] as { payload: { name: string; value: number; earnings: number; percentage: number; color: string } }).payload;
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
           <p className="font-medium mb-2">{data.name}</p>
