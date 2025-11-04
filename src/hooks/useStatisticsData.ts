@@ -3,18 +3,14 @@
  * Manages fetching, caching, and refreshing of statistics data
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
 import { getAllMonthlyCalculations } from '@/lib/database/calculations';
 import { calculateStatistics } from '@/lib/statistics/calculations';
 import {
   StatisticsCalculationResult,
   UseStatisticsDataReturn,
-  MonthlyTrendData,
-  MonthlyProgressionPoint,
-  BarChartDataPoint,
-  AreaChartDataPoint,
-  ChartDataPoint
+  MonthlyTrendData
 } from '@/types/statistics';
 
 /**
@@ -106,47 +102,34 @@ export function useStatisticsData(): UseStatisticsDataReturn {
 /**
  * Hook for chart-specific data transformations
  * Provides pre-formatted data for different chart types
+ * Optimized with useMemo to prevent unnecessary recalculations
  */
 export function useChartData(statisticsData: StatisticsCalculationResult | null) {
-  const [chartData, setChartData] = useState<{
-    ytdChartData: MonthlyProgressionPoint[];
-    monthlyTrendData: BarChartDataPoint[];
-    payComponentData: AreaChartDataPoint[];
-    dutyTypeChartData: ChartDataPoint[];
-    loading: boolean;
-  }>({
-    ytdChartData: [],
-    monthlyTrendData: [],
-    payComponentData: [],
-    dutyTypeChartData: [],
-    loading: false
-  });
-
-  useEffect(() => {
+  // Use useMemo to only recalculate when statisticsData changes
+  const chartData = useMemo(() => {
     if (!statisticsData) {
-      setChartData({
+      return {
         ytdChartData: [],
         monthlyTrendData: [],
         payComponentData: [],
         dutyTypeChartData: [],
         loading: false
-      });
-      return;
+      };
     }
 
-    setChartData({
+    return {
       loading: false,
-      
+
       // YTD progression data for line/area charts
       ytdChartData: statisticsData.ytdData.monthlyProgression,
-      
+
       // Monthly trend data for bar charts
       monthlyTrendData: statisticsData.monthlyTrends.map(trend => ({
         month: trend.monthName,
         earnings: trend.totalEarnings,
         trend: trend.totalEarnings
       })),
-      
+
       // Pay component data for stacked area charts
       payComponentData: statisticsData.payComponentBreakdown.monthlyBreakdown.map(month => ({
         month: month.monthName,
@@ -155,14 +138,14 @@ export function useChartData(statisticsData: StatisticsCalculationResult | null)
         asbyPay: month.asbyPay,
         total: month.totalPay
       })),
-      
+
       // Duty type data for pie charts
       dutyTypeChartData: statisticsData.dutyTypeStats.dutyTypeBreakdown.map(duty => ({
         name: duty.dutyType.charAt(0).toUpperCase() + duty.dutyType.slice(1),
         value: duty.count,
         fill: getDutyTypeColor(duty.dutyType)
       }))
-    });
+    };
   }, [statisticsData]);
 
   return chartData;
@@ -188,30 +171,34 @@ function getDutyTypeColor(dutyType: string): string {
 /**
  * Hook for statistics summary metrics
  * Provides key metrics for dashboard cards
+ * Optimized with useMemo to prevent unnecessary recalculations
  */
 export function useStatisticsSummary(statisticsData: StatisticsCalculationResult | null) {
-  if (!statisticsData) {
-    return {
-      ytdTotal: 0,
-      monthlyAverage: 0,
-      bestMonth: 0,
-      currentMonthRank: 0,
-      totalFlights: 0,
-      averageEarningsPerFlight: 0
-    };
-  }
+  // Use useMemo to only recalculate when statisticsData changes
+  return useMemo(() => {
+    if (!statisticsData) {
+      return {
+        ytdTotal: 0,
+        monthlyAverage: 0,
+        bestMonth: 0,
+        currentMonthRank: 0,
+        totalFlights: 0,
+        averageEarningsPerFlight: 0
+      };
+    }
 
-  const { ytdData, monthlyComparison, monthlyTrends } = statisticsData;
-  const monthsWithData = monthlyTrends.filter(trend => trend.totalEarnings > 0);
-  
-  return {
-    ytdTotal: ytdData.totalEarnings,
-    monthlyAverage: monthsWithData.length > 0 ? ytdData.totalEarnings / monthsWithData.length : 0,
-    bestMonth: monthlyComparison.bestMonth.totalEarnings,
-    currentMonthRank: calculateCurrentMonthRank(monthlyTrends, monthlyComparison.currentMonth),
-    totalFlights: monthlyTrends.reduce((sum, trend) => sum + trend.flightCount, 0),
-    averageEarningsPerFlight: 0 // Would need flight count data
-  };
+    const { ytdData, monthlyComparison, monthlyTrends } = statisticsData;
+    const monthsWithData = monthlyTrends.filter(trend => trend.totalEarnings > 0);
+
+    return {
+      ytdTotal: ytdData.totalEarnings,
+      monthlyAverage: monthsWithData.length > 0 ? ytdData.totalEarnings / monthsWithData.length : 0,
+      bestMonth: monthlyComparison.bestMonth.totalEarnings,
+      currentMonthRank: calculateCurrentMonthRank(monthlyTrends, monthlyComparison.currentMonth),
+      totalFlights: monthlyTrends.reduce((sum, trend) => sum + trend.flightCount, 0),
+      averageEarningsPerFlight: 0 // Would need flight count data
+    };
+  }, [statisticsData]);
 }
 
 /**

@@ -181,22 +181,25 @@ export function useDataRefresh(
           affectedMonths.set(key, { month: flight.month, year: flight.year });
         });
 
-        // Recalculate each affected month
-        for (const { month, year } of affectedMonths.values()) {
-          const recalcResult = await recalculateMonthlyTotals(
-            userId,
-            month,
-            year,
-            position
-          );
+        // Recalculate all affected months in parallel (independent operations)
+        const recalcPromises = Array.from(affectedMonths.values()).map(
+          ({ month, year }) =>
+            recalculateMonthlyTotals(userId, month, year, position)
+        );
 
-          if (!recalcResult.success) {
-            onError(
-              'Recalculation Failed',
-              `Failed to recalculate monthly totals for ${month}/${year}: ${recalcResult.errors.join(', ')}`
-            );
-            continue; // Continue with other months
-          }
+        const recalcResults = await Promise.all(recalcPromises);
+
+        // Check for any failures
+        const failures = recalcResults.filter((result) => !result.success);
+        if (failures.length > 0) {
+          const errorMessages = failures
+            .map((result) => result.errors.join(', '))
+            .join('; ');
+          onError(
+            'Recalculation Failed',
+            `Failed to recalculate ${failures.length} month(s): ${errorMessages}`
+          );
+          // Continue anyway to refresh the data we can
         }
 
         // Fetch and update data for currently selected month
