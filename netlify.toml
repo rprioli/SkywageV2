@@ -6,6 +6,10 @@
   NODE_VERSION = "20"
   NPM_FLAGS = "--legacy-peer-deps"
 
+# Netlify Next.js plugin for optimal deployment
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
 # Production environment
 [context.production.environment]
   NODE_ENV = "production"
@@ -17,10 +21,4 @@
 # Branch deploy environment
 [context.branch-deploy.environment]
   NODE_ENV = "development"
-
-# Redirects for client-side routing
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
 
