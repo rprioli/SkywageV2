@@ -302,9 +302,8 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
       </Dialog>
 
       {/* Roster Replacement Confirmation Dialog */}
-      {existingDataCheck && (
+      {existingDataCheck && selectedUploadMonth !== null && (
         <RosterReplacementDialog
-          existingData={existingDataCheck}
           open={replacementDialogOpen}
           onOpenChange={setReplacementDialogOpen}
           month={selectedUploadMonth}

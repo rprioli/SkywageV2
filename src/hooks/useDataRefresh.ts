@@ -33,8 +33,8 @@ interface UseDataRefreshReturn {
   // Refresh after bulk delete (determines months from deleted flights)
   refreshAfterBulkDelete: (deletedFlights: FlightDuty[]) => Promise<void>;
 
-  // Refresh after roster upload (uses provided month, conditional update)
-  refreshAfterUpload: (uploadMonth: number) => Promise<void>;
+  // Refresh after roster upload (refreshes all data)
+  refreshAfterUpload: () => Promise<void>;
 
   // Refresh after manual entry (uses selected month/year, with delay)
   refreshAfterManualEntry: () => Promise<void>;

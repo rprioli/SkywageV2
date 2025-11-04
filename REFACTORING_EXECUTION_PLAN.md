@@ -1632,13 +1632,15 @@ git push -u origin refactor/validation-and-optimization
 
 ---
 
-## PHASE 6: Code Organization Improvements 📁
+## PHASE 6: Code Organization Improvements 📁 ✅ COMPLETE
 
 **Priority**: 🟢 LOW (OPTIONAL)
 **Branch**: `refactor/code-organization`
 **Risk Level**: 🟢 VERY LOW
 **Dependencies**: Must complete Phase 5 first
 **Issues Fixed**: File organization, generic patterns
+**Status**: ✅ COMPLETE
+**PR**: #TBD
 
 ### ⚠️ IMPORTANT: Evaluate Necessity
 
@@ -1765,6 +1767,102 @@ git commit -m "refactor: improve code organization and add generic utilities
 git push -u origin refactor/code-organization
 
 # Create PR, wait for approval, merge, delete branch
+```
+
+### ✅ Phase 6 Completion Summary
+
+**Completed**: 2025-01-XX
+**Branch**: `refactor/code-organization`
+**PR**: #TBD
+
+#### Files Created (1 file, 228 lines):
+
+1. **src/lib/database/withDatabaseOperation.ts** (NEW FILE, 228 lines)
+   - Generic database operation wrapper with consistent error handling
+   - Three wrapper functions: `withDatabaseOperation`, `withDatabaseArrayOperation`, `withDatabaseVoidOperation`
+   - Comprehensive documentation with usage examples
+   - Type-safe with TypeScript generics
+   - Reduces boilerplate code (~10 lines per database function)
+
+#### Approach Taken:
+
+**Conservative Implementation**:
+
+- ✅ Created the generic wrapper utility
+- ✅ Added comprehensive documentation and usage examples
+- ✅ Provided migration strategy for future development
+- ⏭️ **Did NOT refactor existing database files** (too risky, not worth it)
+
+**Rationale**:
+
+- Existing database operations work perfectly fine
+- Refactoring all operations would be high-risk with minimal benefit
+- Better to use the wrapper for NEW operations going forward
+- Provides the foundation without the risk
+
+#### Benefits:
+
+**For Future Development**:
+
+- ✅ New database operations can use the wrapper (reduces boilerplate)
+- ✅ Consistent error handling pattern established
+- ✅ Easy to add monitoring/metrics later
+- ✅ Type-safe with excellent TypeScript support
+
+**Documentation**:
+
+- ✅ Comprehensive usage guide in the file header
+- ✅ Three clear examples for different operation types
+- ✅ Migration strategy documented
+
+#### Metrics:
+
+| Metric                  | Value    | Notes                       |
+| ----------------------- | -------- | --------------------------- |
+| Files Created           | 1        | withDatabaseOperation.ts    |
+| Lines Added             | 228      | Utility + documentation     |
+| Existing Files Modified | 0        | Conservative approach       |
+| Lint Errors             | 0        | ✅ Clean                    |
+| Risk Level              | Very Low | No changes to existing code |
+
+#### Testing Checklist:
+
+- [x] Lint passes ✅
+- [x] No existing code modified ✅
+- [x] Documentation is comprehensive ✅
+- [x] Type definitions are correct ✅
+- [ ] Test with actual database operations (future use)
+
+#### Future Usage:
+
+When creating NEW database operations, developers can now use:
+
+```typescript
+// Instead of writing 10+ lines of boilerplate:
+export async function getFlightDuty(id: string) {
+  try {
+    const { data, error } = await supabase
+      .from("flights")
+      .select()
+      .eq("id", id)
+      .single();
+    if (error) {
+      console.error("Error:", error);
+      return { data: null, error: error.message };
+    }
+    return { data: rowToFlightDuty(data), error: null };
+  } catch (error) {
+    console.error("Error:", error);
+    return { data: null, error: (error as Error).message };
+  }
+}
+
+// Write this instead (2 lines):
+export const getFlightDuty = withDatabaseOperation(
+  async (id: string) => supabase.from("flights").select().eq("id", id).single(),
+  "getFlightDuty",
+  rowToFlightDuty
+);
 ```
 
 ---
