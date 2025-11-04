@@ -281,13 +281,13 @@ export function validateTimeSequence(
     const reportTimeObj = parseTimeString(reportTime);
     const debriefTimeObj = parseTimeString(debriefTime);
 
-    if (!reportTimeObj || !debriefTimeObj) {
+    if (!reportTimeObj.success || !debriefTimeObj.success || !reportTimeObj.timeValue || !debriefTimeObj.timeValue) {
       return { valid: false, error: 'Invalid time format' };
     }
 
     // For validation, we need to check the raw time sequence first
-    const reportMinutes = reportTimeObj.totalMinutes;
-    const debriefMinutes = debriefTimeObj.totalMinutes;
+    const reportMinutes = reportTimeObj.timeValue.totalMinutes;
+    const debriefMinutes = debriefTimeObj.timeValue.totalMinutes;
 
     // If debrief is before report on same day and cross-day is not enabled, it's invalid
     if (debriefMinutes <= reportMinutes && !isCrossDay) {
@@ -299,7 +299,7 @@ export function validateTimeSequence(
     }
 
     // Now calculate actual duration for further validation
-    const duration = calculateDuration(reportTimeObj, debriefTimeObj, isCrossDay);
+    const duration = calculateDuration(reportTimeObj.timeValue, debriefTimeObj.timeValue, isCrossDay);
 
     if (duration <= 0) {
       return {
@@ -403,10 +403,10 @@ export function validateManualEntry(
     try {
       const reportTimeObj = parseTimeString(data.reportTime);
       const debriefTimeObj = parseTimeString(data.debriefTime);
-      
-      if (reportTimeObj && debriefTimeObj) {
-        calculatedDutyHours = calculateDuration(reportTimeObj, debriefTimeObj, data.isCrossDay);
-        
+
+      if (reportTimeObj.success && debriefTimeObj.success && reportTimeObj.timeValue && debriefTimeObj.timeValue) {
+        calculatedDutyHours = calculateDuration(reportTimeObj.timeValue, debriefTimeObj.timeValue, data.isCrossDay);
+
         // Calculate estimated pay based on position and duty type
         const rates = FLYDUBAI_CONFIG.salaryRates[position];
         if (data.dutyType === 'asby') {

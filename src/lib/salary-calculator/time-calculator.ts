@@ -40,14 +40,14 @@ export function parseTimeString(timeStr: string): TimeParseResult {
 
   // Check for cross-day indicator (¹, ⁺¹, or ?¹ patterns, but not ♦ which is same-day)
   const isCrossDay = /[¹²³⁴⁵⁶⁷⁸⁹]/.test(timeStr) || timeStr.includes('?¹') || timeStr.includes('⁺¹');
-  
-  // Parse HH:MM format
-  const timeMatch = cleanedTime.match(/^(\d{1,2}):(\d{2})$/);
-  
+
+  // Parse HH:MM or HH:MM:SS format (database stores HH:MM:SS, CSV has HH:MM)
+  const timeMatch = cleanedTime.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+
   if (!timeMatch) {
     return {
       success: false,
-      error: `Invalid time format: ${timeStr}. Expected HH:MM format.`,
+      error: `Invalid time format: ${timeStr}. Expected HH:MM or HH:MM:SS format.`,
       isCrossDay
     };
   }

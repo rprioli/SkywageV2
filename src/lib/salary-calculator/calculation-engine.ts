@@ -226,8 +226,9 @@ export function calculateFlightDuty(
         let isELD = false;
 
         // Check original data from roster upload
-        if (flightDuty.originalData?.rawData) {
-          const originalDuties = flightDuty.originalData.rawData[1]?.value?.toString().toUpperCase() || '';
+        if (flightDuty.originalData?.rawData && Array.isArray(flightDuty.originalData.rawData)) {
+          const rawData = flightDuty.originalData.rawData as Array<{ value?: unknown }>;
+          const originalDuties = rawData[1]?.value?.toString().toUpperCase() || '';
           isELD = originalDuties.includes('ELD');
         }
 

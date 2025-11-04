@@ -22,7 +22,6 @@ export { SectorInput } from './SectorInput';
 export { TimeInput } from './TimeInput';
 
 // Phase 5 Components
-export { EditFlightModal } from './EditFlightModal';
 export { AuditTrailDisplay, AuditTrailModal } from './AuditTrailDisplay';
 export { FlightDutiesManager } from './FlightDutiesManager';
 

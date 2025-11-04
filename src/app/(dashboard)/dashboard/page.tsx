@@ -828,7 +828,7 @@ export default function DashboardPage() {
 
   // Confirm single flight deletion
   const confirmFlightDelete = async () => {
-    if (!selectedFlightForDelete || !user?.id) return;
+    if (!selectedFlightForDelete || !selectedFlightForDelete.id || !user?.id) return;
 
     setDeleteProcessing(true);
     try {
@@ -866,13 +866,15 @@ export default function DashboardPage() {
 
     setDeleteProcessing(true);
     try {
-      const deletePromises = selectedFlightsForBulkDelete.map(flight =>
-        deleteFlightDuty(
-          flight.id,
-          user.id,
-          `Bulk delete operation - ${selectedFlightsForBulkDelete.length} flights`
-        )
-      );
+      const deletePromises = selectedFlightsForBulkDelete
+        .filter(flight => flight.id) // Filter out flights without IDs
+        .map(flight =>
+          deleteFlightDuty(
+            flight.id!,
+            user.id,
+            `Bulk delete operation - ${selectedFlightsForBulkDelete.length} flights`
+          )
+        );
 
       const results = await Promise.all(deletePromises);
       const errors = results.filter(result => result.error).map(result => result.error);
@@ -1367,8 +1369,6 @@ export default function DashboardPage() {
           open={replacementDialogOpen}
           onOpenChange={setReplacementDialogOpen}
           month={selectedUploadMonth}
-          year={new Date().getFullYear()}
-          existingFlightCount={existingDataCheck.flightCount}
           onConfirm={handleReplacementConfirm}
           onCancel={handleReplacementCancel}
           isProcessing={replacementProcessing}

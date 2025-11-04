@@ -63,7 +63,10 @@ export async function middleware(request: NextRequest) {
 
   try {
     // Use IP + User-Agent as cache key for session caching
-    const cacheKey = `${request.ip || 'unknown'}-${request.headers.get('user-agent') || 'unknown'}`;
+    // Note: request.ip is not available in NextRequest, use x-forwarded-for header instead
+    const forwardedFor = request.headers.get('x-forwarded-for');
+    const ip = forwardedFor ? forwardedFor.split(',')[0] : 'unknown';
+    const cacheKey = `${ip}-${request.headers.get('user-agent') || 'unknown'}`;
 
     // Get session (cached or fresh)
     const { session, error, fromCache } = await getCachedSession(cacheKey);

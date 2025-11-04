@@ -136,7 +136,7 @@ export function useMobileNavigation(): MobileNavigationContextType {
  * Hook to handle click outside sidebar to close it
  */
 export function useClickOutside(
-  ref: React.RefObject<HTMLElement>,
+  ref: React.RefObject<HTMLElement | null>,
   callback: () => void,
   enabled: boolean = true
 ) {

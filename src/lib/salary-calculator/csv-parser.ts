@@ -290,10 +290,10 @@ function mergeRelatedRows(
  * Checks if a row needs merging (has incomplete data)
  */
 function needsRowMerging(row: string[]): boolean {
-  const hasDate = row[0] && row[0].trim() !== '' && !row[0].toLowerCase().includes('date');
-  const hasDuties = row[1] && row[1].trim() !== '';
-  const hasReportTime = row[3] && row[3].trim() !== '';
-  const hasDebriefTime = row[5] && row[5].trim() !== '';
+  const hasDate = !!(row[0] && row[0].trim() !== '' && !row[0].toLowerCase().includes('date'));
+  const hasDuties = !!(row[1] && row[1].trim() !== '');
+  const hasReportTime = !!(row[3] && row[3].trim() !== '');
+  const hasDebriefTime = !!(row[5] && row[5].trim() !== '');
 
   // Needs merging if it has a date but missing other essential data
   return hasDate && (!hasDuties || (!hasReportTime && !hasDebriefTime));

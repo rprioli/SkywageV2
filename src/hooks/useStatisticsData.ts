@@ -7,7 +7,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
 import { getAllMonthlyCalculations } from '@/lib/database/calculations';
 import { calculateStatistics } from '@/lib/statistics/calculations';
-import { StatisticsCalculationResult, UseStatisticsDataReturn, MonthlyTrendData } from '@/types/statistics';
+import {
+  StatisticsCalculationResult,
+  UseStatisticsDataReturn,
+  MonthlyTrendData,
+  MonthlyProgressionPoint,
+  BarChartDataPoint,
+  AreaChartDataPoint,
+  ChartDataPoint
+} from '@/types/statistics';
 
 /**
  * Hook for managing statistics data
@@ -100,7 +108,13 @@ export function useStatisticsData(): UseStatisticsDataReturn {
  * Provides pre-formatted data for different chart types
  */
 export function useChartData(statisticsData: StatisticsCalculationResult | null) {
-  const [chartData, setChartData] = useState({
+  const [chartData, setChartData] = useState<{
+    ytdChartData: MonthlyProgressionPoint[];
+    monthlyTrendData: BarChartDataPoint[];
+    payComponentData: AreaChartDataPoint[];
+    dutyTypeChartData: ChartDataPoint[];
+    loading: boolean;
+  }>({
     ytdChartData: [],
     monthlyTrendData: [],
     payComponentData: [],

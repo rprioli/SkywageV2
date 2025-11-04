@@ -4,8 +4,8 @@
  * Following existing parser patterns in the codebase
  */
 
-import { CSVParser, ValidationResult } from '@/types/airline-config';
-import { CSVParseResult, FlightDuty } from '@/types/salary-calculator';
+import { CSVParser } from '@/types/airline-config';
+import { CSVParseResult, FlightDuty, ValidationResult } from '@/types/salary-calculator';
 import { parseFlightDutiesFromCSV, extractMonthFromCSV, parseCSVContent } from '../csv-parser';
 import {
   FLYDUBAI_TIME_FORMATS,
@@ -185,19 +185,17 @@ export class FlydubaiCSVParser implements CSVParser {
   private postProcessFlydubaiData(flightDuties: FlightDuty[]): FlightDuty[] {
     return flightDuties.map(duty => {
       // Apply Flydubai-specific business rules
-      
-      // Validate duty hours against Flydubai limits
+
+      // Validate duty hours against Flydubai limits (log warnings instead of modifying duty object)
       if (duty.dutyHours > 14) {
-        duty.warnings = duty.warnings || [];
-        duty.warnings.push(`Duty hours (${duty.dutyHours.toFixed(2)}) exceed Flydubai maximum (14 hours)`);
+        console.warn(`Duty hours (${duty.dutyHours.toFixed(2)}) exceed Flydubai maximum (14 hours)`);
       }
 
       // Validate flight numbers are Flydubai flights
       if (duty.flightNumbers) {
         for (const flightNumber of duty.flightNumbers) {
           if (!isValidFlydubaiFlightNumber(flightNumber)) {
-            duty.warnings = duty.warnings || [];
-            duty.warnings.push(`Flight number ${flightNumber} is not a valid Flydubai flight`);
+            console.warn(`Flight number ${flightNumber} is not a valid Flydubai flight`);
           }
         }
       }
@@ -206,8 +204,7 @@ export class FlydubaiCSVParser implements CSVParser {
       if (duty.sectors) {
         for (const sector of duty.sectors) {
           if (!isValidFlydubaiSector(sector)) {
-            duty.warnings = duty.warnings || [];
-            duty.warnings.push(`Sector ${sector} format not recognized`);
+            console.warn(`Sector ${sector} format not recognized`);
           }
         }
       }

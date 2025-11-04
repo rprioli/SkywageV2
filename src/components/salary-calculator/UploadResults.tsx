@@ -23,6 +23,7 @@ import { ProcessingResult } from '@/lib/salary-calculator/upload-processor';
 interface UploadResultsProps {
   result: ProcessingResult;
   fileName: string;
+  position: 'CCM' | 'SCCM';
   onStartOver: () => void;
   onDownloadReport?: () => void;
   className?: string;
@@ -31,6 +32,7 @@ interface UploadResultsProps {
 export function UploadResults({
   result,
   fileName,
+  position,
   onStartOver,
   onDownloadReport,
   className
@@ -193,7 +195,7 @@ export function UploadResults({
           </h2>
           <SalaryBreakdown
             calculation={monthlyCalculation.monthlyCalculation}
-            variant="detailed"
+            position={position}
           />
         </div>
 

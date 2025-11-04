@@ -39,7 +39,7 @@ export interface ExcelParsingConfig {
 // Excel parsing result
 export interface ExcelParseResult {
   success: boolean;
-  data?: ExcelFlightDuty[];
+  data?: unknown[]; // Can be ExcelFlightDuty[] or FlightDuty[] depending on conversion
   errors: string[];
   warnings: string[];
   month?: number;

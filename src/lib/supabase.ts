@@ -60,56 +60,6 @@ export type Database = {
           updated_at?: string;
         };
       };
-      flights: {
-        Row: {
-          id: string;
-          user_id: string;
-          date: string;
-          flight_number: string;
-          sector: string;
-          report_time: string;
-          departure_time: string;
-          arrival_time: string;
-          debriefing_time: string;
-          duty_hours: number;
-          flight_hours: number;
-          pay: number;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          user_id: string;
-          date: string;
-          flight_number: string;
-          sector: string;
-          report_time: string;
-          departure_time: string;
-          arrival_time: string;
-          debriefing_time: string;
-          duty_hours: number;
-          flight_hours: number;
-          pay: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          user_id?: string;
-          date?: string;
-          flight_number?: string;
-          sector?: string;
-          report_time?: string;
-          departure_time?: string;
-          arrival_time?: string;
-          debriefing_time?: string;
-          duty_hours?: number;
-          flight_hours?: number;
-          pay?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-      };
       // Enhanced flights table for salary calculator (includes both old and new schema)
       flights: {
         Row: {
@@ -127,21 +77,21 @@ export type Database = {
           is_turnaround?: boolean;
           is_layover?: boolean;
           is_asby?: boolean;
-          // New schema columns (salary calculator)
-          flight_numbers: string[];
-          sectors: string[];
-          duty_type: 'turnaround' | 'layover' | 'asby' | 'sby' | 'off' | 'business_promotion';
-          report_time: string;
-          debrief_time: string;
-          duty_hours: number;
-          flight_pay: number;
-          is_cross_day: boolean;
-          data_source: 'csv' | 'manual' | 'edited';
+          // New schema columns (salary calculator) - optional for backward compatibility
+          flight_numbers?: string[];
+          sectors?: string[];
+          duty_type?: 'turnaround' | 'layover' | 'asby' | 'sby' | 'off' | 'business_promotion' | 'recurrent';
+          report_time?: string;
+          debrief_time?: string;
+          duty_hours?: number;
+          flight_pay?: number;
+          is_cross_day?: boolean;
+          data_source?: 'csv' | 'manual' | 'edited';
           original_data?: unknown;
           last_edited_at?: string;
           last_edited_by?: string;
-          month: number;
-          year: number;
+          month?: number;
+          year?: number;
           created_at: string;
           updated_at: string;
         };
@@ -163,7 +113,7 @@ export type Database = {
           // New schema columns (salary calculator)
           flight_numbers?: string[];
           sectors?: string[];
-          duty_type?: 'turnaround' | 'layover' | 'asby' | 'sby' | 'off' | 'business_promotion';
+          duty_type?: 'turnaround' | 'layover' | 'asby' | 'sby' | 'off' | 'business_promotion' | 'recurrent';
           report_time?: string;
           debrief_time?: string;
           duty_hours?: number;
@@ -196,7 +146,7 @@ export type Database = {
           // New schema columns (salary calculator)
           flight_numbers?: string[];
           sectors?: string[];
-          duty_type?: 'turnaround' | 'layover' | 'asby' | 'sby' | 'off' | 'business_promotion';
+          duty_type?: 'turnaround' | 'layover' | 'asby' | 'sby' | 'off' | 'business_promotion' | 'recurrent';
           report_time?: string;
           debrief_time?: string;
           duty_hours?: number;

@@ -220,7 +220,7 @@ export function FlightNumberInput({
                   </div>
 
                   <Input
-                    ref={el => inputRefs.current[index] = el}
+                    ref={el => { inputRefs.current[index] = el; }}
                     type="text"
                     value={flightNumber}
                     onChange={e => handleInputChange(index, e.target.value)}

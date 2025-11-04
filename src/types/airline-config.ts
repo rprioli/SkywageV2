@@ -34,7 +34,7 @@ export interface CSVValidationRules {
 
 // CSV parser interface
 export interface CSVParser {
-  validateFile(content: string): ValidationResult;
+  validateFile(content: string): Promise<ValidationResult>;
   extractMonth(content: string): { month: number; year: number } | null;
   parseFlightDuties(content: string, userId: string): CSVParseResult;
 }
@@ -83,9 +83,9 @@ export interface AirlineConfig {
 }
 
 // Registry of all airline configurations
-export interface AirlineConfigRegistry {
+export type AirlineConfigRegistry = {
   [K in SupportedAirline]: AirlineConfig;
-}
+};
 
 // Configuration factory interface
 export interface ConfigFactory {

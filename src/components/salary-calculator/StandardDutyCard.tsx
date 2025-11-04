@@ -102,7 +102,7 @@ export function StandardDutyCard({
                   <MoreVertical className="h-4 w-4 text-gray-500" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {onDelete && (
+                  {onDelete !== undefined && (
                     <DropdownMenuItem onClick={handleDelete} className="text-red-600">
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete

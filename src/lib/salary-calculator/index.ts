@@ -223,9 +223,5 @@ export type {
 } from '@/types/excel-config';
 
 // Phase 5: Edit functionality and recalculation
-export {
-  RecalculationResult,
-  recalculateMonthlyTotals,
-  handleFlightEdit,
-  validateFlightEdit
-} from './recalculation-engine';
+export type { RecalculationResult } from './recalculation-engine';
+export { recalculateMonthlyTotals } from './recalculation-engine';
