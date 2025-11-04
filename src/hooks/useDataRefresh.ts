@@ -11,9 +11,7 @@
  * - Refresh after manual entry
  */
 
-import { FlightDuty, MonthlyCalculation, Position } from '@/types/salary-calculator';
-import { getMonthlyCalculation, getAllMonthlyCalculations } from '@/lib/database/calculations';
-import { getFlightDutiesByMonth } from '@/lib/database/flights';
+import { FlightDuty, Position } from '@/types/salary-calculator';
 import { recalculateMonthlyTotals } from '@/lib/salary-calculator/recalculation-engine';
 import { useState, useCallback } from 'react';
 
@@ -23,11 +21,8 @@ interface UseDataRefreshOptions {
   selectedMonth: number; // 0-based month (0 = January)
   selectedYear: number;
   userPositionLoading: boolean;
-  onCalculationsUpdate: (
-    current: MonthlyCalculation | null,
-    all: MonthlyCalculation[]
-  ) => void;
-  onFlightDutiesUpdate: (duties: FlightDuty[]) => void;
+  onCalculationsUpdate: () => Promise<void>;
+  onFlightDutiesUpdate: () => Promise<void>;
   onError: (title: string, description: string) => void;
 }
 
@@ -58,7 +53,6 @@ export function useDataRefresh(
     selectedYear,
     userPositionLoading,
     onCalculationsUpdate,
-    onFlightDutiesUpdate,
     onError,
   } = options;
 
@@ -68,39 +62,20 @@ export function useDataRefresh(
   const selectedMonthOneBased = selectedMonth + 1;
 
   /**
-   * Core refresh logic - fetches all data and updates state
+   * Core refresh logic - calls update callbacks to refetch data
    */
   const fetchAndUpdateData = useCallback(
-    async (month: number, year: number) => {
+    async () => {
       try {
-        // Fetch all data in parallel (after recalculation if needed)
-        const [calculationResult, allCalculationsResult, flightDutiesResult] =
-          await Promise.all([
-            getMonthlyCalculation(userId, month, year),
-            getAllMonthlyCalculations(userId),
-            getFlightDutiesByMonth(userId, month, year),
-          ]);
-
-        // Update all monthly calculations
-        const allCalculations = allCalculationsResult.data || [];
-        
-        // Update current month calculation
-        const currentCalculation = calculationResult.data || null;
-
-        // Update flight duties
-        const flightDuties = flightDutiesResult.data || [];
-
-        // Call update callbacks
-        onCalculationsUpdate(currentCalculation, allCalculations);
-        onFlightDutiesUpdate(flightDuties);
-
+        // Call update callbacks to refetch data
+        await onCalculationsUpdate();
         return { success: true };
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error refreshing data:', error);
         return { success: false, error };
       }
     },
-    [userId, onCalculationsUpdate, onFlightDutiesUpdate]
+    [onCalculationsUpdate]
   );
 
   /**
@@ -153,7 +128,7 @@ export function useDataRefresh(
       console.log('✅ REFRESH AFTER DELETE: Recalculation successful');
 
       // Fetch and update all data
-      const result = await fetchAndUpdateData(selectedMonthOneBased, selectedYear);
+      const result = await fetchAndUpdateData();
 
       if (result.success) {
         console.log('✅ REFRESH AFTER DELETE: Data refresh complete');
@@ -225,7 +200,7 @@ export function useDataRefresh(
         }
 
         // Fetch and update data for currently selected month
-        await fetchAndUpdateData(selectedMonthOneBased, selectedYear);
+        await fetchAndUpdateData();
       } catch (error) {
         onError(
           'Refresh Failed',
@@ -241,8 +216,6 @@ export function useDataRefresh(
       userId,
       userPositionLoading,
       position,
-      selectedMonthOneBased,
-      selectedYear,
       onError,
       fetchAndUpdateData,
     ]
@@ -254,41 +227,14 @@ export function useDataRefresh(
    * - Only updates displayed data if upload month matches selected month
    */
   const refreshAfterUpload = useCallback(
-    async (uploadMonth: number) => {
+    async () => {
       if (!userId) return;
 
       setIsRefreshing(true);
 
       try {
-        // Refresh all monthly calculations for chart data first
-        const allCalculationsResult = await getAllMonthlyCalculations(userId);
-        const allCalculations = allCalculationsResult.data || [];
-
-        // Check if the uploaded month matches the currently selected month
-        const shouldUpdateDisplayedData = uploadMonth === selectedMonthOneBased;
-
-        if (shouldUpdateDisplayedData) {
-          // Only refresh displayed data if the uploaded month matches the user's selected month
-          console.log(
-            `Upload matches selected month (${uploadMonth}), refreshing displayed data`
-          );
-
-          // Fetch current month data
-          const [calculationResult, flightDutiesResult] = await Promise.all([
-            getMonthlyCalculation(userId, uploadMonth, selectedYear),
-            getFlightDutiesByMonth(userId, uploadMonth, selectedYear),
-          ]);
-
-          const currentCalculation = calculationResult.data || null;
-          const flightDuties = flightDutiesResult.data || [];
-
-          // Update state
-          onCalculationsUpdate(currentCalculation, allCalculations);
-          onFlightDutiesUpdate(flightDuties);
-        } else {
-          // Just update all calculations (for chart)
-          onCalculationsUpdate(null, allCalculations);
-        }
+        // Refresh all data
+        await fetchAndUpdateData();
       } catch (error) {
         onError(
           'Refresh Failed',
@@ -302,11 +248,8 @@ export function useDataRefresh(
     },
     [
       userId,
-      selectedMonthOneBased,
-      selectedYear,
-      onCalculationsUpdate,
-      onFlightDutiesUpdate,
       onError,
+      fetchAndUpdateData,
     ]
   );
 
@@ -334,7 +277,7 @@ export function useDataRefresh(
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Fetch and update all data
-      const result = await fetchAndUpdateData(selectedMonthOneBased, selectedYear);
+      const result = await fetchAndUpdateData();
 
       if (result.success) {
         console.log('✅ MANUAL ENTRY SUCCESS: Data refresh complete');
