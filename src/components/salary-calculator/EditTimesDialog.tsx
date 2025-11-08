@@ -28,9 +28,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { TimeInput } from './TimeInput';
 import { FlightDuty, TimeValue } from '@/types/salary-calculator';
-import { parseTimeString, formatTimeValue, calculateDuration, calculateRestPeriod } from '@/lib/salary-calculator';
+import { parseTimeString, formatTimeValue, calculateRestPeriod } from '@/lib/salary-calculator';
 import { findLayoverPair, formatDutyHours, formatCurrency } from '@/lib/salary-calculator/card-data-mapper';
-import { Plane, AlertTriangle, Info } from 'lucide-react';
+import { Plane, AlertTriangle, Info, Sunrise } from 'lucide-react';
 
 interface EditTimesDialogProps {
   flightDuty: FlightDuty;
@@ -88,19 +88,6 @@ export function EditTimesDialog({
     };
   }, [reportTimeStr, debriefTimeStr]);
 
-  // Calculate duty hours preview
-  const dutyHoursPreview = useMemo(() => {
-    if (!parsedTimes.reportTime || !parsedTimes.debriefTime) return null;
-
-    const durationMinutes = calculateDuration(
-      parsedTimes.reportTime,
-      parsedTimes.debriefTime,
-      parsedTimes.isCrossDay
-    );
-
-    return durationMinutes / 60; // Convert minutes to hours
-  }, [parsedTimes]);
-
   // Find layover pair and calculate rest period preview
   const layoverInfo = useMemo(() => {
     if (flightDuty.dutyType !== 'layover') return null;
@@ -153,6 +140,21 @@ export function EditTimesDialog({
       newPerDiem: restHours * 8.82
     };
   }, [flightDuty, allFlightDuties, parsedTimes]);
+
+  // Helper function to get next day date string in DD/MM/YY format
+  const getNextDayDate = (baseDate: Date): string => {
+    const nextDay = new Date(baseDate);
+    nextDay.setDate(baseDate.getDate() + 1);
+
+    const day = nextDay.getDate().toString().padStart(2, '0');
+    const month = (nextDay.getMonth() + 1).toString().padStart(2, '0');
+    const year = nextDay.getFullYear().toString().slice(-2);
+
+    return `${day}/${month}/${year}`;
+  };
+
+  // Calculate next day date for cross-day indicator
+  const nextDayDate = parsedTimes.isCrossDay ? getNextDayDate(flightDuty.date) : '';
 
   // Validate form
   const validate = (): boolean => {
@@ -240,48 +242,32 @@ export function EditTimesDialog({
               required
             />
 
-            {/* Debriefing Time */}
-            <TimeInput
-              label="Debriefing Time"
-              value={debriefTimeStr}
-              onChange={setDebriefTimeStr}
-              error={errors.debrief}
-              required
-            />
-
-            {/* Cross-day indicator */}
-            {parsedTimes.isCrossDay && (
-              <div className="flex items-center gap-2 text-sm text-orange-600 bg-orange-50 p-2 rounded-md">
-                <Info className="h-4 w-4" />
-                <span>Cross-day duty detected (debrief time is next day)</span>
-              </div>
-            )}
-
-            {/* Duty hours preview */}
-            {dutyHoursPreview !== null && (
-              <div className="bg-gray-50 p-3 rounded-md space-y-1">
-                <div className="text-sm font-medium text-gray-700">Preview:</div>
-                <div className="text-sm text-gray-600">
-                  Duty Hours: <span className="font-semibold">{dutyHoursPreview.toFixed(2)}h</span>
+            {/* Debriefing Time with cross-day indicator */}
+            <div className="relative">
+              <TimeInput
+                label="Debriefing Time"
+                value={debriefTimeStr}
+                onChange={setDebriefTimeStr}
+                error={errors.debrief}
+                required
+              />
+              {parsedTimes.isCrossDay && nextDayDate && (
+                <div className="absolute right-3 top-9 flex items-center gap-1 text-orange-500 pointer-events-none">
+                  <span className="text-sm font-medium">{nextDayDate}</span>
+                  <Sunrise className="h-4 w-4" />
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Layover rest period preview */}
             {layoverInfo && layoverInfo.newRestHours !== null && (
               <div className="bg-blue-50 p-3 rounded-md space-y-1 border border-blue-200">
-                <div className="text-sm font-medium text-blue-900 flex items-center gap-2">
+                <div className="text-sm font-semibold text-blue-900 flex items-center gap-2">
                   <Info className="h-4 w-4" />
-                  Layover Rest Period Impact
+                  Layover Rest
                 </div>
-                <div className="text-sm text-blue-800">
-                  Current: {formatDutyHours(layoverInfo.pair.restHours)} • {formatCurrency(layoverInfo.pair.perDiemPay)}
-                </div>
-                <div className="text-sm text-blue-900 font-semibold">
-                  New: {formatDutyHours(layoverInfo.newRestHours)} • {formatCurrency(layoverInfo.newPerDiem || 0)}
-                </div>
-                <div className="text-xs text-blue-700 mt-1">
-                  {layoverInfo.isOutbound ? 'Outbound' : 'Inbound'} flight • Paired flight will be updated
+                <div className="text-sm text-blue-900">
+                  {formatDutyHours(layoverInfo.newRestHours)} • {formatCurrency(layoverInfo.newPerDiem || 0)}
                 </div>
               </div>
             )}
@@ -310,29 +296,19 @@ export function EditTimesDialog({
       <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-orange-500" />
+            <AlertDialogTitle className="flex items-center gap-2" style={{ color: 'rgb(58, 55, 128)' }}>
+              <Plane className="h-5 w-5" />
               Confirm Time Changes
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <p>You are about to update the flight times:</p>
                 <div className="bg-gray-50 p-3 rounded-md space-y-1 text-sm">
-                  <div className="font-medium text-gray-900">Changes:</div>
-                  <div className="text-gray-700">
-                    Report: {formatTimeValue(flightDuty.reportTime)} → {reportTimeStr}
-                  </div>
-                  <div className="text-gray-700">
-                    Debrief: {formatTimeValue(flightDuty.debriefTime)} → {debriefTimeStr}
-                  </div>
-                  {parsedTimes.isCrossDay && (
-                    <div className="text-orange-600 font-medium">Cross-day duty</div>
-                  )}
+                  <div>Report: {formatTimeValue(flightDuty.reportTime)} → {reportTimeStr}</div>
+                  <div>Debrief: {formatTimeValue(flightDuty.debriefTime)} → {debriefTimeStr}</div>
                 </div>
                 {layoverInfo && (
-                  <p className="text-orange-600 font-medium">
-                    This will also update the layover rest period and per diem pay.
-                  </p>
+                  <p>This will also update the layover rest period and per diem pay.</p>
                 )}
               </div>
             </AlertDialogDescription>
