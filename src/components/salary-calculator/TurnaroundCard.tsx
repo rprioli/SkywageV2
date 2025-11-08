@@ -3,9 +3,10 @@
 /**
  * Turnaround Card Component - New uniform design
  * Based on the design created in flight-card-design-test
+ * Phase 3: Added edit times functionality
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import {
   DropdownMenu,
@@ -13,9 +14,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreVertical, Trash2 } from 'lucide-react';
-import { FlightDuty } from '@/types/salary-calculator';
+import { MoreVertical, Trash2, Edit } from 'lucide-react';
+import { FlightDuty, TimeValue, Position } from '@/types/salary-calculator';
 import { mapFlightDutyToCardData } from '@/lib/salary-calculator/card-data-mapper';
+import { EditTimesDialog } from './EditTimesDialog';
+import { updateFlightDuty } from '@/lib/database/flights';
+import { recalculateMonthlyTotals } from '@/lib/salary-calculator/recalculation-engine';
+import { useToast } from '@/hooks/use-toast';
 
 const BRAND = { primary: "#4C49ED", accent: "#6DDC91", neutral: "#FFFFFF" };
 
@@ -27,6 +32,9 @@ interface TurnaroundCardProps {
   bulkMode?: boolean;
   isSelected?: boolean;
   onToggleSelection?: (flightId: string) => void;
+  userId?: string;
+  position?: Position;
+  onEditComplete?: () => void;
 }
 
 export function TurnaroundCard({
@@ -36,9 +44,14 @@ export function TurnaroundCard({
   showActions = true,
   bulkMode = false,
   isSelected = false,
-  onToggleSelection
+  onToggleSelection,
+  userId,
+  position,
+  onEditComplete
 }: TurnaroundCardProps) {
-  
+  const { salaryCalculator } = useToast();
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+
   const cardData = mapFlightDutyToCardData(flightDuty, allFlightDuties);
 
   // Parse turnaround routing correctly
@@ -66,6 +79,72 @@ export function TurnaroundCard({
     }
   };
 
+  const handleEditClick = () => {
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async (
+    flightId: string,
+    newReportTime: TimeValue,
+    newDebriefTime: TimeValue,
+    isCrossDay: boolean
+  ) => {
+    if (!userId || !position) {
+      salaryCalculator.error('User information not available');
+      return;
+    }
+
+    try {
+      // Calculate new duty hours
+      const reportMinutes = newReportTime.totalMinutes;
+      const debriefMinutes = newDebriefTime.totalMinutes;
+      let dutyMinutes = debriefMinutes - reportMinutes;
+      if (isCrossDay) {
+        dutyMinutes += 24 * 60; // Add 24 hours for cross-day
+      }
+      const dutyHours = dutyMinutes / 60;
+
+      // Calculate new flight pay based on position
+      const hourlyRate = position === 'SCCM' ? 62 : 50;
+      const flightPay = dutyHours * hourlyRate;
+
+      // Update flight duty in database
+      const result = await updateFlightDuty(
+        flightId,
+        {
+          reportTime: newReportTime,
+          debriefTime: newDebriefTime,
+          dutyHours,
+          flightPay,
+          isCrossDay
+        },
+        userId,
+        'Manual time edit from dashboard'
+      );
+
+      if (result.error) {
+        salaryCalculator.error(`Failed to update flight: ${result.error}`);
+        return;
+      }
+
+      // Recalculate monthly totals
+      const month = flightDuty.date.getMonth() + 1; // Convert to 1-based
+      const year = flightDuty.date.getFullYear();
+
+      await recalculateMonthlyTotals(userId, month, year, position);
+
+      salaryCalculator.success('Flight times updated successfully');
+
+      // Notify parent to refresh data
+      if (onEditComplete) {
+        onEditComplete();
+      }
+    } catch (error) {
+      console.error('Error updating flight:', error);
+      salaryCalculator.error('Failed to update flight times');
+    }
+  };
+
   return (
     <div className="relative">
       <Card
@@ -76,13 +155,19 @@ export function TurnaroundCard({
       >
         <div className="card-mobile-optimized h-full flex flex-col">
           {/* Actions Menu - Bottom Right */}
-          {showActions && onDelete && (
+          {showActions && (onDelete || userId) && (
             <div className="absolute bottom-2 right-2 z-10" onClick={(e) => e.stopPropagation()}>
               <DropdownMenu>
                 <DropdownMenuTrigger className="p-1 hover:bg-gray-100 rounded-full transition-colors">
                   <MoreVertical className="h-4 w-4 text-gray-500" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  {userId && (
+                    <DropdownMenuItem onClick={handleEditClick}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Times
+                    </DropdownMenuItem>
+                  )}
                   {onDelete !== undefined && (
                     <DropdownMenuItem onClick={handleDelete} className="text-red-600">
                       <Trash2 className="h-4 w-4 mr-2" />
@@ -145,6 +230,17 @@ export function TurnaroundCard({
           <div className="flex-1"></div>
         </div>
       </Card>
+
+      {/* Edit Times Dialog */}
+      {userId && (
+        <EditTimesDialog
+          flightDuty={flightDuty}
+          allFlightDuties={allFlightDuties}
+          isOpen={editDialogOpen}
+          onClose={() => setEditDialogOpen(false)}
+          onSave={handleSaveEdit}
+        />
+      )}
     </div>
   );
 }

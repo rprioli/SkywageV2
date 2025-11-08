@@ -3,10 +3,11 @@
 /**
  * New Flight Duty Card Component - Redesigned with uniform heights and improved layout
  * Routes to appropriate card type based on duty type
+ * Phase 3: Added userId and position props for edit functionality
  */
 
 import React from 'react';
-import { FlightDuty } from '@/types/salary-calculator';
+import { FlightDuty, Position } from '@/types/salary-calculator';
 import { LayoverConnectedCard } from './LayoverConnectedCard';
 import { TurnaroundCard } from './TurnaroundCard';
 import { StandardDutyCard } from './StandardDutyCard';
@@ -19,6 +20,9 @@ interface NewFlightDutyCardProps {
   bulkMode?: boolean;
   isSelected?: boolean;
   onToggleSelection?: (flightId: string) => void;
+  userId?: string;
+  position?: Position;
+  onEditComplete?: () => void;
 }
 
 export function NewFlightDutyCard({
@@ -28,9 +32,12 @@ export function NewFlightDutyCard({
   showActions = true,
   bulkMode = false,
   isSelected = false,
-  onToggleSelection
+  onToggleSelection,
+  userId,
+  position,
+  onEditComplete
 }: NewFlightDutyCardProps) {
-  
+
   // Route to appropriate card type based on duty type
   const commonProps = {
     flightDuty,
@@ -39,7 +46,10 @@ export function NewFlightDutyCard({
     showActions,
     bulkMode,
     isSelected,
-    onToggleSelection
+    onToggleSelection,
+    userId,
+    position,
+    onEditComplete
   };
 
   switch (flightDuty.dutyType) {
