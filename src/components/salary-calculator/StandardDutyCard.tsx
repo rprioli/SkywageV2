@@ -5,7 +5,7 @@
  * Handles: asby, recurrent, sby, off duty types
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import {
   DropdownMenu,
@@ -13,9 +13,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreVertical, Trash2, Timer, BookOpen, Clock, Camera } from 'lucide-react';
-import { FlightDuty } from '@/types/salary-calculator';
+import { MoreVertical, Trash2, Timer, BookOpen, Clock, Camera, Edit } from 'lucide-react';
+import { FlightDuty, TimeValue, Position } from '@/types/salary-calculator';
 import { mapFlightDutyToCardData } from '@/lib/salary-calculator/card-data-mapper';
+import { EditTimesDialog } from './EditTimesDialog';
+import { updateFlightDuty } from '@/lib/database/flights';
+import { recalculateMonthlyTotals } from '@/lib/salary-calculator/recalculation-engine';
+import { useToast } from '@/hooks/use-toast';
 
 const BRAND = { primary: "#4C49ED", accent: "#6DDC91", neutral: "#FFFFFF" };
 
@@ -27,6 +31,9 @@ interface StandardDutyCardProps {
   bulkMode?: boolean;
   isSelected?: boolean;
   onToggleSelection?: (flightId: string) => void;
+  userId?: string;
+  position?: Position;
+  onEditComplete?: () => void;
 }
 
 export function StandardDutyCard({
@@ -36,8 +43,13 @@ export function StandardDutyCard({
   showActions = true,
   bulkMode = false,
   isSelected = false,
-  onToggleSelection
+  onToggleSelection,
+  userId,
+  position,
+  onEditComplete
 }: StandardDutyCardProps) {
+  const { showSuccess, showError } = useToast();
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const cardData = mapFlightDutyToCardData(flightDuty, allFlightDuties);
 
@@ -50,6 +62,75 @@ export function StandardDutyCard({
       onToggleSelection(flightDuty.id);
     }
   };
+
+  const handleEditClick = () => {
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async (
+    flightId: string,
+    newReportTime: TimeValue,
+    newDebriefTime: TimeValue,
+    isCrossDay: boolean
+  ) => {
+    if (!userId || !position) {
+      showError('User information not available');
+      return;
+    }
+
+    try {
+      // Calculate new duty hours
+      const reportMinutes = newReportTime.totalMinutes;
+      const debriefMinutes = newDebriefTime.totalMinutes;
+      let dutyMinutes = debriefMinutes - reportMinutes;
+      if (isCrossDay) {
+        dutyMinutes += 24 * 60; // Add 24 hours for cross-day
+      }
+      const dutyHours = dutyMinutes / 60;
+
+      // Calculate new flight pay based on position
+      const hourlyRate = position === 'SCCM' ? 62 : 50;
+      const flightPay = dutyHours * hourlyRate;
+
+      // Update flight duty in database
+      const result = await updateFlightDuty(
+        flightId,
+        {
+          reportTime: newReportTime,
+          debriefTime: newDebriefTime,
+          dutyHours,
+          flightPay,
+          isCrossDay
+        },
+        userId,
+        'Manual time edit from dashboard'
+      );
+
+      if (result.error) {
+        showError(`Failed to update flight: ${result.error}`);
+        return;
+      }
+
+      // Recalculate monthly totals
+      const month = flightDuty.date.getMonth() + 1; // Convert to 1-based
+      const year = flightDuty.date.getFullYear();
+
+      await recalculateMonthlyTotals(userId, month, year, position);
+
+      showSuccess('Flight times updated successfully');
+
+      // Notify parent to refresh data
+      if (onEditComplete) {
+        onEditComplete();
+      }
+    } catch (error) {
+      console.error('Error updating flight:', error);
+      showError('Failed to update flight times');
+    }
+  };
+
+  // Check if this duty type is editable (only ASBY and SBY)
+  const isEditable = flightDuty.dutyType === 'asby' || flightDuty.dutyType === 'sby';
 
   // Get duty type specific information
   const getDutyTypeInfo = () => {
@@ -102,6 +183,12 @@ export function StandardDutyCard({
                   <MoreVertical className="h-4 w-4 text-gray-500" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  {userId && position && isEditable && (
+                    <DropdownMenuItem onClick={handleEditClick}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Times
+                    </DropdownMenuItem>
+                  )}
                   {onDelete !== undefined && (
                     <DropdownMenuItem onClick={handleDelete} className="text-red-600">
                       <Trash2 className="h-4 w-4 mr-2" />
@@ -165,6 +252,17 @@ export function StandardDutyCard({
           <div className="flex-1"></div>
         </div>
       </Card>
+
+      {/* Edit Times Dialog - Only for ASBY and SBY */}
+      {isEditable && (
+        <EditTimesDialog
+          flightDuty={flightDuty}
+          allFlightDuties={allFlightDuties}
+          isOpen={editDialogOpen}
+          onClose={() => setEditDialogOpen(false)}
+          onSave={handleSaveEdit}
+        />
+      )}
     </div>
   );
 }
