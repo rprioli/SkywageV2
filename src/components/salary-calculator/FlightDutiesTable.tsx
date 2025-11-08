@@ -7,7 +7,7 @@
  */
 
 import { useState } from 'react';
-import { FlightDuty } from '@/types/salary-calculator';
+import { FlightDuty, Position } from '@/types/salary-calculator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

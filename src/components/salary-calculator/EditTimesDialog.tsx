@@ -91,14 +91,14 @@ export function EditTimesDialog({
   // Calculate duty hours preview
   const dutyHoursPreview = useMemo(() => {
     if (!parsedTimes.reportTime || !parsedTimes.debriefTime) return null;
-    
-    const duration = calculateDuration(
+
+    const durationMinutes = calculateDuration(
       parsedTimes.reportTime,
       parsedTimes.debriefTime,
       parsedTimes.isCrossDay
     );
-    
-    return duration.success ? duration.hours : null;
+
+    return durationMinutes / 60; // Convert minutes to hours
   }, [parsedTimes]);
 
   // Find layover pair and calculate rest period preview
@@ -138,7 +138,7 @@ export function EditTimesDialog({
       (pair.inbound.date.getTime() - pair.outbound.date.getTime()) / (1000 * 60 * 60 * 24)
     );
 
-    const restResult = calculateRestPeriod(
+    const restHours = calculateRestPeriod(
       outboundDebriefTime,
       outboundIsCrossDay,
       inboundReportTime,
@@ -149,8 +149,8 @@ export function EditTimesDialog({
     return {
       pair,
       isOutbound,
-      newRestHours: restResult.success ? restResult.hours : null,
-      newPerDiem: restResult.success ? restResult.hours * 8.82 : null
+      newRestHours: restHours,
+      newPerDiem: restHours * 8.82
     };
   }, [flightDuty, allFlightDuties, parsedTimes]);
 
