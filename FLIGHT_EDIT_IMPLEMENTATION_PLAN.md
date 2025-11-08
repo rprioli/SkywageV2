@@ -245,13 +245,37 @@ git push origin main
 
 **Updated Strategy:** Combining Phases 1-3 into single PR for better testability.
 
-- [ ] **Phase 1-3 Combined:** TurnaroundCard Edit (Proof of Concept) - `feature/flight-edit-phase-1-3-turnaround-poc`
+- [x] **Phase 1-3 Combined:** TurnaroundCard Edit (Proof of Concept) - `feature/flight-edit-phase-1-3-turnaround-poc`
   - Includes: Database functions + Edit dialog + TurnaroundCard integration
   - Fully testable before merge
-- [ ] Phase 4: LayoverConnectedCard Integration - `feature/flight-edit-phase-4-layover`
-- [ ] Phase 5: StandardDutyCard Integration - `feature/flight-edit-phase-5-standard`
-- [ ] Phase 6: Revert Functionality - `feature/flight-edit-phase-6-revert`
-- [ ] Phase 7: Testing & Edge Cases - `feature/flight-edit-phase-7-testing`
+  - **Status:** ✅ Merged in PR #18
+- [x] Phase 4: LayoverConnectedCard Integration - `feature/flight-edit-phase-4-layover`
+  - **Status:** ✅ Merged in PR #19
+- [x] Phase 5: StandardDutyCard Integration (ASBY & SBY) - `feature/flight-edit-phase-5-standard`
+  - **Status:** ✅ Merged in PR #20
+  - **Note:** Recurrent training excluded from edit functionality per user request
+- [ ] Phase 6: Revert Functionality - `feature/flight-edit-phase-6-revert` **(OPTIONAL - Future Enhancement)**
+- [x] Phase 7: Testing & Edge Cases
+  - **Status:** ✅ Completed through user testing in Phases 1-5
+
+---
+
+## ✅ FEATURE COMPLETE (Phases 1-5)
+
+**Date Completed:** November 8, 2025
+
+**Summary:**
+
+- All editable duty types (Turnaround, Layover, ASBY, SBY) now have full edit functionality
+- Payment logic correctly handles SBY (0 AED) and ASBY (fixed 4-hour rate)
+- Flight Hours calculation correctly excludes SBY duties
+- Real-time recalculation of monthly totals working correctly
+- Layover rest periods update automatically when editing paired flights
+- All issues identified during testing have been resolved
+
+**Future Enhancement:**
+
+- Phase 6 (Revert Functionality) can be implemented if users request the ability to restore original roster values
 
 ---
 
