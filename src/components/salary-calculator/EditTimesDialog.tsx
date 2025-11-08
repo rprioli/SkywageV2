@@ -314,25 +314,27 @@ export function EditTimesDialog({
               <AlertTriangle className="h-5 w-5 text-orange-500" />
               Confirm Time Changes
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <div>You are about to update the flight times:</div>
-              <div className="bg-gray-50 p-3 rounded-md space-y-1 text-sm">
-                <div className="font-medium text-gray-900">Changes:</div>
-                <div className="text-gray-700">
-                  Report: {formatTimeValue(flightDuty.reportTime)} → {reportTimeStr}
+            <AlertDialogDescription asChild>
+              <div className="space-y-2">
+                <p>You are about to update the flight times:</p>
+                <div className="bg-gray-50 p-3 rounded-md space-y-1 text-sm">
+                  <div className="font-medium text-gray-900">Changes:</div>
+                  <div className="text-gray-700">
+                    Report: {formatTimeValue(flightDuty.reportTime)} → {reportTimeStr}
+                  </div>
+                  <div className="text-gray-700">
+                    Debrief: {formatTimeValue(flightDuty.debriefTime)} → {debriefTimeStr}
+                  </div>
+                  {parsedTimes.isCrossDay && (
+                    <div className="text-orange-600 font-medium">Cross-day duty</div>
+                  )}
                 </div>
-                <div className="text-gray-700">
-                  Debrief: {formatTimeValue(flightDuty.debriefTime)} → {debriefTimeStr}
-                </div>
-                {parsedTimes.isCrossDay && (
-                  <div className="text-orange-600 font-medium">Cross-day duty</div>
+                {layoverInfo && (
+                  <p className="text-orange-600 font-medium">
+                    This will also update the layover rest period and per diem pay.
+                  </p>
                 )}
               </div>
-              {layoverInfo && (
-                <div className="text-orange-600 font-medium">
-                  This will also update the layover rest period and per diem pay.
-                </div>
-              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

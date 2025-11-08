@@ -49,7 +49,7 @@ export function TurnaroundCard({
   position,
   onEditComplete
 }: TurnaroundCardProps) {
-  const { salaryCalculator } = useToast();
+  const { showSuccess, showError } = useToast();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const cardData = mapFlightDutyToCardData(flightDuty, allFlightDuties);
@@ -90,7 +90,7 @@ export function TurnaroundCard({
     isCrossDay: boolean
   ) => {
     if (!userId || !position) {
-      salaryCalculator.error('User information not available');
+      showError('User information not available');
       return;
     }
 
@@ -123,7 +123,7 @@ export function TurnaroundCard({
       );
 
       if (result.error) {
-        salaryCalculator.error(`Failed to update flight: ${result.error}`);
+        showError(`Failed to update flight: ${result.error}`);
         return;
       }
 
@@ -133,7 +133,7 @@ export function TurnaroundCard({
 
       await recalculateMonthlyTotals(userId, month, year, position);
 
-      salaryCalculator.success('Flight times updated successfully');
+      showSuccess('Flight times updated successfully');
 
       // Notify parent to refresh data
       if (onEditComplete) {
@@ -141,7 +141,7 @@ export function TurnaroundCard({
       }
     } catch (error) {
       console.error('Error updating flight:', error);
-      salaryCalculator.error('Failed to update flight times');
+      showError('Failed to update flight times');
     }
   };
 
