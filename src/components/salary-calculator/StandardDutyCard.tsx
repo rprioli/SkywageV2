@@ -88,9 +88,20 @@ export function StandardDutyCard({
       }
       const dutyHours = dutyMinutes / 60;
 
-      // Calculate new flight pay based on position
-      const hourlyRate = position === 'SCCM' ? 62 : 50;
-      const flightPay = dutyHours * hourlyRate;
+      // Calculate flight pay based on duty type
+      let flightPay;
+      if (flightDuty.dutyType === 'sby') {
+        // SBY (Home Standby) is always unpaid
+        flightPay = 0;
+      } else if (flightDuty.dutyType === 'asby') {
+        // ASBY (Airport Standby) has fixed 4-hour payment regardless of actual duty hours
+        // Keep the existing payment (4 hours × hourly rate)
+        flightPay = flightDuty.flightPay;
+      } else {
+        // Other duty types (shouldn't happen for StandardDutyCard, but fallback)
+        const hourlyRate = position === 'SCCM' ? 62 : 50;
+        flightPay = dutyHours * hourlyRate;
+      }
 
       // Update flight duty in database
       const result = await updateFlightDuty(
