@@ -36,6 +36,7 @@ interface FlightDutiesManagerProps {
 
 export function FlightDutiesManager({
   flightDuties,
+  position,
   userId,
   loading = false,
   onFlightDeleted,
@@ -227,6 +228,9 @@ export function FlightDutiesManager({
         onBulkDelete={handleBulkDelete}
         onDeleteAll={handleDeleteAll}
         showActions={true}
+        userId={userId}
+        position={position}
+        onEditComplete={onRecalculationComplete}
       />
 
       {/* Delete Confirmation Dialog */}

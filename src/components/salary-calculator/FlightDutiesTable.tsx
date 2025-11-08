@@ -7,7 +7,7 @@
  */
 
 import { useState } from 'react';
-import { FlightDuty } from '@/types/salary-calculator';
+import { FlightDuty, Position } from '@/types/salary-calculator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,6 +37,9 @@ interface FlightDutiesTableProps {
   onDeleteAll?: () => void;
   showActions?: boolean;
   useNewCardDesign?: boolean; // Feature flag for new card design
+  userId?: string;
+  position?: Position;
+  onEditComplete?: () => void;
 }
 
 export function FlightDutiesTable({
@@ -46,7 +49,10 @@ export function FlightDutiesTable({
   onBulkDelete,
   onDeleteAll,
   showActions = true,
-  useNewCardDesign = FEATURE_FLAGS.NEW_FLIGHT_CARDS
+  useNewCardDesign = FEATURE_FLAGS.NEW_FLIGHT_CARDS,
+  userId,
+  position,
+  onEditComplete
 }: FlightDutiesTableProps) {
 
 
@@ -350,6 +356,9 @@ export function FlightDutiesTable({
                     bulkMode={bulkMode}
                     isSelected={duty.id ? selectedFlights.has(duty.id) : false}
                     onToggleSelection={toggleFlightSelection}
+                    userId={userId}
+                    position={position}
+                    onEditComplete={onEditComplete}
                   />
                 ) : (
                   <FlightDutyCard

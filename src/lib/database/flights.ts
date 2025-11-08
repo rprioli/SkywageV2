@@ -239,6 +239,175 @@ export async function getFlightDutyById(
 
 
 /**
+ * Updates flight duty times and recalculates dependent values
+ * Preserves original data on first edit
+ */
+export async function updateFlightDuty(
+  flightId: string,
+  updates: {
+    reportTime: { hours: number; minutes: number; totalMinutes: number; totalHours: number };
+    debriefTime: { hours: number; minutes: number; totalMinutes: number; totalHours: number };
+    dutyHours: number;
+    flightPay: number;
+    isCrossDay: boolean;
+  },
+  userId: string,
+  changeReason?: string
+): Promise<{ data: FlightDuty | null; error: string | null }> {
+  try {
+    // Get current data for audit trail and original data preservation
+    const { data: currentData, error: fetchError } = await getFlightDutyById(flightId, userId);
+
+    if (fetchError || !currentData) {
+      return { data: null, error: fetchError || 'Flight duty not found' };
+    }
+
+    // Preserve original data on first edit (if not already edited)
+    const originalData = currentData.dataSource === 'edited'
+      ? currentData.originalData // Keep existing original data
+      : { // Store current data as original
+          reportTime: currentData.reportTime,
+          debriefTime: currentData.debriefTime,
+          dutyHours: currentData.dutyHours,
+          flightPay: currentData.flightPay,
+          isCrossDay: currentData.isCrossDay,
+          dataSource: currentData.dataSource
+        };
+
+    // Format times for database
+    const reportTimeStr = formatTimeValue(updates.reportTime);
+    const debriefTimeStr = formatTimeValue(updates.debriefTime);
+
+    // Update database with both old and new schema columns
+    const { data, error } = await supabase
+      .from('flights')
+      .update({
+        // Old schema columns (for backward compatibility)
+        reporting_time: reportTimeStr,
+        debriefing_time: debriefTimeStr,
+        hours: updates.dutyHours,
+        pay: updates.flightPay,
+        // New schema columns
+        report_time: reportTimeStr,
+        debrief_time: debriefTimeStr,
+        duty_hours: updates.dutyHours,
+        flight_pay: updates.flightPay,
+        is_cross_day: updates.isCrossDay,
+        data_source: 'edited',
+        original_data: originalData,
+        last_edited_at: new Date().toISOString(),
+        last_edited_by: userId
+      })
+      .eq('id', flightId)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating flight duty:', error);
+      return { data: null, error: error.message };
+    }
+
+    // Create audit trail entry
+    await createAuditTrailEntry({
+      flightId,
+      userId,
+      action: 'updated',
+      oldData: currentData,
+      newData: rowToFlightDuty(data),
+      changeReason
+    });
+
+    return { data: rowToFlightDuty(data), error: null };
+  } catch (error) {
+    console.error('Error updating flight duty:', error);
+    return { data: null, error: (error as Error).message };
+  }
+}
+
+/**
+ * Reverts a flight duty to its original values
+ * Only works if the flight has been edited and has original data
+ */
+export async function revertFlightDuty(
+  flightId: string,
+  userId: string,
+  changeReason?: string
+): Promise<{ data: FlightDuty | null; error: string | null }> {
+  try {
+    // Get current data
+    const { data: currentData, error: fetchError } = await getFlightDutyById(flightId, userId);
+
+    if (fetchError || !currentData) {
+      return { data: null, error: fetchError || 'Flight duty not found' };
+    }
+
+    // Check if flight has been edited and has original data
+    if (currentData.dataSource !== 'edited' || !currentData.originalData) {
+      return { data: null, error: 'Flight duty has not been edited or has no original data' };
+    }
+
+    const original = currentData.originalData as {
+      reportTime: { hours: number; minutes: number; totalMinutes: number; totalHours: number };
+      debriefTime: { hours: number; minutes: number; totalMinutes: number; totalHours: number };
+      dutyHours: number;
+      flightPay: number;
+      isCrossDay: boolean;
+      dataSource: 'csv' | 'manual' | 'edited';
+    };
+
+    // Format times for database
+    const reportTimeStr = formatTimeValue(original.reportTime);
+    const debriefTimeStr = formatTimeValue(original.debriefTime);
+
+    // Restore original values
+    const { data, error } = await supabase
+      .from('flights')
+      .update({
+        // Old schema columns (for backward compatibility)
+        reporting_time: reportTimeStr,
+        debriefing_time: debriefTimeStr,
+        hours: original.dutyHours,
+        pay: original.flightPay,
+        // New schema columns
+        report_time: reportTimeStr,
+        debrief_time: debriefTimeStr,
+        duty_hours: original.dutyHours,
+        flight_pay: original.flightPay,
+        is_cross_day: original.isCrossDay,
+        data_source: original.dataSource,
+        original_data: null, // Clear original data since we're reverting
+        last_edited_at: null,
+        last_edited_by: null
+      })
+      .eq('id', flightId)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error reverting flight duty:', error);
+      return { data: null, error: error.message };
+    }
+
+    // Create audit trail entry (using 'updated' action since 'reverted' is not in DB constraint)
+    await createAuditTrailEntry({
+      flightId,
+      userId,
+      action: 'updated',
+      oldData: currentData,
+      newData: rowToFlightDuty(data),
+      changeReason: changeReason || 'Reverted to original values'
+    });
+
+    return { data: rowToFlightDuty(data), error: null };
+  } catch (error) {
+    console.error('Error reverting flight duty:', error);
+    return { data: null, error: (error as Error).message };
+  }
+}
+
+/**
  * Deletes a flight duty record
  */
 export async function deleteFlightDuty(
@@ -249,7 +418,7 @@ export async function deleteFlightDuty(
   try {
     // Get current data for audit trail
     const { data: currentData } = await getFlightDutyById(flightId, userId);
-    
+
     const { error } = await supabase
       .from('flights')
       .delete()
@@ -381,7 +550,7 @@ export async function deleteFlightDataByMonth(
 async function createAuditTrailEntry(entry: {
   flightId: string;
   userId: string;
-  action: 'created' | 'deleted';
+  action: 'created' | 'updated' | 'deleted';
   oldData?: unknown;
   newData?: unknown;
   changeReason?: string;
