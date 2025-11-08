@@ -390,14 +390,14 @@ export async function revertFlightDuty(
       return { data: null, error: error.message };
     }
 
-    // Create audit trail entry
+    // Create audit trail entry (using 'updated' action since 'reverted' is not in DB constraint)
     await createAuditTrailEntry({
       flightId,
       userId,
-      action: 'reverted',
+      action: 'updated',
       oldData: currentData,
       newData: rowToFlightDuty(data),
-      changeReason
+      changeReason: changeReason || 'Reverted to original values'
     });
 
     return { data: rowToFlightDuty(data), error: null };
@@ -550,7 +550,7 @@ export async function deleteFlightDataByMonth(
 async function createAuditTrailEntry(entry: {
   flightId: string;
   userId: string;
-  action: 'created' | 'updated' | 'reverted' | 'deleted';
+  action: 'created' | 'updated' | 'deleted';
   oldData?: unknown;
   newData?: unknown;
   changeReason?: string;
