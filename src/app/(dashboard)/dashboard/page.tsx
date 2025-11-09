@@ -408,6 +408,7 @@ export default function DashboardPage() {
             userId={user?.id || ''}
             position={userPosition}
             userPositionLoading={userPositionLoading}
+            selectedYear={selectedYear}
             onUploadSuccess={handleUploadSuccess}
           />
         </div>
