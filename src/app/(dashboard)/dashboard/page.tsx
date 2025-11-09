@@ -44,7 +44,9 @@ export default function DashboardPage() {
   const [selectedOverviewMonth, setSelectedOverviewMonth] = useState<number>(new Date().getMonth());
   const [hasUserSelectedMonth, setHasUserSelectedMonth] = useState<boolean>(false);
   const [isMonthSwitching, setIsMonthSwitching] = useState<boolean>(false);
-  const currentYear = new Date().getFullYear();
+
+  // Year selection state
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
   // Delete dialog states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -93,7 +95,7 @@ export default function DashboardPage() {
   } = useFlightDuties({
     userId: user?.id || '',
     month: selectedOverviewMonth,
-    year: currentYear,
+    year: selectedYear,
     enabled: !!user?.id,
   });
 
@@ -107,7 +109,7 @@ export default function DashboardPage() {
   } = useMonthlyCalculations({
     userId: user?.id || '',
     month: selectedOverviewMonth,
-    year: currentYear,
+    year: selectedYear,
     enabled: !!user?.id,
   });
 
@@ -117,7 +119,7 @@ export default function DashboardPage() {
       const currentMonthIndex = new Date().getMonth();
 
       const currentMonthData = allCalculations.find(calc =>
-        calc.month === currentMonthIndex + 1 && calc.year === currentYear
+        calc.month === currentMonthIndex + 1 && calc.year === selectedYear
       );
 
       if (currentMonthData) {
@@ -131,7 +133,7 @@ export default function DashboardPage() {
         setSelectedOverviewMonth(sortedCalculations[0].month - 1); // Convert to 0-based index
       }
     }
-  }, [calculationsLoading, allCalculations, hasUserSelectedMonth, currentYear]);
+  }, [calculationsLoading, allCalculations, hasUserSelectedMonth, selectedYear]);
 
   // Initialize data refresh hook (for delete/upload/manual entry operations)
   const {
@@ -143,7 +145,7 @@ export default function DashboardPage() {
     userId: user?.id || '',
     position: userPosition,
     selectedMonth: selectedOverviewMonth,
-    selectedYear: currentYear,
+    selectedYear: selectedYear,
     userPositionLoading,
     onCalculationsUpdate: async () => {
       // Silently refetch calculations and flight duties (no loading state)
@@ -204,6 +206,10 @@ export default function DashboardPage() {
   // Memoized callbacks for child components
   const handleMonthChange = useCallback((month: number) => {
     setSelectedOverviewMonth(month);
+  }, []);
+
+  const handleYearChange = useCallback((year: number) => {
+    setSelectedYear(year);
   }, []);
 
   const handleMonthSwitchingChange = useCallback((switching: boolean) => {
@@ -414,7 +420,9 @@ export default function DashboardPage() {
           <MonthSelector
             allMonthlyCalculations={allCalculations}
             selectedOverviewMonth={selectedOverviewMonth}
+            selectedYear={selectedYear}
             onMonthChange={handleMonthChange}
+            onYearChange={handleYearChange}
             onMonthSwitchingChange={handleMonthSwitchingChange}
             onUserSelectedChange={handleUserSelectedChange}
             loading={calculationsLoading}
