@@ -39,6 +39,7 @@ interface FlightEntryFormProps {
   disabled?: boolean;
   initialData?: Partial<ManualFlightEntryData>;
   position: Position;
+  selectedYear: number;
   batchCount?: number;
   className?: string;
 
@@ -52,6 +53,7 @@ export function FlightEntryForm({
   disabled = false,
   initialData,
   position,
+  selectedYear,
   batchCount = 0,
   className
 }: FlightEntryFormProps) {
@@ -106,9 +108,9 @@ export function FlightEntryForm({
 
   // Real-time validation (for internal use, not display)
   useEffect(() => {
-    const validationResult = validateManualEntryRealTime(formData, position);
+    const validationResult = validateManualEntryRealTime(formData, position, selectedYear);
     setValidation(validationResult);
-  }, [formData, position]);
+  }, [formData, position, selectedYear]);
 
   // Initialize form fields based on default duty type on mount
   useEffect(() => {
@@ -271,18 +273,31 @@ export function FlightEntryForm({
     return today.toISOString().split('T')[0];
   };
 
-  // Get start of current year for min date
-  const getStartOfCurrentYear = () => {
-    const today = new Date();
-    const startOfYear = new Date(today.getFullYear(), 0, 1); // January 1st of current year
-    return startOfYear.toISOString().split('T')[0];
+  // Get start of selected year for min date
+  const getStartOfSelectedYear = () => {
+    return `${selectedYear}-01-01`;
   };
 
-  // Get end of current year for max date
-  const getEndOfCurrentYear = () => {
-    const today = new Date();
-    const endOfYear = new Date(today.getFullYear(), 11, 31); // December 31st of current year
-    return endOfYear.toISOString().split('T')[0];
+  // Get end of selected year for max date
+  const getEndOfSelectedYear = () => {
+    return `${selectedYear}-12-31`;
+  };
+
+  // Helper to compute inbound max date (allow up to next year for cross-year layovers)
+  const getInboundMaxDate = (outboundDate?: string): string => {
+    if (!outboundDate) {
+      // Allow up to end of next year
+      return `${selectedYear + 1}-12-31`;
+    }
+    // No upper limit - layovers can have rest periods up to 96 hours
+    return `${selectedYear + 1}-12-31`;
+  };
+
+  // Outbound must be in selectedYear
+  const isOutboundInSelectedYear = (dateString: string): boolean => {
+    if (!dateString) return false;
+    const d = new Date(dateString);
+    return d.getFullYear() === selectedYear;
   };
 
   // Smart cross-day detection
@@ -359,8 +374,8 @@ export function FlightEntryForm({
                 className={cn(
                   validation.fieldErrors.date && submitAttempted && 'border-destructive focus-visible:border-destructive'
                 )}
-                min={getStartOfCurrentYear()} // Start from January 1st of current year
-                max={getEndOfCurrentYear()} // Limit to current year only
+                min={getStartOfSelectedYear()}
+                max={getEndOfSelectedYear()}
               />
               {!formData.date && (
                 <button
@@ -373,6 +388,11 @@ export function FlightEntryForm({
                 </button>
               )}
             </div>
+            {formData.date && !isOutboundInSelectedYear(formData.date) && (
+              <p className="text-orange-500 text-sm">
+                Outbound date must be in {selectedYear}
+              </p>
+            )}
             {validation.fieldErrors.date && submitAttempted && (
               <p className="text-destructive form-error-responsive">{validation.fieldErrors.date}</p>
             )}
@@ -482,8 +502,8 @@ export function FlightEntryForm({
                     className={cn(
                       validation.fieldErrors.inboundDate && submitAttempted && 'border-destructive focus-visible:border-destructive'
                     )}
-                    min={getStartOfCurrentYear()}
-                    max={getEndOfCurrentYear()}
+                    min={formData.date || getStartOfSelectedYear()}
+                    max={getInboundMaxDate(formData.date)}
                   />
                   {validation.fieldErrors.inboundDate && submitAttempted && (
                     <p className="text-destructive text-sm">{validation.fieldErrors.inboundDate}</p>

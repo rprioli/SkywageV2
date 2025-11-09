@@ -402,6 +402,7 @@ export default function DashboardPage() {
           <ManualEntrySection
             position={userPosition}
             userPositionLoading={userPositionLoading}
+            selectedYear={selectedYear}
             onEntrySuccess={handleManualEntrySuccess}
           />
           <RosterUploadSection

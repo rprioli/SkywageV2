@@ -57,8 +57,11 @@ export interface FormValidationResult extends ValidationResult {
 
 /**
  * Validates date field
+ * @param date - Date string in YYYY-MM-DD format
+ * @param selectedYear - The year selected by the user
+ * @param isInbound - Whether this is an inbound date (allows next year for cross-year layovers)
  */
-export function validateDate(date: string): FieldValidationResult {
+export function validateDate(date: string, selectedYear: number, isInbound = false): FieldValidationResult {
   if (!date) {
     return { valid: false, error: 'Date is required' };
   }
@@ -68,24 +71,24 @@ export function validateDate(date: string): FieldValidationResult {
     return { valid: false, error: 'Invalid date format' };
   }
 
-  // Check if date is within current year only
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const startOfCurrentYear = new Date(currentYear, 0, 1); // January 1st of current year
-  const endOfCurrentYear = new Date(currentYear, 11, 31); // December 31st of current year
+  const dateYear = dateObj.getFullYear();
 
-  if (dateObj < startOfCurrentYear) {
-    return {
-      valid: false,
-      error: 'Date must be within the current year'
-    };
-  }
-
-  if (dateObj > endOfCurrentYear) {
-    return {
-      valid: false,
-      error: 'Date must be within the current year'
-    };
+  // For outbound dates: must be within selected year
+  if (!isInbound) {
+    if (dateYear !== selectedYear) {
+      return {
+        valid: false,
+        error: `Date must be within ${selectedYear}`
+      };
+    }
+  } else {
+    // For inbound dates: can be in selected year or next year (for cross-year layovers)
+    if (dateYear !== selectedYear && dateYear !== selectedYear + 1) {
+      return {
+        valid: false,
+        error: `Date must be within ${selectedYear} or ${selectedYear + 1}`
+      };
+    }
   }
 
   return { valid: true };
@@ -336,14 +339,15 @@ export function validateTimeSequence(
  */
 export function validateManualEntry(
   data: ManualFlightEntryData,
-  position: Position
+  position: Position,
+  selectedYear: number
 ): FormValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const fieldErrors: { [key: string]: string } = {};
 
-  // Validate date
-  const dateValidation = validateDate(data.date);
+  // Validate outbound date (must be in selected year)
+  const dateValidation = validateDate(data.date, selectedYear, false);
   if (!dateValidation.valid) {
     fieldErrors.date = dateValidation.error!;
     errors.push(dateValidation.error!);
@@ -355,7 +359,8 @@ export function validateManualEntry(
       fieldErrors.inboundDate = 'Inbound date is required for layover duties';
       errors.push('Inbound date is required for layover duties');
     } else {
-      const inboundDateValidation = validateDate(data.inboundDate);
+      // Inbound date can be in selected year or next year (for cross-year layovers)
+      const inboundDateValidation = validateDate(data.inboundDate, selectedYear, true);
       if (!inboundDateValidation.valid) {
         fieldErrors.inboundDate = inboundDateValidation.error!;
         errors.push(inboundDateValidation.error!);

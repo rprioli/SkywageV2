@@ -478,8 +478,11 @@ export async function processManualEntry(
   const warnings: string[] = [];
 
   try {
+    // Extract year from outbound date
+    const selectedYear = data.date ? new Date(data.date).getFullYear() : new Date().getFullYear();
+
     // Validate the entry
-    const validation = validateManualEntry(data, position);
+    const validation = validateManualEntry(data, position, selectedYear);
     if (!validation.valid) {
       return {
         success: false,
@@ -558,7 +561,9 @@ export async function processBatchManualEntries(
   try {
     // Validate all entries first
     for (let i = 0; i < entries.length; i++) {
-      const validation = validateManualEntry(entries[i], position);
+      // Extract year from outbound date
+      const selectedYear = entries[i].date ? new Date(entries[i].date).getFullYear() : new Date().getFullYear();
+      const validation = validateManualEntry(entries[i], position, selectedYear);
       if (!validation.valid) {
         errors.push(`Entry ${i + 1}: ${validation.errors.join(', ')}`);
       } else {
@@ -672,8 +677,11 @@ export async function processManualEntryBatch(
     for (let i = 0; i < entries.length; i++) {
       const entry = entries[i];
 
+      // Extract year from outbound date
+      const selectedYear = entry.date ? new Date(entry.date).getFullYear() : new Date().getFullYear();
+
       // Validate the entry
-      const validation = validateManualEntry(entry, position);
+      const validation = validateManualEntry(entry, position, selectedYear);
       if (!validation.valid) {
         errors.push(`Entry ${i + 1}: ${validation.errors.join(', ')}`);
         continue;
@@ -770,7 +778,8 @@ export async function processManualEntryBatch(
  */
 export function validateManualEntryRealTime(
   data: Partial<ManualFlightEntryData>,
-  position: Position
+  position: Position,
+  selectedYear: number
 ): FormValidationResult {
   // Create a complete data object with defaults for validation
   const completeData: ManualFlightEntryData = {
@@ -789,7 +798,7 @@ export function validateManualEntryRealTime(
     isCrossDayInbound: data.isCrossDayInbound || false
   };
 
-  return validateManualEntry(completeData, position);
+  return validateManualEntry(completeData, position, selectedYear);
 }
 
 /**
