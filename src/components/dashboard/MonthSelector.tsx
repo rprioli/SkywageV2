@@ -10,15 +10,30 @@
 
 import React, { useState, useCallback, useMemo, memo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ResponsiveContainer, XAxis, Bar, BarChart, Cell } from 'recharts';
 import { MonthlyCalculation } from '@/types/salary-calculator';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+// Helper function to get year range (current year ± 2)
+const getYearRange = (): number[] => {
+  const currentYear = new Date().getFullYear();
+  return [
+    currentYear - 2,
+    currentYear - 1,
+    currentYear,
+    currentYear + 1,
+    currentYear + 2,
+  ];
+};
+
 interface MonthSelectorProps {
   allMonthlyCalculations: MonthlyCalculation[];
   selectedOverviewMonth: number; // 0-based month
+  selectedYear: number;
   onMonthChange: (month: number) => void;
+  onYearChange: (year: number) => void;
   onMonthSwitchingChange: (switching: boolean) => void;
   onUserSelectedChange: (selected: boolean) => void;
   loading: boolean;
@@ -32,14 +47,14 @@ interface MonthSelectorProps {
 export const MonthSelector = memo<MonthSelectorProps>(({
   allMonthlyCalculations,
   selectedOverviewMonth,
+  selectedYear,
   onMonthChange,
+  onYearChange,
   onMonthSwitchingChange,
   onUserSelectedChange,
   loading,
   selectedData,
 }) => {
-  const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
 
   // Hover state for enhanced interactivity
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
@@ -62,7 +77,7 @@ export const MonthSelector = memo<MonthSelectorProps>(({
 
     for (let i = 0; i < 12; i++) {
       const monthCalc = allMonthlyCalculations.find(calc =>
-        calc.month === i + 1 && calc.year === currentYear
+        calc.month === i + 1 && calc.year === selectedYear
       );
 
       // Normalize values to 0-100 range for better chart display
@@ -75,7 +90,7 @@ export const MonthSelector = memo<MonthSelectorProps>(({
     }
 
     return data;
-  }, [allMonthlyCalculations, currentYear]);
+  }, [allMonthlyCalculations, selectedYear]);
 
   // Enhanced color logic for smooth transitions
   const getBarColor = useCallback((index: number) => {
@@ -114,12 +129,34 @@ export const MonthSelector = memo<MonthSelectorProps>(({
                 `${MONTHS[selectedOverviewMonth]} - No Data` :
                 (() => {
                   const nextMonth = selectedOverviewMonth === 11 ? 0 : selectedOverviewMonth + 1;
-                  const nextYear = selectedOverviewMonth === 11 ? currentYear + 1 : currentYear;
+                  const nextYear = selectedOverviewMonth === 11 ? selectedYear + 1 : selectedYear;
                   return `Expected Salary for ${MONTHS[nextMonth]}, ${nextYear}`;
                 })()
               }
             </p>
           </div>
+        </div>
+
+        {/* Year Selector */}
+        <div className="mb-4 flex items-center gap-2">
+          <label htmlFor="year-selector" className="text-sm font-medium text-gray-700">
+            Year:
+          </label>
+          <Select
+            value={selectedYear.toString()}
+            onValueChange={(value) => onYearChange(parseInt(value, 10))}
+          >
+            <SelectTrigger id="year-selector" className="w-[120px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {getYearRange().map((year) => (
+                <SelectItem key={year} value={year.toString()}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Chart Area - Optimized for mobile with extended width */}
