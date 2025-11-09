@@ -32,6 +32,7 @@ import {
 
 interface ManualFlightEntryProps {
   position: Position;
+  selectedYear: number;
   onBack?: () => void;
   onSuccess?: () => void;
   className?: string;
@@ -41,6 +42,7 @@ type EntryState = 'form' | 'processing' | 'success' | 'error';
 
 export function ManualFlightEntry({
   position,
+  selectedYear,
   onBack,
   onSuccess,
   className
@@ -211,6 +213,7 @@ export function ManualFlightEntry({
             onSaveBatchOnly={handleSaveBatchOnly}
             loading={loading}
             position={position}
+            selectedYear={selectedYear}
             batchCount={batchDuties.length}
           />
         );

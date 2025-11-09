@@ -18,12 +18,14 @@ import { ManualFlightEntry } from '@/components/salary-calculator/ManualFlightEn
 interface ManualEntrySectionProps {
   position: Position;
   userPositionLoading: boolean;
+  selectedYear: number;
   onEntrySuccess: () => Promise<void>;
 }
 
 export const ManualEntrySection = memo<ManualEntrySectionProps>(({
   position,
   userPositionLoading,
+  selectedYear,
   onEntrySuccess,
 }) => {
   const [manualEntryModalOpen, setManualEntryModalOpen] = useState(false);
@@ -77,6 +79,7 @@ export const ManualEntrySection = memo<ManualEntrySectionProps>(({
           ) : (
             <ManualFlightEntry
               position={position}
+              selectedYear={selectedYear}
               onBack={() => setManualEntryModalOpen(false)}
               onSuccess={handleManualEntrySuccess}
             />
