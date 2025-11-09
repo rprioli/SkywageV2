@@ -35,6 +35,7 @@ interface RosterUploadSectionProps {
   userId: string;
   position: Position;
   userPositionLoading: boolean;
+  selectedYear: number;
   onUploadSuccess: () => Promise<void>;
 }
 
@@ -42,6 +43,7 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
   userId,
   position,
   userPositionLoading,
+  selectedYear,
   onUploadSuccess,
 }) => {
   const { salaryCalculator } = useToast();
@@ -105,14 +107,12 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
     const loadingToast = salaryCalculator.processingStarted(file.name);
 
     try {
-      const currentYear = new Date().getFullYear();
-
       const result = await processFileUploadWithReplacement(
         file,
         userId,
         position,
         selectedUploadMonth,
-        currentYear,
+        selectedYear,
         (status) => {
           setProcessingStatus(status);
         },
@@ -173,11 +173,9 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
       return;
     }
 
-    const currentYear = new Date().getFullYear();
-
     // Check for existing data before processing
     try {
-      const existingCheck = await checkForExistingData(userId, selectedUploadMonth, currentYear);
+      const existingCheck = await checkForExistingData(userId, selectedUploadMonth, selectedYear);
 
       if (existingCheck.error) {
         salaryCalculator.csvUploadError(`Error checking existing data: ${existingCheck.error}`);
@@ -267,7 +265,7 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
                     <SelectContent>
                       {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
                         <SelectItem key={month} value={month.toString()}>
-                          {getMonthName(month)} {new Date().getFullYear()}
+                          {getMonthName(month)}
                         </SelectItem>
                       ))}
                     </SelectContent>
