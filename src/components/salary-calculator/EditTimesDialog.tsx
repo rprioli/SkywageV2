@@ -30,7 +30,7 @@ import { TimeInput } from './TimeInput';
 import { FlightDuty, TimeValue } from '@/types/salary-calculator';
 import { parseTimeString, formatTimeValue, calculateRestPeriod } from '@/lib/salary-calculator';
 import { findLayoverPair, formatDutyHours, formatCurrency } from '@/lib/salary-calculator/card-data-mapper';
-import { Plane, AlertTriangle, Info, Sunrise } from 'lucide-react';
+import { Plane, Info, Sunrise } from 'lucide-react';
 
 interface EditTimesDialogProps {
   flightDuty: FlightDuty;

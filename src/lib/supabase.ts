@@ -323,6 +323,36 @@ export type Database = {
           updated_at?: string;
         };
       };
+      // Friendships table for Friends feature
+      friendships: {
+        Row: {
+          id: string;
+          requester_id: string;
+          receiver_id: string;
+          status: 'pending' | 'accepted' | 'rejected';
+          created_at: string;
+          updated_at: string;
+          responded_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          requester_id: string;
+          receiver_id: string;
+          status: 'pending' | 'accepted' | 'rejected';
+          created_at?: string;
+          updated_at?: string;
+          responded_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          requester_id?: string;
+          receiver_id?: string;
+          status?: 'pending' | 'accepted' | 'rejected';
+          created_at?: string;
+          updated_at?: string;
+          responded_at?: string | null;
+        };
+      };
     };
   };
 };
