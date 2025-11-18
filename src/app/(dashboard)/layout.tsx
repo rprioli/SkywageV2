@@ -3,6 +3,7 @@
 import ProtectedRoute from '@/components/ProtectedRoute';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import { MobileNavigationProvider, useMobileNavigation } from '@/contexts/MobileNavigationProvider';
+import { FriendsProvider } from '@/contexts/FriendsProvider';
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const { isMobile, isTablet, isDesktop, isSidebarOpen, closeSidebar } = useMobileNavigation();
@@ -50,9 +51,11 @@ export default function DashboardLayout({
   return (
     <ProtectedRoute>
       <MobileNavigationProvider>
-        <DashboardLayoutContent>
-          {children}
-        </DashboardLayoutContent>
+        <FriendsProvider>
+          <DashboardLayoutContent>
+            {children}
+          </DashboardLayoutContent>
+        </FriendsProvider>
       </MobileNavigationProvider>
     </ProtectedRoute>
   );

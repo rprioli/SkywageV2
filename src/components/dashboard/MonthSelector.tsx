@@ -114,7 +114,7 @@ export const MonthSelector = memo<MonthSelectorProps>(({
   return (
     <Card className="bg-white rounded-3xl !border-0 !shadow-none overflow-hidden">
       <CardContent className="card-responsive-padding">
-        {/* Header */}
+        {/* Header with Year Selector */}
         <div className="flex items-start justify-between mb-4 md:mb-5">
           <div className="min-w-0 flex-1">
             <h2 className="text-responsive-2xl font-bold space-responsive-md" style={{ color: '#3A3780' }}>Overview</h2>
@@ -135,28 +135,28 @@ export const MonthSelector = memo<MonthSelectorProps>(({
               }
             </p>
           </div>
-        </div>
 
-        {/* Year Selector */}
-        <div className="mb-4 flex items-center gap-2">
-          <label htmlFor="year-selector" className="text-sm font-medium text-gray-700">
-            Year:
-          </label>
-          <Select
-            value={selectedYear.toString()}
-            onValueChange={(value) => onYearChange(parseInt(value, 10))}
-          >
-            <SelectTrigger id="year-selector" className="w-[120px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {getYearRange().map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Year Selector - Aligned with Overview heading */}
+          <div className="flex-shrink-0 ml-4">
+            <Select
+              value={selectedYear.toString()}
+              onValueChange={(value) => onYearChange(parseInt(value, 10))}
+            >
+              <SelectTrigger
+                id="year-selector"
+                className="w-[100px] h-7 text-sm border-gray-200 !px-2.5 !py-0 !justify-start [&>*]:!gap-0 [&_svg]:ml-auto"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {getYearRange().map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Chart Area - Optimized for mobile with extended width */}

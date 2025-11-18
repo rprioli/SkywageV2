@@ -237,9 +237,33 @@ We should avoid duplicating card logic by reusing and extending the existing fli
 
 **Goals:**
 
-- Implement core friends operations (send, accept, reject, unfriend) via API routes.
+- Implement core friends operations (send, accept, reject, unfriend) using Supabase client + database helpers, with RLS enforcing access control. (Originally planned via API routes, but simplified to a client-side pattern due to auth constraints.)
 - Add a `/friends` page within the dashboard layout.
 - Show pending requests and friends list, with a global pending-requests indicator in the sidebar.
+
+**Current status (as of 2025-11-18):**
+
+- All core friends flows are implemented and manually tested end-to-end:
+  - Sending requests by email (case-insensitive) between real users.
+  - Accept / reject / unfriend actions.
+  - Friends list and pending requests sections on `/friends`.
+  - Global pending badge in the sidebar, backed by a shared `FriendsProvider` so it updates immediately after actions.
+- Supporting infrastructure:
+  - `friendships` database helpers in `src/lib/database/friends.ts`.
+  - `useFriends` hook for fetching and mutating friends data.
+  - `FriendsProvider` context wrapping the dashboard layout.
+  - Updated RLS on `public.profiles` to allow authenticated users to look up other users by email for friend discovery.
+
+**Remaining work to finalize Phase 2:**
+
+- GitHub workflow:
+  - Ensure `main` is up to date locally.
+  - Rebase or merge `main` into `feature/friends-phase-2-core-ui` if needed.
+  - Run `npm run lint`, `npm run test` (if applicable), and `npm run build` on the feature branch.
+  - Push `feature/friends-phase-2-core-ui` to GitHub.
+  - Open a PR from `feature/friends-phase-2-core-ui` into `main`.
+  - Perform final manual QA on the PR branch (Friends flows + pending badge behavior).
+  - After approval, merge the PR into `main` and delete the feature branch.
 
 ### Scope
 

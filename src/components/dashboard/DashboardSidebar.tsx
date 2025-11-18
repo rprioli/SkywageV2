@@ -3,6 +3,7 @@
 import { useRef } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
 import { useAuthentication } from '@/hooks/useAuthentication';
+import { useFriendsContext } from '@/contexts/FriendsProvider';
 import { Logo } from '@/components/ui/Logo';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -12,6 +13,7 @@ import {
   LayoutDashboard,
   BarChart,
   User,
+  Users,
   LogOut,
   X
 } from 'lucide-react';
@@ -22,6 +24,7 @@ const DEFAULT_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
 export default function DashboardSidebar() {
   const { user } = useAuth();
   const { handleLogout, loading } = useAuthentication();
+  const { pendingCount } = useFriendsContext();
   const pathname = usePathname();
   const { isMobile, isTablet, isDesktop, isSidebarOpen, closeSidebar } = useMobileNavigation();
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -32,6 +35,7 @@ export default function DashboardSidebar() {
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Statistics', href: '/statistics', icon: BarChart },
+    { name: 'Friends', href: '/friends', icon: Users, badge: pendingCount },
     { name: 'Profile', href: '/profile', icon: User },
   ];
 
@@ -134,7 +138,7 @@ export default function DashboardSidebar() {
                 href={item.href}
                 onClick={handleNavClick}
                 className={cn(
-                  "flex items-center rounded-2xl text-sm font-medium uppercase tracking-wide transition-all duration-200",
+                  "flex items-center justify-between rounded-2xl text-sm font-medium uppercase tracking-wide transition-all duration-200",
                   // Touch-friendly padding on mobile
                   isMobile || isTablet ? "px-4 py-4" : "px-6 py-3",
                   pathname === item.href || pathname.startsWith(`${item.href}/`)
@@ -143,16 +147,26 @@ export default function DashboardSidebar() {
                 )}
                 aria-current={pathname === item.href || pathname.startsWith(`${item.href}/`) ? "page" : undefined}
               >
-                <item.icon
-                  className={cn(
-                    "mr-3 h-5 w-5 transition-colors duration-200",
-                    pathname === item.href || pathname.startsWith(`${item.href}/`)
-                      ? "text-accent"
-                      : ""
-                  )}
-                  aria-hidden="true"
-                />
-                {item.name}
+                <div className="flex items-center">
+                  <item.icon
+                    className={cn(
+                      "mr-3 h-5 w-5 transition-colors duration-200",
+                      pathname === item.href || pathname.startsWith(`${item.href}/`)
+                        ? "text-accent"
+                        : ""
+                    )}
+                    aria-hidden="true"
+                  />
+                  {item.name}
+                </div>
+                {item.badge !== undefined && item.badge > 0 && (
+                  <span
+                    className="ml-2 px-2 py-0.5 text-xs font-bold rounded-full"
+                    style={{ backgroundColor: '#6DDC91', color: '#FFFFFF' }}
+                  >
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             </li>
           ))}
