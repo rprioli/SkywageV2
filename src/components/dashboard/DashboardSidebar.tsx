@@ -3,7 +3,7 @@
 import { useRef } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
 import { useAuthentication } from '@/hooks/useAuthentication';
-import { useFriends } from '@/hooks/useFriends';
+import { useFriendsContext } from '@/contexts/FriendsProvider';
 import { Logo } from '@/components/ui/Logo';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -24,7 +24,7 @@ const DEFAULT_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
 export default function DashboardSidebar() {
   const { user } = useAuth();
   const { handleLogout, loading } = useAuthentication();
-  const { pendingCount } = useFriends();
+  const { pendingCount } = useFriendsContext();
   const pathname = usePathname();
   const { isMobile, isTablet, isDesktop, isSidebarOpen, closeSidebar } = useMobileNavigation();
   const sidebarRef = useRef<HTMLDivElement>(null);

@@ -7,7 +7,7 @@
  */
 
 import { useState } from 'react';
-import { useFriends } from '@/hooks/useFriends';
+import { useFriendsContext } from '@/contexts/FriendsProvider';
 import { useMobileNavigation } from '@/contexts/MobileNavigationProvider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,7 @@ export default function FriendsPage() {
     sendFriendRequest,
     respondToRequest,
     unfriend,
-  } = useFriends();
+  } = useFriendsContext();
 
   const { isMobile, toggleSidebar } = useMobileNavigation();
   const { showSuccess, showError } = useToast();

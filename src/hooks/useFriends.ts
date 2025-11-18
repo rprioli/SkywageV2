@@ -9,7 +9,17 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { FriendWithProfile, PendingRequest } from '@/lib/database/friends';
+import { useAuth } from '@/contexts/AuthProvider';
+import {
+  FriendWithProfile,
+  PendingRequest,
+  getFriendsForUser,
+  getPendingFriendRequests,
+  getPendingRequestsCount,
+  sendFriendRequest as sendFriendRequestDb,
+  respondToFriendRequest as respondToFriendRequestDb,
+  unfriend as unfriendDb,
+} from '@/lib/database/friends';
 
 interface UseFriendsReturn {
   friends: FriendWithProfile[];
@@ -24,6 +34,8 @@ interface UseFriendsReturn {
 }
 
 export function useFriends(): UseFriendsReturn {
+  const { user } = useAuth();
+
   const [friends, setFriends] = useState<FriendWithProfile[]>([]);
   const [pendingRequests, setPendingRequests] = useState<{ sent: PendingRequest[]; received: PendingRequest[] }>({
     sent: [],
@@ -33,26 +45,46 @@ export function useFriends(): UseFriendsReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const userId = user?.id ?? null;
+
   /**
-   * Fetch friends data from API
+   * Fetch friends data directly from Supabase using shared database helpers.
+   * This follows the same pattern as other parts of the app and avoids
+   * server-side auth/cookie issues with custom API routes.
    */
   const fetchFriends = useCallback(async () => {
+    if (!userId) {
+      // If we don't have a user yet (initial load), just reset state without error.
+      setFriends([]);
+      setPendingRequests({ sent: [], received: [] });
+      setPendingCount(0);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/friends/list');
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch friends');
+      const [friendsResult, pendingResult, countResult] = await Promise.all([
+        getFriendsForUser(userId),
+        getPendingFriendRequests(userId),
+        getPendingRequestsCount(userId),
+      ]);
+
+      if (friendsResult.error || pendingResult.error || countResult.error) {
+        const errorMessage =
+          friendsResult.error ??
+          pendingResult.error ??
+          countResult.error ??
+          'Failed to fetch friends';
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
-      
-      setFriends(data.friends || []);
-      setPendingRequests(data.pending || { sent: [], received: [] });
-      setPendingCount(data.pendingCount || 0);
+      setFriends(friendsResult.data || []);
+      setPendingRequests(pendingResult.data || { sent: [], received: [] });
+      setPendingCount(countResult.data || 0);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
@@ -60,93 +92,101 @@ export function useFriends(): UseFriendsReturn {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
   /**
    * Send a friend request
    */
-  const sendFriendRequest = useCallback(async (email: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const response = await fetch('/api/friends/send-request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        return { success: false, error: data.error || 'Failed to send friend request' };
+  const sendFriendRequest = useCallback(
+    async (email: string): Promise<{ success: boolean; error?: string }> => {
+      if (!userId) {
+        return { success: false, error: 'Not authenticated' };
       }
 
-      // Refetch friends data to update the list
-      await fetchFriends();
+      try {
+        const normalizedEmail = email.trim().toLowerCase();
+        const { error: dbError } = await sendFriendRequestDb(userId, normalizedEmail);
 
-      return { success: true };
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-      return { success: false, error: errorMessage };
-    }
-  }, [fetchFriends]);
+        if (dbError) {
+          return { success: false, error: dbError };
+        }
+
+        // Refetch friends data to update the list
+        await fetchFriends();
+
+        return { success: true };
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        return { success: false, error: errorMessage };
+      }
+    },
+    [userId, fetchFriends]
+  );
 
   /**
    * Respond to a friend request
    */
-  const respondToRequest = useCallback(async (
-    friendshipId: string,
-    status: 'accepted' | 'rejected'
-  ): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const response = await fetch('/api/friends/respond', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ friendshipId, status }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        return { success: false, error: data.error || 'Failed to respond to friend request' };
+  const respondToRequest = useCallback(
+    async (
+      friendshipId: string,
+      status: 'accepted' | 'rejected'
+    ): Promise<{ success: boolean; error?: string }> => {
+      if (!userId) {
+        return { success: false, error: 'Not authenticated' };
       }
 
-      // Refetch friends data to update the list
-      await fetchFriends();
+      try {
+        const { error: dbError } = await respondToFriendRequestDb(
+          friendshipId,
+          userId,
+          status
+        );
 
-      return { success: true };
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-      return { success: false, error: errorMessage };
-    }
-  }, [fetchFriends]);
+        if (dbError) {
+          return { success: false, error: dbError };
+        }
+
+        // Refetch friends data to update the list
+        await fetchFriends();
+
+        return { success: true };
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        return { success: false, error: errorMessage };
+      }
+    },
+    [userId, fetchFriends]
+  );
 
   /**
    * Unfriend a user
    */
-  const unfriendUser = useCallback(async (friendshipId: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const response = await fetch('/api/friends/unfriend', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ friendshipId }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        return { success: false, error: data.error || 'Failed to unfriend user' };
+  const unfriendUser = useCallback(
+    async (friendshipId: string): Promise<{ success: boolean; error?: string }> => {
+      if (!userId) {
+        return { success: false, error: 'Not authenticated' };
       }
 
-      // Refetch friends data to update the list
-      await fetchFriends();
+      try {
+        const { error: dbError } = await unfriendDb(friendshipId, userId);
 
-      return { success: true };
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-      return { success: false, error: errorMessage };
-    }
-  }, [fetchFriends]);
+        if (dbError) {
+          return { success: false, error: dbError };
+        }
 
-  // Fetch friends on mount
+        // Refetch friends data to update the list
+        await fetchFriends();
+
+        return { success: true };
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        return { success: false, error: errorMessage };
+      }
+    },
+    [userId, fetchFriends]
+  );
+
+  // Fetch friends on mount and when the authenticated user changes
   useEffect(() => {
     fetchFriends();
   }, [fetchFriends]);
@@ -158,7 +198,7 @@ export function useFriends(): UseFriendsReturn {
     loading,
     error,
     sendFriendRequest,
-    respondToRequest: respondToRequest,
+    respondToRequest,
     unfriend: unfriendUser,
     refetch: fetchFriends,
   };

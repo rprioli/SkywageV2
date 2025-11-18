@@ -45,19 +45,16 @@ export async function findUserByEmail(
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('email', email)
-      .single();
+      .ilike('email', email)
+      .maybeSingle();
 
     if (error) {
-      // Not found is not an error for this use case
-      if (error.code === 'PGRST116') {
-        return { data: null, error: null };
-      }
       console.error('Error finding user by email:', error);
       return { data: null, error: error.message };
     }
 
-    return { data, error: null };
+    // `maybeSingle` returns `data: null, error: null` when no rows are found
+    return { data: data ?? null, error: null };
   } catch (error) {
     console.error('Error finding user by email:', error);
     return { data: null, error: (error as Error).message };

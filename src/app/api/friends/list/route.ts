@@ -5,7 +5,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase-server';
 import {
   getFriendsForUser,
   getPendingFriendRequests,
@@ -14,10 +14,14 @@ import {
 
 export async function GET() {
   try {
-    // Get authenticated user
+    const supabase = await createClient();
+
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
+    console.log('[Friends API] Auth check:', { user: user?.id, error: authError?.message });
+
     if (authError || !user) {
+      console.log('[Friends API] Unauthorized - no user or auth error');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

@@ -5,12 +5,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase-server';
 import { unfriend } from '@/lib/database/friends';
 
 export async function POST(request: NextRequest) {
   try {
-    // Get authenticated user
+    const supabase = await createClient();
+
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
