@@ -1,5 +1,24 @@
 # Friends Feature - Implementation Plan
 
+## 📊 Progress Summary
+
+**Last Updated:** 2025-11-18
+
+| Phase                                           | Status         | Branch                                      | PR                                                  | Merged |
+| ----------------------------------------------- | -------------- | ------------------------------------------- | --------------------------------------------------- | ------ |
+| **Phase 1** - Database & RLS Foundation         | ✅ Complete    | `feature/friends-phase-1-database`          | [#24](https://github.com/rprioli/SkywageV2/pull/24) | ✅ Yes |
+| **Phase 2** - Core Friends UI & API             | ✅ Complete    | `feature/friends-phase-2-core-ui`           | [#25](https://github.com/rprioli/SkywageV2/pull/25) | ✅ Yes |
+| **Phase 3** - Roster Comparison & Off/Rest Days | ⏳ Not Started | `feature/friends-phase-3-roster-comparison` | -                                                   | -      |
+
+**Current State:**
+
+- ✅ Phase 1 & 2 are complete and merged into `main`
+- ✅ Friends feature is fully functional (add/accept/reject/unfriend)
+- ✅ Pending requests badge working in sidebar
+- ⏳ Next: Phase 3 - Roster comparison functionality
+
+---
+
 ## Overview
 
 This document outlines the implementation plan for adding a **Friends** feature to the Skywage application.
@@ -175,9 +194,11 @@ We should avoid duplicating card logic by reusing and extending the existing fli
 
 ---
 
-## Phase 1 – Database & RLS Foundation
+## Phase 1 – Database & RLS Foundation ✅
 
-**Git branch:** `feature/friends-phase-1-database`
+**Status:** ✅ COMPLETE (Merged via PR #24)
+
+**Git branch:** `feature/friends-phase-1-database` (deleted after merge)
 
 **Goals:**
 
@@ -217,23 +238,26 @@ We should avoid duplicating card logic by reusing and extending the existing fli
    - Extend `Database` types in `src/lib/supabase.ts` with `friendships` table definition.
    - Confirm code builds and type-checks.
 
-### Testing & Verification
+### Testing & Verification ✅
 
-- Run existing unit tests and type checks.
-- From a temporary script / Supabase SQL console:
-  - Insert a friendship row as user A and confirm user B can see it when authenticated as B.
-  - Confirm a third user C cannot see or modify that row.
+- ✅ Existing unit tests and type checks passed.
+- ✅ RLS policies verified via Supabase SQL console.
+- ✅ Confirmed participants can see/modify their friendships.
+- ✅ Confirmed non-participants cannot access friendship rows.
 
-### Why separate branch?
+### Outcome
 
-- The database foundation can be safely merged without any UI.
-- Keeps schema/RLS review focused and isolated from later feature logic.
+- ✅ Successfully merged into `main` via PR #24.
+- ✅ Database foundation ready for Phase 2 implementation.
+- ✅ No breaking changes to existing features.
 
 ---
 
-## Phase 2 – Core Friends API & UI (No Roster Comparison Yet)
+## Phase 2 – Core Friends API & UI (No Roster Comparison Yet) ✅
 
-**Git branch:** `feature/friends-phase-2-core-ui`
+**Status:** ✅ COMPLETE (Merged via PR #25 on 2025-11-18)
+
+**Git branch:** `feature/friends-phase-2-core-ui` (deleted after merge)
 
 **Goals:**
 
@@ -241,29 +265,50 @@ We should avoid duplicating card logic by reusing and extending the existing fli
 - Add a `/friends` page within the dashboard layout.
 - Show pending requests and friends list, with a global pending-requests indicator in the sidebar.
 
-**Current status (as of 2025-11-18):**
+**Status: ✅ COMPLETE (as of 2025-11-18)**
 
-- All core friends flows are implemented and manually tested end-to-end:
+Phase 2 has been fully implemented, tested, and merged into `main`.
+
+**What was completed:**
+
+- ✅ All core friends flows implemented and manually tested end-to-end:
   - Sending requests by email (case-insensitive) between real users.
   - Accept / reject / unfriend actions.
   - Friends list and pending requests sections on `/friends`.
   - Global pending badge in the sidebar, backed by a shared `FriendsProvider` so it updates immediately after actions.
-- Supporting infrastructure:
+- ✅ Supporting infrastructure:
   - `friendships` database helpers in `src/lib/database/friends.ts`.
   - `useFriends` hook for fetching and mutating friends data.
   - `FriendsProvider` context wrapping the dashboard layout.
   - Updated RLS on `public.profiles` to allow authenticated users to look up other users by email for friend discovery.
+  - Server-side Supabase client (`src/lib/supabase-server.ts`) for API routes.
+  - SQL migration for profiles RLS update (`sql/20251118120000_update_profiles_select_rls.sql`).
 
-**Remaining work to finalize Phase 2:**
+**GitHub workflow completed:**
 
-- GitHub workflow:
-  - Ensure `main` is up to date locally.
-  - Rebase or merge `main` into `feature/friends-phase-2-core-ui` if needed.
-  - Run `npm run lint`, `npm run test` (if applicable), and `npm run build` on the feature branch.
-  - Push `feature/friends-phase-2-core-ui` to GitHub.
-  - Open a PR from `feature/friends-phase-2-core-ui` into `main`.
-  - Perform final manual QA on the PR branch (Friends flows + pending badge behavior).
-  - After approval, merge the PR into `main` and delete the feature branch.
+- ✅ All changes staged and committed (commit hash: `fbb50d4`).
+- ✅ Feature branch pushed to GitHub.
+- ✅ PR #25 created and updated with comprehensive details.
+- ✅ Build and lint checks passed (only pre-existing warnings).
+- ✅ PR reviewed, approved, and merged into `main` (merge commit: `2676b4b`).
+- ✅ Feature branch `feature/friends-phase-2-core-ui` deleted (local and remote).
+
+**Files added/modified in Phase 2:**
+
+- New files (4):
+  - `src/contexts/FriendsProvider.tsx`
+  - `src/lib/supabase-server.ts`
+  - `sql/20251118120000_update_profiles_select_rls.sql`
+  - `src/app/(dashboard)/friends/page.tsx`
+- Modified files (13):
+  - API routes: `list`, `respond`, `send-request`, `unfriend`
+  - `src/hooks/useFriends.ts`
+  - `src/lib/database/friends.ts`
+  - `src/components/dashboard/DashboardSidebar.tsx`
+  - `src/app/(dashboard)/layout.tsx`
+  - `middleware.ts`
+  - `package.json` and `package-lock.json`
+  - This implementation plan
 
 ### Scope
 
@@ -319,26 +364,44 @@ We should avoid duplicating card logic by reusing and extending the existing fli
    - Use a light-weight hook or data fetch in the sidebar to show a small badge with `pendingCount` for the current user.
    - Ensure this fetch is efficient and cached to avoid excessive requests.
 
-### Testing & Verification
+### Testing & Verification ✅
 
-- Unit tests for `friends` DB helpers where practical (or targeted integration tests).
-- Manual API testing via HTTP client or browser.
-- UI testing:
-  - Send request to another test account and verify correct pending states.
-  - Accept/reject/unfriend flows work and lists refresh.
-  - Pending badge updates when requests are created/resolved.
-- Start dev server from this branch so you can test /friends end-to-end before merging.
+- ✅ Manual end-to-end testing completed with real user accounts.
+- ✅ All friend flows verified:
+  - Send request to another account (case-insensitive email lookup).
+  - Accept/reject requests and verify state changes.
+  - Unfriend action works correctly.
+  - Pending badge updates immediately after all actions.
+- ✅ Error handling tested:
+  - User not found.
+  - Already friends.
+  - Request already pending.
+  - Cannot friend yourself.
+- ✅ Build and lint checks passed (`npm run build`, `npm run lint`).
+- ✅ TypeScript type checking passed.
+- ✅ No breaking changes to existing features.
 
-### Why separate branch?
+### Outcome
 
-- Phase 2 introduces user-facing Friends functionality that is fully usable **even without roster comparison**.
-- Keeps the PR focused on relationship management and UI, without parser or comparison complexity.
+- ✅ Successfully merged into `main` via PR #25 (merge commit: `2676b4b`).
+- ✅ Friends feature is fully functional and ready for use.
+- ✅ All 17 files committed (1,450 additions, 141 deletions).
+- ✅ Feature branch deleted (local and remote).
+- ✅ Ready to proceed with Phase 3.
 
 ---
 
-## Phase 3 – Roster Comparison & Off/Rest-Day Support
+## Phase 3 – Roster Comparison & Off/Rest-Day Support ⏳
 
-**Git branch:** `feature/friends-phase-3-roster-comparison`
+**Status:** ⏳ NOT STARTED (Next phase to implement)
+
+**Git branch:** `feature/friends-phase-3-roster-comparison` (to be created from `main`)
+
+**Prerequisites:**
+
+- ✅ Phase 1 complete and merged
+- ✅ Phase 2 complete and merged
+- ✅ Local `main` branch up to date
 
 **Goals:**
 
@@ -441,3 +504,75 @@ After all three phases are merged, the Friends feature will provide:
 
 - Email-based friend management with pending requests and global indicators.
 - Side-by-side roster comparison per month, including all duty types (working duties, off days, additional days off, and other rest/leave entries), with read-only friend rosters and no salary sharing.
+
+---
+
+## 🚀 Getting Started with Phase 3
+
+When ready to begin Phase 3 implementation, follow these steps:
+
+### 1. Verify Prerequisites
+
+```bash
+# Ensure you're on main branch
+git checkout main
+
+# Pull latest changes
+git pull origin main
+
+# Verify Phase 1 & 2 are merged
+git log --oneline -10
+# Should show merge commits for PR #24 and #25
+```
+
+### 2. Create Phase 3 Branch
+
+```bash
+# Create and checkout new branch from main
+git checkout -b feature/friends-phase-3-roster-comparison
+
+# Verify branch
+git branch
+```
+
+### 3. Implementation Checklist
+
+Refer to **Phase 3 – Roster Comparison & Off/Rest-Day Support** section above for detailed scope.
+
+**Key tasks:**
+
+- [ ] Update parsers to persist off/rest/leave days (don't filter them out)
+- [ ] Create comparison API endpoint (`GET /api/friends/compare-roster`)
+- [ ] Extend `/friends` page with roster comparison panel
+- [ ] Implement month selector for comparison view
+- [ ] Create reusable `DutyCard` component variants for all duty types
+- [ ] Test parser changes don't break salary calculations
+- [ ] Test comparison view with real data
+- [ ] Ensure friend roster is read-only
+- [ ] Run build and lint checks
+- [ ] Create PR and test end-to-end
+
+### 4. Testing Strategy
+
+- Test parser changes with sample CSV/Excel files containing off/rest days
+- Verify salary calculations remain correct (off days = 0 pay)
+- Test comparison view with multiple months
+- Verify RLS prevents unauthorized access to friend rosters
+- Confirm main dashboard still hides off days (no regression)
+
+### 5. Git Workflow
+
+```bash
+# After implementation
+git add -A
+git commit -m "feat(friends): Phase 3 - Roster comparison with off/rest days"
+git push origin feature/friends-phase-3-roster-comparison
+
+# Create PR via GitHub API or web interface
+# Target: main
+# Title: "feat(friends): Phase 3 - Roster Comparison & Off/Rest-Day Support"
+```
+
+---
+
+**End of Implementation Plan**
