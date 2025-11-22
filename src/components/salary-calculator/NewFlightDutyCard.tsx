@@ -4,6 +4,7 @@
  * New Flight Duty Card Component - Redesigned with uniform heights and improved layout
  * Routes to appropriate card type based on duty type
  * Phase 3: Added userId and position props for edit functionality
+ * Phase 3: Added showOffDays prop for roster comparison view
  */
 
 import React from 'react';
@@ -11,6 +12,7 @@ import { FlightDuty, Position } from '@/types/salary-calculator';
 import { LayoverConnectedCard } from './LayoverConnectedCard';
 import { TurnaroundCard } from './TurnaroundCard';
 import { StandardDutyCard } from './StandardDutyCard';
+import { OffDayCard } from './OffDayCard';
 
 interface NewFlightDutyCardProps {
   flightDuty: FlightDuty;
@@ -23,6 +25,7 @@ interface NewFlightDutyCardProps {
   userId?: string;
   position?: Position;
   onEditComplete?: () => void;
+  showOffDays?: boolean; // New prop for roster comparison
 }
 
 export function NewFlightDutyCard({
@@ -35,7 +38,8 @@ export function NewFlightDutyCard({
   onToggleSelection,
   userId,
   position,
-  onEditComplete
+  onEditComplete,
+  showOffDays = false
 }: NewFlightDutyCardProps) {
 
   // Route to appropriate card type based on duty type
@@ -60,8 +64,8 @@ export function NewFlightDutyCard({
       return <TurnaroundCard {...commonProps} />;
 
     case 'off':
-      // Don't create cards for off days
-      return null;
+      // Show off days only in roster comparison view
+      return showOffDays ? <OffDayCard flightDuty={flightDuty} /> : null;
 
     case 'asby':
     case 'recurrent':

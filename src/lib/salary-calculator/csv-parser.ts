@@ -5,7 +5,7 @@
  */
 
 import { CSVParseResult, FlightDuty } from '@/types/salary-calculator';
-import { parseTimeString, parseTimeStringWithCrossDay } from './time-calculator';
+import { parseTimeString, parseTimeStringWithCrossDay, createTimeValue } from './time-calculator';
 import { classifyFlightDuty, extractFlightNumbers, extractSectors } from './flight-classifier';
 import { validateFlightNumbers, validateSectors } from './csv-validator';
 import Papa from 'papaparse';
@@ -484,20 +484,45 @@ export function parseFlightDutyRow(
   // First classify the duty to determine if it's a non-duty entry
   const classification = classifyFlightDuty(duties, details, reportTimeStr, debriefTimeStr);
 
-  // Check if this is a non-duty entry that should be skipped entirely
+  // Check if this is an off/rest/leave day - now we CREATE entries instead of skipping
   const dutiesUpper = duties.toUpperCase().trim();
-  const isNonDutyEntry =
+  const isOffDay =
     dutiesUpper.includes('DAY OFF') ||
     dutiesUpper.includes('REST DAY') ||
     dutiesUpper.includes('ADDITIONAL DAY OFF') ||
     dutiesUpper.includes('ANNUAL LEAVE') ||
     dutiesUpper.includes('OFF') ||
     dutiesUpper === 'X' ||
-    classification.dutyType === 'off' ||
-    classification.dutyType === 'sby';
+    classification.dutyType === 'off';
 
-  // Skip validation and processing for non-duty entries
-  if (isNonDutyEntry) {
+  // If it's an off day, create a minimal FlightDuty entry with dutyType='off'
+  if (isOffDay) {
+    const flightDuty: FlightDuty = {
+      userId,
+      date,
+      flightNumbers: [],
+      sectors: [],
+      dutyType: 'off',
+      reportTime: createTimeValue(0, 0),
+      debriefTime: createTimeValue(0, 0),
+      dutyHours: 0,
+      flightPay: 0,
+      isCrossDay: false,
+      dataSource: 'csv',
+      month,
+      year,
+      originalData: {
+        duties,
+        details,
+        rowIndex
+      }
+    };
+
+    return { flightDuty, errors, warnings };
+  }
+
+  // Skip SBY (Home Standby) - these are still filtered out as they're not relevant for comparison
+  if (classification.dutyType === 'sby') {
     return { flightDuty: null, errors, warnings };
   }
 

@@ -391,11 +391,11 @@ Phase 2 has been fully implemented, tested, and merged into `main`.
 
 ---
 
-## Phase 3 – Roster Comparison & Off/Rest-Day Support ⏳
+## Phase 3 – Roster Comparison & Off/Rest-Day Support 🚧
 
-**Status:** ⏳ NOT STARTED (Next phase to implement)
+**Status:** 🚧 IN PROGRESS (Implementation complete, ready for testing)
 
-**Git branch:** `feature/friends-phase-3-roster-comparison` (to be created from `main`)
+**Git branch:** `feature/friends-phase-3-roster-comparison` (created from `main`)
 
 **Prerequisites:**
 
@@ -475,6 +475,52 @@ Phase 2 has been fully implemented, tested, and merged into `main`.
 - Data shape change (off/rest days now persisted) and new UI/API that depends on that data must be tested together to avoid:
   - Persisting new off-duty records without any UI to verify them.
   - A comparison UI that expects off-duty records that do not yet exist.
+
+### Implementation Summary
+
+**What was completed:**
+
+1. ✅ **Parser changes:**
+
+   - Updated `flydubai-excel-parser.ts` to create `FlightDuty` entries with `dutyType: 'off'` for rest/off/leave days instead of filtering them out
+   - Updated `csv-parser.ts` similarly to persist off days
+   - Added `createTimeValue` import to csv-parser
+   - Off days are created with zero pay/time fields to maintain salary calculation accuracy
+
+2. ✅ **Comparison API endpoint:**
+
+   - Created `src/app/api/friends/compare-roster/route.ts`
+   - Implements `GET /api/friends/compare-roster?friendId={id}&month={month}&year={year}`
+   - Verifies friendship status using new `verifyFriendship()` helper in `src/lib/database/friends.ts`
+   - Uses service-role client (`src/lib/supabase-service.ts`) to bypass RLS and fetch both users' rosters
+   - Sanitizes response to exclude salary data (flight_pay, per_diem_pay, layover_rest_hours)
+
+3. ✅ **Roster comparison UI:**
+   - Created `src/components/friends/RosterComparison.tsx` - side-by-side comparison component
+   - Created `src/components/salary-calculator/OffDayCard.tsx` - minimal card for off/rest/leave days
+   - Updated `src/components/salary-calculator/NewFlightDutyCard.tsx` with `showOffDays` prop
+   - Integrated comparison into `/friends` page with Calendar button for each friend
+   - Month navigation with ChevronLeft/ChevronRight buttons
+   - Defaults to current month/year
+   - Friend roster is strictly read-only (no actions)
+
+**Files created (5):**
+
+- `src/app/api/friends/compare-roster/route.ts`
+- `src/lib/supabase-service.ts`
+- `src/components/friends/RosterComparison.tsx`
+- `src/components/salary-calculator/OffDayCard.tsx`
+
+**Files modified (5):**
+
+- `src/lib/salary-calculator/flydubai-excel-parser.ts`
+- `src/lib/salary-calculator/csv-parser.ts`
+- `src/lib/database/friends.ts` (added `verifyFriendship` function)
+- `src/components/salary-calculator/NewFlightDutyCard.tsx`
+- `src/app/(dashboard)/friends/page.tsx`
+- `FRIENDS_FEATURE_IMPLEMENTATION_PLAN.md` (this file)
+
+**Dev server:** Running at http://localhost:3000 for testing
 
 ---
 
