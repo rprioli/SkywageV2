@@ -3,7 +3,7 @@
 /**
  * Friends Page
  * Allows users to manage their friends, send/accept requests
- * Phase 2 - Core Friends UI & API
+ * Phase 3 - Integrated Layout with Sidebar
  */
 
 import { useState } from 'react';
@@ -12,9 +12,12 @@ import { useMobileNavigation } from '@/contexts/MobileNavigationProvider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, Menu, UserPlus, Mail, Check, X, UserMinus, Calendar } from 'lucide-react';
+import { Menu, UserPlus, Mail, Check, X, Calendar as CalendarIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { RosterComparison } from '@/components/friends/RosterComparison';
+import { FriendListSidebar } from '@/components/friends/FriendListSidebar';
+import { FriendWithProfile } from '@/lib/database/friends';
+import { getFriendDisplayName } from '@/lib/database/friends';
 
 export default function FriendsPage() {
   const {
@@ -24,7 +27,6 @@ export default function FriendsPage() {
     error,
     sendFriendRequest,
     respondToRequest,
-    unfriend,
   } = useFriendsContext();
 
   const { isMobile, toggleSidebar } = useMobileNavigation();
@@ -32,7 +34,7 @@ export default function FriendsPage() {
 
   const [emailInput, setEmailInput] = useState('');
   const [sendingRequest, setSendingRequest] = useState(false);
-  const [selectedFriend, setSelectedFriend] = useState<{ id: string; email: string } | null>(null);
+  const [selectedFriend, setSelectedFriend] = useState<FriendWithProfile | null>(null);
 
   /**
    * Handle sending a friend request
@@ -79,21 +81,6 @@ export default function FriendsPage() {
     }
   };
 
-  /**
-   * Handle unfriending a user
-   */
-  const handleUnfriend = async (friendshipId: string, friendEmail: string) => {
-    if (!confirm(`Are you sure you want to remove ${friendEmail} from your friends?`)) {
-      return;
-    }
-
-    const result = await unfriend(friendshipId);
-    if (result.success) {
-      showSuccess('Friend removed');
-    } else {
-      showError('Failed to remove friend', { description: result.error });
-    }
-  };
 
   return (
     <div className="space-y-4">
@@ -244,72 +231,45 @@ export default function FriendsPage() {
           </Card>
         )}
 
-        {/* Friends List Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" style={{ color: '#4C49ED' }} />
-              My Friends ({friends.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading && friends.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                Loading friends...
-              </div>
-            ) : friends.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <Users className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p>No friends yet</p>
-                <p className="text-sm mt-1">Add friends to compare rosters</p>
+        {/* Friends & Roster Comparison - Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-32rem)]">
+          {/* Left Column: Friend List Sidebar */}
+          <div className="lg:col-span-4 xl:col-span-3 h-full">
+            <div className="border border-gray-200 rounded-lg overflow-hidden h-full bg-white">
+              <FriendListSidebar
+                friends={friends}
+                loading={loading}
+                selectedFriendId={selectedFriend?.userId || null}
+                onSelectFriend={(friend) => setSelectedFriend(friend)}
+              />
+            </div>
+          </div>
+
+          {/* Right Column: Roster Comparison Canvas */}
+          <div className="lg:col-span-8 xl:col-span-9 h-full">
+            {selectedFriend ? (
+              <div className="h-full overflow-hidden">
+                <RosterComparison
+                  friendId={selectedFriend.userId}
+                  friendEmail={getFriendDisplayName(selectedFriend)}
+                  onClose={() => setSelectedFriend(null)}
+                />
               </div>
             ) : (
-              <div className="space-y-2">
-                {friends.map((friend) => (
-                  <div
-                    key={friend.friendshipId}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{friend.email}</p>
-                      <p className="text-sm text-gray-500">
-                        {friend.airline} • {friend.position}
-                        {friend.nationality && ` • ${friend.nationality}`}
-                      </p>
-                    </div>
-                    <div className="flex gap-2 ml-4">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setSelectedFriend({ id: friend.userId, email: friend.email })}
-                        className="text-[#4C49ED] hover:text-[#4C49ED] hover:bg-purple-50"
-                      >
-                        <Calendar className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleUnfriend(friend.friendshipId, friend.email)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <UserMinus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <Card className="h-full flex items-center justify-center border-2 border-dashed border-gray-300 bg-gray-50/50">
+                <CardContent className="text-center py-12">
+                  <CalendarIcon className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                    Select a friend to compare rosters
+                  </h3>
+                  <p className="text-sm text-gray-500 max-w-md mx-auto">
+                    Choose a friend from the list on the left to view and compare your rosters side by side
+                  </p>
+                </CardContent>
+              </Card>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Roster Comparison Section */}
-        {selectedFriend && (
-          <RosterComparison
-            friendId={selectedFriend.id}
-            friendEmail={selectedFriend.email}
-            onClose={() => setSelectedFriend(null)}
-          />
-        )}
+          </div>
+        </div>
       </div>
     </div>
   );
