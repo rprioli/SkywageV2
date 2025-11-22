@@ -504,30 +504,48 @@ export class FlydubaiExcelParser {
     year: number,
     position?: Position
   ): FlightDuty | null {
-    // Check for rest days and off days that should be filtered out
+    // Check for rest days and off days - now we CREATE entries instead of filtering
     const dutiesUpper = String(excelDuty.duties || '').toUpperCase().trim();
     const detailsUpper = String(excelDuty.details || '').toUpperCase().trim();
 
-    // Skip rest days, off days, and other non-duty entries
-    const isRestDay = dutiesUpper.includes('REST DAY') ||
-                      detailsUpper.includes('REST DAY') ||
-                      dutiesUpper.includes('DAY OFF') ||
-                      detailsUpper.includes('DAY OFF') ||
-                      dutiesUpper.includes('ADDITIONAL DAY OFF') ||
-                      detailsUpper.includes('ADDITIONAL DAY OFF') ||
-                      dutiesUpper.includes('ANNUAL LEAVE') ||
-                      detailsUpper.includes('ANNUAL LEAVE') ||
-                      dutiesUpper === 'OFF' ||
-                      dutiesUpper === '*OFF' ||
-                      dutiesUpper === 'X';
+    // Detect off/rest/leave days
+    const isOffDay = dutiesUpper.includes('REST DAY') ||
+                     detailsUpper.includes('REST DAY') ||
+                     dutiesUpper.includes('DAY OFF') ||
+                     detailsUpper.includes('DAY OFF') ||
+                     dutiesUpper.includes('ADDITIONAL DAY OFF') ||
+                     detailsUpper.includes('ADDITIONAL DAY OFF') ||
+                     dutiesUpper.includes('ANNUAL LEAVE') ||
+                     detailsUpper.includes('ANNUAL LEAVE') ||
+                     dutiesUpper === 'OFF' ||
+                     dutiesUpper === '*OFF' ||
+                     dutiesUpper === 'X' ||
+                     excelDuty.dutyType === 'off';
 
-    if (isRestDay) {
-      return null;
-    }
+    // If it's an off day, create a minimal FlightDuty entry with dutyType='off'
+    if (isOffDay) {
+      const date = this.parseExcelDate(excelDuty.date, month, year);
 
-    // Skip other non-flight duties (OFF only)
-    if (excelDuty.dutyType === 'off') {
-      return null;
+      return {
+        userId: '', // Will be set by the caller
+        date,
+        flightNumbers: [],
+        sectors: [],
+        dutyType: 'off',
+        reportTime: createTimeValue(0, 0),
+        debriefTime: createTimeValue(0, 0),
+        dutyHours: 0,
+        flightPay: 0,
+        isCrossDay: false,
+        dataSource: 'csv',
+        month,
+        year,
+        originalData: {
+          duties: excelDuty.duties,
+          details: excelDuty.details,
+          rowNumber: excelDuty.rowNumber
+        }
+      };
     }
 
     // Parse date

@@ -52,7 +52,7 @@ function flightDutyToInsert(flightDuty: FlightDuty, userId: string): FlightInser
  * Handles both old and new schema columns
  * Prefers new schema columns when available, falls back to old schema
  */
-function rowToFlightDuty(row: FlightRow): FlightDuty {
+export function rowToFlightDuty(row: FlightRow): FlightDuty {
   // Prefer new schema columns, fall back to old schema
   const flightNumbers = row.flight_numbers && row.flight_numbers.length > 0
     ? row.flight_numbers

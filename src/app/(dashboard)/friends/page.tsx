@@ -12,8 +12,9 @@ import { useMobileNavigation } from '@/contexts/MobileNavigationProvider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, Menu, UserPlus, Mail, Check, X, UserMinus } from 'lucide-react';
+import { Users, Menu, UserPlus, Mail, Check, X, UserMinus, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { RosterComparison } from '@/components/friends/RosterComparison';
 
 export default function FriendsPage() {
   const {
@@ -31,6 +32,7 @@ export default function FriendsPage() {
 
   const [emailInput, setEmailInput] = useState('');
   const [sendingRequest, setSendingRequest] = useState(false);
+  const [selectedFriend, setSelectedFriend] = useState<{ id: string; email: string } | null>(null);
 
   /**
    * Handle sending a friend request
@@ -279,6 +281,14 @@ export default function FriendsPage() {
                       <Button
                         size="sm"
                         variant="outline"
+                        onClick={() => setSelectedFriend({ id: friend.userId, email: friend.email })}
+                        className="text-[#4C49ED] hover:text-[#4C49ED] hover:bg-purple-50"
+                      >
+                        <Calendar className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
                         onClick={() => handleUnfriend(friend.friendshipId, friend.email)}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
                       >
@@ -291,6 +301,15 @@ export default function FriendsPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Roster Comparison Section */}
+        {selectedFriend && (
+          <RosterComparison
+            friendId={selectedFriend.id}
+            friendEmail={selectedFriend.email}
+            onClose={() => setSelectedFriend(null)}
+          />
+        )}
       </div>
     </div>
   );
