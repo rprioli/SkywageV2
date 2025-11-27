@@ -17,7 +17,6 @@ import { useToast } from '@/hooks/use-toast';
 import { RosterComparison } from '@/components/friends/RosterComparison';
 import { FriendListSidebar } from '@/components/friends/FriendListSidebar';
 import { FriendWithProfile } from '@/lib/database/friends';
-import { getFriendDisplayName } from '@/lib/database/friends';
 
 export default function FriendsPage() {
   const {
@@ -248,10 +247,9 @@ export default function FriendsPage() {
           {/* Right Column: Roster Comparison Canvas */}
           <div className="lg:col-span-8 xl:col-span-9 h-full">
             {selectedFriend ? (
-              <div className="h-full overflow-hidden">
+              <div className="h-full overflow-hidden border border-gray-200 rounded-lg">
                 <RosterComparison
-                  friendId={selectedFriend.userId}
-                  friendEmail={getFriendDisplayName(selectedFriend)}
+                  friend={selectedFriend}
                   onClose={() => setSelectedFriend(null)}
                 />
               </div>
