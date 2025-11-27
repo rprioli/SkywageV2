@@ -94,20 +94,31 @@ export function getDutyTileType(dutyType: DutyType): TileType {
 
 /**
  * Extract destination airport from sectors
- * For sectors like ["DXB-VIE", "VIE-DXB"], returns the final destination
+ * Handles two data formats:
+ * 1. New format: ["DXB-TLV", "TLV-DXB"] - returns "TLV" (first destination)
+ * 2. Old format: ["DXB", "TLV", "DXB"] - returns "TLV" (second element)
  */
 export function getDestinationAirport(sectors: string[]): string | undefined {
   if (!sectors || sectors.length === 0) return undefined;
   
-  // Get the last sector and extract destination
-  const lastSector = sectors[sectors.length - 1];
-  const parts = lastSector.split('-');
+  const firstSector = sectors[0];
   
-  if (parts.length >= 2) {
-    return parts[parts.length - 1]; // Return destination of last sector
+  // Check if it's the new format (contains hyphen: "DXB-TLV")
+  if (firstSector.includes('-')) {
+    const parts = firstSector.split('-');
+    if (parts.length >= 2) {
+      return parts[1]; // Return destination of first sector
+    }
   }
   
-  return undefined;
+  // Old format: sectors is an array of individual airports ["DXB", "TLV", "DXB"]
+  // The first destination is the second element
+  if (sectors.length >= 2) {
+    return sectors[1];
+  }
+  
+  // Fallback: return first element if only one exists
+  return firstSector;
 }
 
 /**

@@ -54,13 +54,13 @@ export function FriendListSidebar({
         
         {/* Search Input */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute input-icon-left h-4 w-4 text-gray-400" />
           <Input
             type="text"
             placeholder="Search friends..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 pr-4"
+            className="input-with-left-icon"
           />
         </div>
       </div>
@@ -153,7 +153,7 @@ function FriendListItem({ friend, isActive, onClick }: FriendListItemProps) {
           {displayName}
         </p>
         <p className="text-sm text-gray-500 truncate">
-          {friend.airline} • {friend.position}
+          {friend.position}
         </p>
       </div>
     </button>

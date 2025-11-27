@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FlightDuty } from '@/types/salary-calculator';
 import { useAuth } from '@/contexts/AuthProvider';
@@ -164,8 +164,9 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
           </button>
         </div>
 
-        {/* Selected friend chip */}
-        <div className="mb-4">
+        {/* Search bar with selected friend chip */}
+        <div className="mb-4 flex items-center gap-2">
+          <Search className="h-4 w-4 text-gray-400" />
           <div className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5">
             <span className="text-sm text-gray-700">{friendDisplayName}</span>
             <button
@@ -203,9 +204,9 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
         </div>
       </div>
 
-      {/* Avatar headers - sticky column headers */}
-      <div className="flex-shrink-0 border-b border-gray-200 bg-white">
-        <div className="grid grid-cols-[80px_1fr_1fr] gap-2 px-4 py-3">
+      {/* Avatar headers - sticky column headers, scrollable on mobile */}
+      <div className="flex-shrink-0 border-b border-gray-200 bg-white overflow-x-auto">
+        <div className="grid min-w-[400px] grid-cols-[80px_1fr_1fr] gap-2 px-4 py-3">
           {/* Empty space for date column */}
           <div />
 
@@ -235,11 +236,11 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
         </div>
       </div>
 
-      {/* Grid content */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Grid content - scrollable on mobile */}
+      <div className="flex-1 overflow-y-auto overflow-x-auto">
         {loading && (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-sm text-gray-500">Loading rosters...</div>
+          <div className="min-w-[400px] px-4 py-2">
+            <LoadingSkeleton />
           </div>
         )}
 
@@ -250,7 +251,7 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
         )}
 
         {!loading && !error && gridData && (
-          <div className="px-4 py-2">
+          <div className="min-w-[400px] px-4 py-2">
             {gridData.days.map((dayData) => (
               <DayRow key={dayData.day.dayNumber} dayData={dayData} />
             ))}
@@ -270,6 +271,7 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
 /**
  * Day Row Component
  * Renders a single day with date column + user/friend duty tiles
+ * Handles multi-day flight connections with reduced spacing
  */
 interface DayRowProps {
   dayData: DayWithDuties;
@@ -278,10 +280,21 @@ interface DayRowProps {
 function DayRow({ dayData }: DayRowProps) {
   const { day, userDuty, friendDuty } = dayData;
 
+  // Check if this row is part of a multi-day flight (for spacing adjustments)
+  const userIsMultiDayEnd = userDuty?.isMultiDay && userDuty?.position === 'end';
+  const userIsMultiDayStart = userDuty?.isMultiDay && userDuty?.position === 'start';
+  const friendIsMultiDayEnd = friendDuty?.isMultiDay && friendDuty?.position === 'end';
+  const friendIsMultiDayStart = friendDuty?.isMultiDay && friendDuty?.position === 'start';
+
+  // Reduce vertical padding when tiles need to connect
+  const isConnectedRow = userIsMultiDayStart || userIsMultiDayEnd || 
+                         friendIsMultiDayStart || friendIsMultiDayEnd;
+
   return (
     <div
       className={cn(
-        'grid grid-cols-[80px_1fr_1fr] gap-2 py-1',
+        'grid grid-cols-[80px_1fr_1fr] gap-2',
+        isConnectedRow ? 'py-0' : 'py-1',
         day.isWeekend && 'bg-gray-50/50'
       )}
     >
@@ -293,14 +306,47 @@ function DayRow({ dayData }: DayRowProps) {
       </div>
 
       {/* User duty tile */}
-      <div className="min-h-[60px]">
+      <div className={cn(
+        'min-h-[60px]',
+        userIsMultiDayStart && 'pb-0',
+        userIsMultiDayEnd && 'pt-0'
+      )}>
         <DutyTile tile={userDuty} />
       </div>
 
       {/* Friend duty tile */}
-      <div className="min-h-[60px]">
+      <div className={cn(
+        'min-h-[60px]',
+        friendIsMultiDayStart && 'pb-0',
+        friendIsMultiDayEnd && 'pt-0'
+      )}>
         <DutyTile tile={friendDuty} />
       </div>
+    </div>
+  );
+}
+
+/**
+ * Loading Skeleton
+ * Shows placeholder rows while data is loading
+ */
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-1">
+      {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+        <div key={i} className="grid grid-cols-[80px_1fr_1fr] gap-2 py-1">
+          {/* Date skeleton */}
+          <div className="flex flex-col items-center justify-center py-2">
+            <div className="h-3 w-8 animate-pulse rounded bg-gray-200" />
+            <div className="mt-1 h-7 w-6 animate-pulse rounded bg-gray-200" />
+            <div className="mt-1 h-3 w-8 animate-pulse rounded bg-gray-200" />
+          </div>
+          {/* User tile skeleton */}
+          <div className="min-h-[60px] animate-pulse rounded-lg bg-gray-200" />
+          {/* Friend tile skeleton */}
+          <div className="min-h-[60px] animate-pulse rounded-lg bg-gray-200" />
+        </div>
+      ))}
     </div>
   );
 }
