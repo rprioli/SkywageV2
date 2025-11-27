@@ -1,7 +1,7 @@
 /**
  * FlightTile Component
  * Blue filled tile for flight duties
- * Phase 4b - Friends Feature
+ * Phase 4b - Friends Feature (Polish: multi-day spanning)
  */
 
 'use client';
@@ -22,11 +22,11 @@ interface FlightTileProps {
 /**
  * Flight duty tile - blue background with airplane icon
  * Matches the reference design with bold airport code and smaller flight number
+ * Multi-day flights connect visually with no gap between tiles
  */
 export function FlightTile({
   airportCode,
   flightNumber,
-  isMultiDay = false,
   position = 'single',
   className,
 }: FlightTileProps) {
@@ -38,30 +38,45 @@ export function FlightTile({
     'rounded-b-lg rounded-t-none': position === 'end',
   });
 
+  // Multi-day tiles need margin adjustment to visually connect
+  const marginClasses = cn({
+    'mb-0': position === 'start',
+    'mt-0 mb-0': position === 'middle',
+    'mt-0': position === 'end',
+  });
+
+  // For multi-day layovers, only show content on the first day (start)
+  // Middle and end days show just the blue background (continuation)
+  const showContent = position === 'single' || position === 'start';
+
   return (
     <div
       className={cn(
-        'flex h-full min-h-[60px] items-center justify-between gap-2 px-3 py-2',
+        'flex h-full min-h-[60px] items-center justify-center gap-4 px-4 py-3',
         'bg-[#4169E1] text-white', // Royal blue matching reference
         borderRadiusClasses,
-        isMultiDay && position !== 'single' && 'border-t-0',
+        marginClasses,
         className
       )}
     >
-      {/* Airplane icon */}
-      <div className="flex-shrink-0">
-        <Plane className="h-5 w-5 rotate-45" fill="currentColor" />
-      </div>
+      {showContent && (
+        <>
+          {/* Airplane icon - centered */}
+          <div className="flex-shrink-0">
+            <Plane className="h-5 w-5 rotate-45" fill="currentColor" />
+          </div>
 
-      {/* Airport code and flight number */}
-      <div className="flex flex-col items-end text-right">
-        <span className="text-base font-bold leading-tight">
-          {airportCode || 'FLT'}
-        </span>
-        {flightNumber && (
-          <span className="text-xs font-medium opacity-90">{flightNumber}</span>
-        )}
-      </div>
+          {/* Airport code and flight number */}
+          <div className="flex flex-col items-center text-center">
+            <span className="text-lg font-bold leading-tight">
+              {airportCode || 'FLT'}
+            </span>
+            {flightNumber && (
+              <span className="text-sm font-medium opacity-90">{flightNumber}</span>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

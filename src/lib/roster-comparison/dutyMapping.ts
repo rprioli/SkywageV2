@@ -286,7 +286,7 @@ export function getDutyDisplayInfo(tile: DutyTileData): {
       };
     case 'off':
       return {
-        label: 'XX',
+        label: 'OFF',
         sublabel: undefined,
         showAirplane: false,
         showHouse: true,
