@@ -285,8 +285,12 @@ export function getDutyDisplayInfo(tile: DutyTileData): {
         showHouse: false,
       };
     case 'off':
+      // Provide more specific labels based on dutyType
+      const offLabel = tile.dutyType === 'rest' ? 'REST' 
+        : tile.dutyType === 'annual_leave' ? 'LEAVE' 
+        : 'OFF';
       return {
-        label: 'OFF',
+        label: offLabel,
         sublabel: undefined,
         showAirplane: false,
         showHouse: true,

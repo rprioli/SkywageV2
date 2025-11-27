@@ -25,22 +25,26 @@ export function OffDayCard({ flightDuty }: OffDayCardProps) {
     });
   };
 
-  // Determine label based on original data if available
+  // Determine label based on duty type
   const getOffDayLabel = () => {
-    const originalData = flightDuty.originalData as { duties?: string; details?: string } | undefined;
-    const duties = originalData?.duties?.toUpperCase() || '';
-    const details = originalData?.details?.toUpperCase() || '';
-
-    if (duties.includes('ANNUAL LEAVE') || details.includes('ANNUAL LEAVE')) {
-      return 'Annual Leave';
+    // Use the duty type directly for the primary classification
+    switch (flightDuty.dutyType) {
+      case 'rest':
+        return 'Rest';
+      case 'annual_leave':
+        return 'Annual Leave';
+      case 'off':
+      default:
+        // For 'off' type, check original data for more specific label
+        const originalData = flightDuty.originalData as { duties?: string; details?: string } | undefined;
+        const duties = originalData?.duties?.toUpperCase() || '';
+        const details = originalData?.details?.toUpperCase() || '';
+        
+        if (duties.includes('ADDITIONAL DAY OFF') || details.includes('ADDITIONAL DAY OFF')) {
+          return 'Additional Day Off';
+        }
+        return 'Off';
     }
-    if (duties.includes('ADDITIONAL DAY OFF') || details.includes('ADDITIONAL DAY OFF')) {
-      return 'Additional Day Off';
-    }
-    if (duties.includes('REST DAY') || details.includes('REST DAY')) {
-      return 'Rest Day';
-    }
-    return 'Off';
   };
 
   return (

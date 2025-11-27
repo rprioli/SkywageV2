@@ -7,7 +7,7 @@
 export type Position = 'CCM' | 'SCCM';
 
 // Flight duty types based on specification
-export type DutyType = 'turnaround' | 'layover' | 'asby' | 'recurrent' | 'sby' | 'off' | 'business_promotion';
+export type DutyType = 'turnaround' | 'layover' | 'asby' | 'recurrent' | 'sby' | 'off' | 'business_promotion' | 'rest' | 'annual_leave';
 
 // Data source tracking
 export type DataSource = 'csv' | 'manual' | 'edited';

@@ -416,6 +416,10 @@ export class FlydubaiExcelParser {
     // Check for specific duty codes
     if (dutiesUpper.includes('ASBY')) return 'asby';
     if (dutiesUpper.includes('XSBY') || dutiesUpper.includes('SBY')) return 'sby';
+    
+    // Check for rest and annual leave before generic off
+    if (dutiesUpper.includes('REST DAY') || detailsUpper.includes('REST DAY')) return 'rest';
+    if (dutiesUpper.includes('ANNUAL LEAVE') || detailsUpper.includes('ANNUAL LEAVE')) return 'annual_leave';
     if (dutiesUpper.includes('OFF')) return 'off';
 
     // Business Promotion detection
@@ -508,22 +512,26 @@ export class FlydubaiExcelParser {
     const dutiesUpper = String(excelDuty.duties || '').toUpperCase().trim();
     const detailsUpper = String(excelDuty.details || '').toUpperCase().trim();
 
-    // Detect off/rest/leave days
-    const isOffDay = dutiesUpper.includes('REST DAY') ||
-                     detailsUpper.includes('REST DAY') ||
-                     dutiesUpper.includes('DAY OFF') ||
+    // Detect specific non-working day types
+    const isRestDay = dutiesUpper.includes('REST DAY') || detailsUpper.includes('REST DAY');
+    const isAnnualLeave = dutiesUpper.includes('ANNUAL LEAVE') || detailsUpper.includes('ANNUAL LEAVE');
+    const isOffDay = dutiesUpper.includes('DAY OFF') ||
                      detailsUpper.includes('DAY OFF') ||
                      dutiesUpper.includes('ADDITIONAL DAY OFF') ||
                      detailsUpper.includes('ADDITIONAL DAY OFF') ||
-                     dutiesUpper.includes('ANNUAL LEAVE') ||
-                     detailsUpper.includes('ANNUAL LEAVE') ||
                      dutiesUpper === 'OFF' ||
                      dutiesUpper === '*OFF' ||
                      dutiesUpper === 'X' ||
                      excelDuty.dutyType === 'off';
 
-    // If it's an off day, create a minimal FlightDuty entry with dutyType='off'
-    if (isOffDay) {
+    // Determine the correct duty type for non-working days
+    const nonWorkingDutyType: DutyType | null = isRestDay ? 'rest' 
+      : isAnnualLeave ? 'annual_leave' 
+      : isOffDay ? 'off' 
+      : null;
+
+    // If it's a non-working day, create a minimal FlightDuty entry
+    if (nonWorkingDutyType) {
       const date = this.parseExcelDate(excelDuty.date, month, year);
 
       return {
@@ -531,7 +539,7 @@ export class FlydubaiExcelParser {
         date,
         flightNumbers: [],
         sectors: [],
-        dutyType: 'off',
+        dutyType: nonWorkingDutyType,
         reportTime: createTimeValue(0, 0),
         debriefTime: createTimeValue(0, 0),
         dutyHours: 0,
@@ -596,44 +604,14 @@ export class FlydubaiExcelParser {
         console.log(`⚠️ Using default times: 08:00 - 16:00, 8 hours`);
       }
     } else if (excelDuty.dutyType === 'business_promotion') {
-      // For Business Promotion, parse time ranges from actualTimes column
-      const actualTimesStr = excelDuty.actualTimes || '';
-      console.log(`💼 BUSINESS PROMOTION TIME DEBUG: Row ${excelDuty.rowNumber}`);
-      console.log(`💼 actualTimesStr = "${actualTimesStr}"`);
-      console.log(`💼 actualTimesStr type = ${typeof actualTimesStr}`);
-      console.log(`💼 actualTimesStr length = ${actualTimesStr.length}`);
-
-      if (actualTimesStr && actualTimesStr.trim().length > 0) {
-        try {
-          const bpTime = parseTrainingTimeRange(actualTimesStr);
-          console.log(`✅ Parsed Business Promotion time successfully:`, bpTime);
-
-          // Set report time to start time and debrief time to end time
-          const [startHour, startMin] = bpTime.startTime.split(':').map(Number);
-          const [endHour, endMin] = bpTime.endTime.split(':').map(Number);
-
-          reportTime = createTimeValue(startHour, startMin);
-          debriefTime = createTimeValue(endHour, endMin);
-          actualDutyHours = bpTime.totalHours;
-
-          console.log(`✅ Set BP times: report ${startHour}:${startMin}, debrief ${endHour}:${endMin}, hours ${actualDutyHours}`);
-        } catch (error) {
-          console.error(`❌ Failed to parse Business Promotion time range for row ${excelDuty.rowNumber}:`, error);
-          console.error(`❌ Raw actualTimes data: "${actualTimesStr}"`);
-          // Fallback to default times
-          reportTime = createTimeValue(8, 0);  // Default 08:00
-          debriefTime = createTimeValue(16, 0); // Default 16:00
-          actualDutyHours = 8; // Default 8 hours
-          console.log(`⚠️ Using fallback BP times: 08:00 - 16:00, 8 hours`);
-        }
-      } else {
-        console.warn(`⚠️ No actualTimes provided for Business Promotion row ${excelDuty.rowNumber}, using defaults`);
-        // Default Business Promotion times if no actual times provided
-        reportTime = createTimeValue(8, 0);
-        debriefTime = createTimeValue(16, 0);
-        actualDutyHours = 8;
-        console.log(`⚠️ Using default BP times: 08:00 - 16:00, 8 hours`);
-      }
+      // For Business Promotion, use fixed 5-hour calculation (similar to ASBY with fixed 4 hours)
+      // Payment is always 5 hours × position rate, regardless of actual time worked
+      reportTime = excelDuty.reportTime ?
+        this.parseTimeValue(excelDuty.reportTime) : createTimeValue(8, 0);
+      debriefTime = excelDuty.debriefTime ?
+        this.parseTimeValue(excelDuty.debriefTime) : createTimeValue(13, 0);
+      actualDutyHours = 5; // Fixed 5 hours for Business Promotion duties
+      console.log(`💼 Business Promotion duty detected: Using fixed 5 hours for calculation`);
     } else if (excelDuty.dutyType === 'asby') {
       // For ASBY duties, use fixed 4-hour calculation regardless of actual times
       reportTime = excelDuty.reportTime ?
