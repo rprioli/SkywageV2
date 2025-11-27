@@ -336,8 +336,8 @@ export function FlightDutiesTable({
       <CardContent className="pt-2 pb-8 px-2 md:px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-4 md:gap-x-6">
           {filteredFlightDuties.map((duty, index) => {
-            // Skip rendering off days when using new card design
-            if (useNewCardDesign && duty.dutyType === 'off') {
+            // Skip rendering off/rest/annual leave days when using new card design
+            if (useNewCardDesign && (duty.dutyType === 'off' || duty.dutyType === 'rest' || duty.dutyType === 'annual_leave')) {
               return null;
             }
 

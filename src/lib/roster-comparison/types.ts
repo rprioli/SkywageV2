@@ -80,6 +80,8 @@ export function getDutyTileType(dutyType: DutyType): TileType {
     case 'layover':
       return 'flight';
     case 'off':
+    case 'rest':
+    case 'annual_leave':
       return 'off';
     case 'asby':
     case 'sby':

@@ -17,25 +17,29 @@ interface DutyTypesCardProps {
 }
 
 // Color mapping for duty types
-const DUTY_TYPE_COLORS = {
+const DUTY_TYPE_COLORS: Record<string, string> = {
   turnaround: CHART_COLORS.primary,
   layover: CHART_COLORS.accent,
   asby: CHART_COLORS.secondary,
   recurrent: CHART_COLORS.tertiary,
   sby: CHART_COLORS.neutral,
   off: CHART_COLORS.light,
-  business_promotion: CHART_COLORS.tertiary
+  business_promotion: CHART_COLORS.tertiary,
+  rest: CHART_COLORS.light,
+  annual_leave: CHART_COLORS.light
 };
 
 // Icon mapping for duty types
-const DUTY_TYPE_ICONS = {
+const DUTY_TYPE_ICONS: Record<string, typeof Plane> = {
   turnaround: Plane,
   layover: Hotel,
   asby: Users,
   recurrent: Clock,
   sby: Users,
   off: Clock,
-  business_promotion: Clock
+  business_promotion: Clock,
+  rest: Clock,
+  annual_leave: Clock
 };
 
 export function DutyTypesCard({ data, loading = false }: DutyTypesCardProps) {

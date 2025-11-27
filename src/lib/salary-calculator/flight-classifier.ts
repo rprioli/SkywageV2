@@ -61,7 +61,7 @@ export function classifyFlightDuty(
 
   // Check for Business Promotion
   if (dutiesUpper.includes('BP') || detailsUpper.includes('BUSINESS PROMOTION')) {
-    const dutyHours = actualDutyHours || 8; // Default to 8 hours if not provided
+    const dutyHours = 5; // Fixed 5 hours for Business Promotion
     let flightPay = 0;
 
     if (position) {

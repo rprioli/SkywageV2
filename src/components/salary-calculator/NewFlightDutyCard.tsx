@@ -64,7 +64,9 @@ export function NewFlightDutyCard({
       return <TurnaroundCard {...commonProps} />;
 
     case 'off':
-      // Show off days only in roster comparison view
+    case 'rest':
+    case 'annual_leave':
+      // Show off/rest/annual leave days only in roster comparison view
       return showOffDays ? <OffDayCard flightDuty={flightDuty} /> : null;
 
     case 'asby':

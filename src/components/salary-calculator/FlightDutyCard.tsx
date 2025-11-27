@@ -356,7 +356,19 @@ export function FlightDutyCard({
         return {
           ...baseConfig,
           icon: Calendar,
-          label: 'Ground'
+          label: 'Off'
+        };
+      case 'rest':
+        return {
+          ...baseConfig,
+          icon: Calendar,
+          label: 'Rest'
+        };
+      case 'annual_leave':
+        return {
+          ...baseConfig,
+          icon: Calendar,
+          label: 'Annual Leave'
         };
       default:
         return {

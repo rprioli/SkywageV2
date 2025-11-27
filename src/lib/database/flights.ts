@@ -17,6 +17,8 @@ type FlightInsert = Database['public']['Tables']['flights']['Insert'];
  * Populates both old and new schema columns for backward compatibility
  */
 function flightDutyToInsert(flightDuty: FlightDuty, userId: string): FlightInsert {
+  // Note: duty_type is cast to the database type which may be updated via migration
+  // to include new types like 'rest' and 'annual_leave'
   const insertData: FlightInsert = {
     user_id: userId,
     date: flightDuty.date.toISOString().split('T')[0], // YYYY-MM-DD format
@@ -30,7 +32,7 @@ function flightDutyToInsert(flightDuty: FlightDuty, userId: string): FlightInser
     // New schema columns (salary calculator)
     flight_numbers: flightDuty.flightNumbers,
     sectors: flightDuty.sectors,
-    duty_type: flightDuty.dutyType,
+    duty_type: flightDuty.dutyType as FlightInsert['duty_type'],
     report_time: formatTimeValue(flightDuty.reportTime),
     debrief_time: formatTimeValue(flightDuty.debriefTime),
     duty_hours: flightDuty.dutyHours,
