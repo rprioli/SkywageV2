@@ -189,6 +189,23 @@ export function calculateFlightDuty(
   const warnings: string[] = [];
 
   try {
+    // Skip calculation for off days and home standby - they have no duty hours or pay
+    if (flightDuty.dutyType === 'off' || flightDuty.dutyType === 'sby') {
+      return {
+        flightDuty: {
+          ...flightDuty,
+          dutyHours: 0,
+          flightPay: 0
+        },
+        calculationDetails: {
+          dutyHours: 0,
+          flightPay: 0
+        },
+        errors: [],
+        warnings: []
+      };
+    }
+
     // Calculate duty hours
     const dutyHours = calculateDutyHours(flightDuty);
     
@@ -249,10 +266,7 @@ export function calculateFlightDuty(
         flightPay = calculateBusinessPromotionPay(position, calculationYear, calculationMonth);
         break;
 
-      case 'sby':
-      case 'off':
-        // No payment for standby or off days
-        break;
+      // Note: 'sby' and 'off' are handled by early return at the start of this function
 
       default:
         errors.push(`Unknown duty type: ${flightDuty.dutyType}`);
@@ -485,9 +499,9 @@ export function calculateMonthlySalary(
 
   // Variable components
   // Only count duty hours for actual flight duties (turnaround, layover, asby)
-  // Exclude recurrent, business_promotion, and sby (Home Standby) from flight hours total
+  // Exclude recurrent, business_promotion, sby (Home Standby), and off days from flight hours total
   let totalDutyHours = flightDuties
-    .filter(flight => !['recurrent', 'business_promotion', 'sby'].includes(flight.dutyType))
+    .filter(flight => !['recurrent', 'business_promotion', 'sby', 'off'].includes(flight.dutyType))
     .reduce((sum, flight) => sum + flight.dutyHours, 0);
 
   // Apply precision adjustment to match Excel calculations
