@@ -2,6 +2,24 @@
 
 This document describes how we will redesign the Friends experience (left-hand friend list + roster comparison grid) in safe, reviewable phases. Each phase produces a feature branch, a focused PR, and a manual QA gate performed by the user before we move forward. Lint must pass at the end of every phase.
 
+## ✅ PROGRESS UPDATE (Nov 27, 2025)
+
+**Phases 1-3 COMPLETE and MERGED to main**
+- ✅ Phase 1: Data & Context Enhancements - MERGED
+- ✅ Phase 2: Friend List Sidebar Component - MERGED  
+- ✅ Phase 3: Friends Page Layout Integration - MERGED
+- ⏳ Phase 4: Roster Comparison Grid Redesign - PENDING
+- ⏳ Phase 5: Final QA & PR Handoff - PENDING
+
+**What's Live:**
+- Database migration applied (first_name, last_name, avatar_url in profiles)
+- FriendListSidebar component with search and avatar support
+- Integrated two-column layout on Friends page
+- All lint passing, TypeScript compiling, QA complete
+
+**Next Steps:**
+- Start Phase 4 when ready to redesign roster comparison grid (calendar-style)
+
 ---
 
 ## Guiding Principles & Constraints
@@ -46,7 +64,9 @@ This document describes how we will redesign the Friends experience (left-hand f
 
 ---
 
-### Phase 1 – Data & Context Enhancements
+### Phase 1 – Data & Context Enhancements ✅ COMPLETE
+
+**Status:** MERGED to main (Nov 27, 2025)
 
 **Goal:** Enrich friend data so UI work has everything it needs.
 
@@ -63,7 +83,9 @@ This document describes how we will redesign the Friends experience (left-hand f
 
 ---
 
-### Phase 2 – Friend List Sidebar Component
+### Phase 2 – Friend List Sidebar Component ✅ COMPLETE
+
+**Status:** MERGED to main (Nov 27, 2025)
 
 **Goal:** Implement the left-hand list with avatars/initials and selection UX.
 
@@ -84,7 +106,30 @@ This document describes how we will redesign the Friends experience (left-hand f
 
 ---
 
-### Phase 3 – Roster Comparison Grid Redesign
+### Phase 3 – Friends Page Layout Integration ✅ COMPLETE
+
+**Status:** MERGED to main (Nov 27, 2025)
+
+**Goal:** Wire the sidebar + roster comparison into the page layout.
+
+- Update `src/app/(dashboard)/friends/page.tsx`:
+  - Keep Add Friend + Pending Requests cards on top.
+  - Below, create responsive two-column layout:
+    - Left: `FriendListSidebar`.
+    - Right: Roster comparison canvas (shows prompting state when no friend selected).
+  - Ensure mobile view stacks vertically; provide fallback CTA on small screens.
+- Remove the old "Roster Comparison" card block triggered by `selectedFriend`.
+- Verify contexts and selection logic still work.
+
+**Definition of done**
+
+- Layout responsive across breakpoints (Tailwind classes).
+- Lint passes.
+- Manual QA: add friend, select friend, view roster grid, confirm nothing overlaps.
+
+---
+
+### Phase 4 – Roster Comparison Grid Redesign ⏳ PENDING
 
 **Goal:** Replace the dual-column card list with the calendar-style grid from the screenshot.
 
@@ -105,30 +150,9 @@ This document describes how we will redesign the Friends experience (left-hand f
 
 ---
 
-### Phase 4 – Friends Page Layout Integration
+### Phase 5 – Final QA & PR Handoff ⏳ PENDING
 
-**Goal:** Wire the sidebar + new grid into the page layout.
-
-- Update `src/app/(dashboard)/friends/page.tsx`:
-  - Keep Add Friend + Pending Requests cards on top.
-  - Below, create responsive two-column layout:
-    - Left: `FriendListSidebar`.
-    - Right: Roster comparison canvas (shows prompting state when no friend selected).
-  - Ensure mobile view stacks vertically; provide fallback CTA on small screens.
-- Remove the old “Roster Comparison” card block triggered by `selectedFriend`.
-- Verify contexts and selection logic still work.
-
-**Definition of done**
-
-- Layout responsive across breakpoints (Tailwind classes).
-- Lint passes.
-- Manual QA: add friend, select friend, view roster grid, confirm nothing overlaps.
-
----
-
-### Phase 5 – Final QA & PR Handoff
-
-**Goal:** Wrap up and prepare PR after user sign-off.
+**Goal:** Wrap up Phase 4 and prepare PR after user sign-off.
 
 - Run full lint/test suite (`pnpm lint`, `pnpm test` if applicable).
 - Capture screenshots/gifs for PR.
@@ -146,8 +170,43 @@ This document describes how we will redesign the Friends experience (left-hand f
 
 ---
 
-## Next Actions
+## Next Actions (For Resuming Development)
 
-1. Confirm this plan is approved.
-2. Start `feature/friends-phase-1-data`.
-3. Execute Phase 1 steps, run lint, deliver for review/QA.
+**Current State:**
+- ✅ Phases 1-3 are complete and merged to main
+- ✅ All local and remote branches cleaned up
+- ✅ Database migration applied
+- ✅ Friends page functional with new sidebar
+
+**To Resume Phase 4:**
+
+1. **Create new feature branch:**
+   ```bash
+   git checkout main
+   git pull origin main
+   git checkout -b feature/friends-phase-4-grid-redesign
+   ```
+
+2. **Review Phase 4 requirements above** - Focus on calendar-style roster comparison grid
+
+3. **Key files to modify:**
+   - `src/components/friends/RosterComparison.tsx` - Main redesign target
+   - Create new grid components as needed (e.g., `FlightTile.tsx`, `OffDayTile.tsx`)
+   - Create utilities for day generation and mapping duties per day
+
+4. **Execute Phase 4:**
+   - Build calendar-style grid with day/user/friend columns
+   - Implement compact duty tiles with colors/icons
+   - Update header with avatars and month controls
+   - Ensure dates align properly across columns
+   - Run lint and QA
+
+5. **After Phase 4 complete:**
+   - Run Phase 5 (final QA)
+   - Create PR similar to Phases 1-3
+   - Merge and celebrate! 🎉
+
+**Reference Documentation:**
+- `docs/phase-1-summary.md` - Data layer implementation details
+- `docs/phase-2-summary.md` - Sidebar component details
+- `docs/phase-1-completion.md` - QA verification checklist
