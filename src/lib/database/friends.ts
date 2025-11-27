@@ -18,6 +18,9 @@ export interface FriendWithProfile {
   airline: string;
   position: 'CCM' | 'SCCM';
   nationality?: string;
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string;
   status: 'pending' | 'accepted' | 'rejected';
   createdAt: string;
   respondedAt: string | null;
@@ -31,6 +34,9 @@ export interface PendingRequest {
   airline: string;
   position: 'CCM' | 'SCCM';
   nationality?: string;
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string;
   createdAt: string;
   type: 'sent' | 'received';
 }
@@ -123,6 +129,9 @@ export async function getFriendsForUser(
         airline: profile?.airline || '',
         position: profile?.position || 'CCM',
         nationality: profile?.nationality,
+        firstName: profile?.first_name,
+        lastName: profile?.last_name,
+        avatarUrl: profile?.avatar_url,
         status: friendship.status as 'pending' | 'accepted' | 'rejected',
         createdAt: friendship.created_at,
         respondedAt: friendship.responded_at,
@@ -195,6 +204,9 @@ export async function getPendingFriendRequests(
         airline: profile?.airline || '',
         position: profile?.position || 'CCM',
         nationality: profile?.nationality,
+        firstName: profile?.first_name,
+        lastName: profile?.last_name,
+        avatarUrl: profile?.avatar_url,
         createdAt: friendship.created_at,
         type: 'sent' as const,
       };
@@ -210,6 +222,9 @@ export async function getPendingFriendRequests(
         airline: profile?.airline || '',
         position: profile?.position || 'CCM',
         nationality: profile?.nationality,
+        firstName: profile?.first_name,
+        lastName: profile?.last_name,
+        avatarUrl: profile?.avatar_url,
         createdAt: friendship.created_at,
         type: 'received' as const,
       };
@@ -415,5 +430,36 @@ export async function getPendingRequestsCount(
     console.error('Error fetching pending requests count:', error);
     return { data: null, error: (error as Error).message };
   }
+}
+
+/**
+ * Get display name for a friend
+ * Returns "First Last" if available, otherwise falls back to email
+ */
+export function getFriendDisplayName(friend: FriendWithProfile | PendingRequest): string {
+  if (friend.firstName && friend.lastName) {
+    return `${friend.firstName} ${friend.lastName}`;
+  }
+  if (friend.firstName) {
+    return friend.firstName;
+  }
+  if (friend.lastName) {
+    return friend.lastName;
+  }
+  return friend.email;
+}
+
+/**
+ * Get initial letter for a friend's avatar
+ * Returns first letter of first name, or first letter of email if name not available
+ */
+export function getFriendInitial(friend: FriendWithProfile | PendingRequest): string {
+  if (friend.firstName) {
+    return friend.firstName.charAt(0).toUpperCase();
+  }
+  if (friend.lastName) {
+    return friend.lastName.charAt(0).toUpperCase();
+  }
+  return friend.email.charAt(0).toUpperCase();
 }
 
