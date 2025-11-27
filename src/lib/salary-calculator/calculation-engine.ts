@@ -266,10 +266,7 @@ export function calculateFlightDuty(
         flightPay = calculateBusinessPromotionPay(position, calculationYear, calculationMonth);
         break;
 
-      case 'sby':
-      case 'off':
-        // No payment for standby or off days
-        break;
+      // Note: 'sby' and 'off' are handled by early return at the start of this function
 
       default:
         errors.push(`Unknown duty type: ${flightDuty.dutyType}`);
