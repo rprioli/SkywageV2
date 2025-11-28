@@ -9,25 +9,53 @@
 import React from 'react';
 import { Home } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { TilePosition } from '@/lib/roster-comparison';
 
 interface OffDayTileProps {
   label?: string;
+  position?: TilePosition;
   className?: string;
 }
 
 /**
  * Off day tile - outlined style with green house icon
- * Content centered like FlightTile
+ * Supports position-based corner rounding for consecutive off days
  */
 export function OffDayTile({
   label = 'OFF',
+  position = 'single',
   className,
 }: OffDayTileProps) {
+  // Determine border radius based on position in consecutive group
+  const borderRadiusClasses = cn({
+    'rounded-lg': position === 'single',
+    'rounded-t-lg rounded-b-none': position === 'start',
+    'rounded-none': position === 'middle',
+    'rounded-b-lg rounded-t-none': position === 'end',
+  });
+
+  // Border styling based on position for seamless connection
+  // - single: all borders
+  // - start: all borders except bottom (connects downward)
+  // - middle: left/right borders only (connects both ways)
+  // - end: all borders except top (connects upward)
+  const borderClasses = cn(
+    'border-gray-300',
+    {
+      'border-2': position === 'single',
+      'border-l-2 border-r-2 border-t-2 border-b-0': position === 'start',
+      'border-l-2 border-r-2 border-t-0 border-b-0': position === 'middle',
+      'border-l-2 border-r-2 border-t-0 border-b-2': position === 'end',
+    }
+  );
+
   return (
     <div
       className={cn(
         'flex h-full min-h-[48px] sm:min-h-[60px] items-center justify-center gap-2 sm:gap-4 px-2 py-2 sm:px-4 sm:py-3',
-        'rounded-lg border-2 border-gray-300 bg-white',
+        'bg-white',
+        borderRadiusClasses,
+        borderClasses,
         className
       )}
     >

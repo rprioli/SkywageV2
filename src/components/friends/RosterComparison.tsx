@@ -6,13 +6,13 @@
  * Phase 4 - Design alignment with Dashboard page
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, X, Search, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FlightDuty } from '@/types/salary-calculator';
 import { useAuth } from '@/contexts/AuthProvider';
 import { FriendWithProfile, getFriendDisplayName, getFriendInitial } from '@/lib/database/friends';
-import { createMonthGrid, MonthGridData, DayWithDuties } from '@/lib/roster-comparison';
+import { createMonthGrid, MonthGridData, DayWithDuties, TilePosition } from '@/lib/roster-comparison';
 import { DutyTile } from './roster-tiles';
 import { DutyTileData } from '@/lib/roster-comparison';
 import { DutyType } from '@/types/salary-calculator';
@@ -64,19 +64,85 @@ function getConnectionCategory(duty: DutyTileData | null): ConnectionCategory {
 }
 
 /**
- * Check if two duties should connect (same connection category)
- * Rest and empty never connect
+ * Check if a category can connect (rest and empty never connect)
  */
-function shouldConnect(currentDuty: DutyTileData | null, previousDuty: DutyTileData | null): boolean {
-  const currentCategory = getConnectionCategory(currentDuty);
-  const previousCategory = getConnectionCategory(previousDuty);
+function canConnect(category: ConnectionCategory): boolean {
+  return category !== 'rest' && category !== 'empty';
+}
+
+/**
+ * Processed day data with pre-calculated group positions
+ */
+interface ProcessedDayData extends DayWithDuties {
+  userGroupPosition: TilePosition;
+  friendGroupPosition: TilePosition;
+}
+
+/**
+ * Calculate group positions for consecutive duties in the same category
+ * This enables seamless tile connections like multi-day layovers
+ */
+function calculateGroupPositions(days: DayWithDuties[]): ProcessedDayData[] {
+  return days.map((dayData, index) => {
+    const prevDay = index > 0 ? days[index - 1] : null;
+    const nextDay = index < days.length - 1 ? days[index + 1] : null;
+    
+    // Calculate user group position
+    const userGroupPosition = calculatePositionForDuty(
+      dayData.userDuty,
+      prevDay?.userDuty ?? null,
+      nextDay?.userDuty ?? null
+    );
+    
+    // Calculate friend group position
+    const friendGroupPosition = calculatePositionForDuty(
+      dayData.friendDuty,
+      prevDay?.friendDuty ?? null,
+      nextDay?.friendDuty ?? null
+    );
+    
+    return {
+      ...dayData,
+      userGroupPosition,
+      friendGroupPosition,
+    };
+  });
+}
+
+/**
+ * Calculate the position of a duty within a consecutive group
+ */
+function calculatePositionForDuty(
+  current: DutyTileData | null,
+  prev: DutyTileData | null,
+  next: DutyTileData | null
+): TilePosition {
+  // If it's already a multi-day duty (layover), don't override its position
+  if (current?.isMultiDay) {
+    return current.position || 'single';
+  }
   
-  // Rest and empty never connect
-  if (currentCategory === 'rest' || currentCategory === 'empty') return false;
-  if (previousCategory === 'rest' || previousCategory === 'empty') return false;
+  const currentCategory = getConnectionCategory(current);
+  const prevCategory = getConnectionCategory(prev);
+  const nextCategory = getConnectionCategory(next);
   
-  // Connect if same category
-  return currentCategory === previousCategory;
+  // If current can't connect, it's always single
+  if (!canConnect(currentCategory)) {
+    return 'single';
+  }
+  
+  const connectsToPrev = canConnect(prevCategory) && currentCategory === prevCategory;
+  const connectsToNext = canConnect(nextCategory) && currentCategory === nextCategory;
+  
+  if (connectsToPrev && connectsToNext) {
+    return 'middle';
+  } else if (connectsToPrev && !connectsToNext) {
+    return 'end';
+  } else if (!connectsToPrev && connectsToNext) {
+    return 'start';
+  }
+  
+  return 'single';
 }
 
 interface RosterComparisonProps {
@@ -314,15 +380,7 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
         )}
 
         {!loading && !error && gridData && (
-          <div className="px-2 sm:px-4 py-2">
-            {gridData.days.map((dayData, index) => (
-              <DayRow 
-                key={dayData.day.dayNumber} 
-                dayData={dayData}
-                previousDayData={index > 0 ? gridData.days[index - 1] : null}
-              />
-            ))}
-          </div>
+          <DayGrid days={gridData.days} />
         )}
 
         {!loading && !error && gridData && gridData.userDutyCount === 0 && gridData.friendDutyCount === 0 && (
@@ -340,42 +398,45 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
 }
 
 /**
- * Day Row Component
- * Renders a single day with date column + user/friend duty tiles
- * Handles multi-day flight connections and consecutive duty connections
+ * Day Grid Component
+ * Pre-calculates group positions and renders all day rows
  */
-interface DayRowProps {
-  dayData: DayWithDuties;
-  previousDayData: DayWithDuties | null;
+interface DayGridProps {
+  days: DayWithDuties[];
 }
 
-function DayRow({ dayData, previousDayData }: DayRowProps) {
-  const { day, userDuty, friendDuty } = dayData;
-
-  // Check if this row is part of a multi-day flight (for tile padding adjustments)
-  const userIsMultiDayEnd = userDuty?.isMultiDay && userDuty?.position === 'end';
-  const userIsMultiDayStart = userDuty?.isMultiDay && userDuty?.position === 'start';
-  const userIsMultiDayMiddle = userDuty?.isMultiDay && userDuty?.position === 'middle';
-  const friendIsMultiDayEnd = friendDuty?.isMultiDay && friendDuty?.position === 'end';
-  const friendIsMultiDayStart = friendDuty?.isMultiDay && friendDuty?.position === 'start';
-  const friendIsMultiDayMiddle = friendDuty?.isMultiDay && friendDuty?.position === 'middle';
-
-  // Check if this row should connect to the previous row based on connection categories
-  // User duties connect if same category (work-work, off-off, leave-leave)
-  const userConnectsToPrevious = previousDayData 
-    ? shouldConnect(userDuty, previousDayData.userDuty)
-    : false;
+function DayGrid({ days }: DayGridProps) {
+  // Memoize the processed days with group positions
+  const processedDays = useMemo(() => calculateGroupPositions(days), [days]);
   
-  // Friend duties connect if same category
-  const friendConnectsToPrevious = previousDayData
-    ? shouldConnect(friendDuty, previousDayData.friendDuty)
-    : false;
+  return (
+    <div className="px-2 sm:px-4 py-2">
+      {processedDays.map((dayData) => (
+        <DayRow 
+          key={dayData.day.dayNumber} 
+          dayData={dayData}
+        />
+      ))}
+    </div>
+  );
+}
 
-  // Row should have no padding if either column connects to previous
-  const isMultiDayConnected = userIsMultiDayStart || userIsMultiDayMiddle || userIsMultiDayEnd || 
-                              friendIsMultiDayStart || friendIsMultiDayMiddle || friendIsMultiDayEnd;
-  const isConsecutiveConnected = userConnectsToPrevious || friendConnectsToPrevious;
-  const isConnectedRow = isMultiDayConnected || isConsecutiveConnected;
+/**
+ * Day Row Component
+ * Renders a single day with date column + user/friend duty tiles
+ * Uses pre-calculated group positions for seamless tile connections
+ */
+interface DayRowProps {
+  dayData: ProcessedDayData;
+}
+
+function DayRow({ dayData }: DayRowProps) {
+  const { day, userDuty, friendDuty, userGroupPosition, friendGroupPosition } = dayData;
+
+  // Determine if row has connected tiles (requires no padding between rows)
+  const userIsConnected = userGroupPosition !== 'single';
+  const friendIsConnected = friendGroupPosition !== 'single';
+  const isConnectedRow = userIsConnected || friendIsConnected;
 
   return (
     <div
@@ -393,23 +454,13 @@ function DayRow({ dayData, previousDayData }: DayRowProps) {
       </div>
 
       {/* User duty tile */}
-      <div className={cn(
-        'min-h-[48px] sm:min-h-[60px]',
-        userIsMultiDayStart && 'pb-0',
-        userIsMultiDayMiddle && 'py-0',
-        userIsMultiDayEnd && 'pt-0'
-      )}>
-        <DutyTile tile={userDuty} />
+      <div className="min-h-[48px] sm:min-h-[60px]">
+        <DutyTile tile={userDuty} groupPosition={userGroupPosition} />
       </div>
 
       {/* Friend duty tile */}
-      <div className={cn(
-        'min-h-[48px] sm:min-h-[60px]',
-        friendIsMultiDayStart && 'pb-0',
-        friendIsMultiDayMiddle && 'py-0',
-        friendIsMultiDayEnd && 'pt-0'
-      )}>
-        <DutyTile tile={friendDuty} />
+      <div className="min-h-[48px] sm:min-h-[60px]">
+        <DutyTile tile={friendDuty} groupPosition={friendGroupPosition} />
       </div>
     </div>
   );
