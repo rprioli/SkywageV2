@@ -341,9 +341,17 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
 
           {/* User avatar column */}
           <div className="flex flex-col items-center">
-            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
-              <span className="text-base sm:text-lg font-semibold text-white">{getUserInitial()}</span>
-            </div>
+            {user?.user_metadata?.avatar_url ? (
+              <img
+                src={user.user_metadata.avatar_url}
+                alt="You"
+                className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover"
+              />
+            ) : (
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
+                <span className="text-base sm:text-lg font-semibold text-white">{getUserInitial()}</span>
+              </div>
+            )}
             <span className="mt-1 sm:mt-1.5 text-responsive-xs font-medium text-gray-600">You</span>
           </div>
 
@@ -353,10 +361,10 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
               <img
                 src={friend.avatarUrl}
                 alt={friendDisplayName}
-                className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl object-cover"
+                className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover"
               />
             ) : (
-              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
                 <span className="text-base sm:text-lg font-semibold text-white">{friendInitial}</span>
               </div>
             )}
