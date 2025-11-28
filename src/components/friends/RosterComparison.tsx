@@ -6,15 +6,144 @@
  * Phase 4 - Design alignment with Dashboard page
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, X, Search, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FlightDuty } from '@/types/salary-calculator';
 import { useAuth } from '@/contexts/AuthProvider';
 import { FriendWithProfile, getFriendDisplayName, getFriendInitial } from '@/lib/database/friends';
-import { createMonthGrid, MonthGridData, DayWithDuties } from '@/lib/roster-comparison';
+import { createMonthGrid, MonthGridData, DayWithDuties, TilePosition } from '@/lib/roster-comparison';
 import { DutyTile } from './roster-tiles';
+import { DutyTileData } from '@/lib/roster-comparison';
+import { DutyType } from '@/types/salary-calculator';
 import { cn } from '@/lib/utils';
+
+/**
+ * Connection category for determining which rows should connect without gaps
+ * - 'work': Flight duties and ground duties connect with each other
+ * - 'off': Days off connect only with other days off
+ * - 'rest': Rest never connects (always isolated)
+ * - 'annual_leave': Annual leave connects only with other annual leave
+ * - 'empty': No duty (never connects)
+ */
+type ConnectionCategory = 'work' | 'off' | 'rest' | 'annual_leave' | 'empty';
+
+/**
+ * Get the connection category for a duty type
+ */
+function getConnectionCategory(duty: DutyTileData | null): ConnectionCategory {
+  if (!duty) return 'empty';
+  
+  const dutyType: DutyType = duty.dutyType;
+  
+  switch (dutyType) {
+    // Work duties - flights and ground duties connect with each other
+    case 'turnaround':
+    case 'layover':
+    case 'asby':
+    case 'sby':
+    case 'recurrent':
+    case 'business_promotion':
+      return 'work';
+    
+    // Days off - connect only with other days off
+    case 'off':
+      return 'off';
+    
+    // Rest - never connects
+    case 'rest':
+      return 'rest';
+    
+    // Annual leave - connects only with other annual leave
+    case 'annual_leave':
+      return 'annual_leave';
+    
+    default:
+      return 'empty';
+  }
+}
+
+/**
+ * Check if a category can connect (rest and empty never connect)
+ */
+function canConnect(category: ConnectionCategory): boolean {
+  return category !== 'rest' && category !== 'empty';
+}
+
+/**
+ * Processed day data with pre-calculated group positions
+ */
+interface ProcessedDayData extends DayWithDuties {
+  userGroupPosition: TilePosition;
+  friendGroupPosition: TilePosition;
+}
+
+/**
+ * Calculate group positions for consecutive duties in the same category
+ * This enables seamless tile connections like multi-day layovers
+ */
+function calculateGroupPositions(days: DayWithDuties[]): ProcessedDayData[] {
+  return days.map((dayData, index) => {
+    const prevDay = index > 0 ? days[index - 1] : null;
+    const nextDay = index < days.length - 1 ? days[index + 1] : null;
+    
+    // Calculate user group position
+    const userGroupPosition = calculatePositionForDuty(
+      dayData.userDuty,
+      prevDay?.userDuty ?? null,
+      nextDay?.userDuty ?? null
+    );
+    
+    // Calculate friend group position
+    const friendGroupPosition = calculatePositionForDuty(
+      dayData.friendDuty,
+      prevDay?.friendDuty ?? null,
+      nextDay?.friendDuty ?? null
+    );
+    
+    return {
+      ...dayData,
+      userGroupPosition,
+      friendGroupPosition,
+    };
+  });
+}
+
+/**
+ * Calculate the position of a duty within a consecutive group
+ */
+function calculatePositionForDuty(
+  current: DutyTileData | null,
+  prev: DutyTileData | null,
+  next: DutyTileData | null
+): TilePosition {
+  // If it's already a multi-day duty (layover), don't override its position
+  if (current?.isMultiDay) {
+    return current.position || 'single';
+  }
+  
+  const currentCategory = getConnectionCategory(current);
+  const prevCategory = getConnectionCategory(prev);
+  const nextCategory = getConnectionCategory(next);
+  
+  // If current can't connect, it's always single
+  if (!canConnect(currentCategory)) {
+    return 'single';
+  }
+  
+  const connectsToPrev = canConnect(prevCategory) && currentCategory === prevCategory;
+  const connectsToNext = canConnect(nextCategory) && currentCategory === nextCategory;
+  
+  if (connectsToPrev && connectsToNext) {
+    return 'middle';
+  } else if (connectsToPrev && !connectsToNext) {
+    return 'end';
+  } else if (!connectsToPrev && connectsToNext) {
+    return 'start';
+  }
+  
+  return 'single';
+}
 
 interface RosterComparisonProps {
   friend: FriendWithProfile;
@@ -204,18 +333,18 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
         </div>
       </div>
 
-      {/* Avatar headers - sticky column headers, scrollable on mobile */}
-      <div className="flex-shrink-0 bg-gray-50/50 overflow-x-auto">
-        <div className="grid min-w-[400px] grid-cols-[80px_1fr_1fr] gap-2 px-4 py-3">
+      {/* Avatar headers - sticky column headers, responsive grid */}
+      <div className="flex-shrink-0 bg-gray-50/50">
+        <div className="grid grid-cols-[50px_1fr_1fr] sm:grid-cols-[70px_1fr_1fr] gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3">
           {/* Empty space for date column */}
           <div />
 
           {/* User avatar column */}
           <div className="flex flex-col items-center">
-            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
-              <span className="text-lg font-semibold text-white">{getUserInitial()}</span>
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
+              <span className="text-base sm:text-lg font-semibold text-white">{getUserInitial()}</span>
             </div>
-            <span className="mt-1.5 text-responsive-xs font-medium text-gray-600">You</span>
+            <span className="mt-1 sm:mt-1.5 text-responsive-xs font-medium text-gray-600">You</span>
           </div>
 
           {/* Friend avatar column */}
@@ -224,38 +353,34 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
               <img
                 src={friend.avatarUrl}
                 alt={friendDisplayName}
-                className="h-12 w-12 rounded-xl object-cover"
+                className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl object-cover"
               />
             ) : (
-              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
-                <span className="text-lg font-semibold text-white">{friendInitial}</span>
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
+                <span className="text-base sm:text-lg font-semibold text-white">{friendInitial}</span>
               </div>
             )}
-            <span className="mt-1.5 text-responsive-xs font-medium text-gray-600">{friend.firstName || friendDisplayName}</span>
+            <span className="mt-1 sm:mt-1.5 text-responsive-xs font-medium text-gray-600 truncate max-w-full">{friend.firstName || friendDisplayName}</span>
           </div>
         </div>
       </div>
 
-      {/* Grid content - scrollable on mobile */}
-      <div className="flex-1 overflow-y-auto overflow-x-auto">
+      {/* Grid content - responsive layout */}
+      <div className="flex-1 overflow-y-auto">
         {loading && (
-          <div className="min-w-[400px] px-4 py-2">
+          <div className="px-2 sm:px-4 py-2">
             <LoadingSkeleton />
           </div>
         )}
 
         {error && (
-          <div className="mx-4 my-4 rounded-2xl bg-red-50 p-4 text-responsive-sm text-red-700">
+          <div className="mx-2 sm:mx-4 my-4 rounded-2xl bg-red-50 p-4 text-responsive-sm text-red-700">
             {error}
           </div>
         )}
 
         {!loading && !error && gridData && (
-          <div className="min-w-[400px] px-4 py-2">
-            {gridData.days.map((dayData) => (
-              <DayRow key={dayData.day.dayNumber} dayData={dayData} />
-            ))}
-          </div>
+          <DayGrid days={gridData.days} />
         )}
 
         {!loading && !error && gridData && gridData.userDutyCount === 0 && gridData.friendDutyCount === 0 && (
@@ -273,58 +398,100 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
 }
 
 /**
+ * Day Grid Component
+ * Pre-calculates group positions and renders all day rows
+ */
+interface DayGridProps {
+  days: DayWithDuties[];
+}
+
+function DayGrid({ days }: DayGridProps) {
+  // Memoize the processed days with group positions
+  const processedDays = useMemo(() => calculateGroupPositions(days), [days]);
+  
+  return (
+    <div className="px-2 sm:px-4 py-2">
+      {processedDays.map((dayData) => (
+        <DayRow 
+          key={dayData.day.dayNumber} 
+          dayData={dayData}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
  * Day Row Component
  * Renders a single day with date column + user/friend duty tiles
- * Handles multi-day flight connections with reduced spacing
+ * Uses pre-calculated group positions for seamless tile connections
  */
 interface DayRowProps {
-  dayData: DayWithDuties;
+  dayData: ProcessedDayData;
 }
 
 function DayRow({ dayData }: DayRowProps) {
-  const { day, userDuty, friendDuty } = dayData;
+  const { day, userDuty, friendDuty, userGroupPosition, friendGroupPosition } = dayData;
 
-  // Check if this row is part of a multi-day flight (for spacing adjustments)
-  const userIsMultiDayEnd = userDuty?.isMultiDay && userDuty?.position === 'end';
-  const userIsMultiDayStart = userDuty?.isMultiDay && userDuty?.position === 'start';
-  const friendIsMultiDayEnd = friendDuty?.isMultiDay && friendDuty?.position === 'end';
-  const friendIsMultiDayStart = friendDuty?.isMultiDay && friendDuty?.position === 'start';
+  // Helper to get container margin classes based on position
+  // Each container handles its own vertical spacing INDEPENDENTLY
+  // - 'single': Has margin top AND bottom (for gaps with neighbors)
+  // - 'start': Has margin top (gap above), NO margin bottom (connects to next)
+  // - 'middle': NO margins (connects both ways)
+  // - 'end': NO margin top (connects to prev), HAS margin bottom (gap below)
+  const getContainerMargin = (position: TilePosition) => {
+    switch (position) {
+      case 'single':
+        return 'my-0.5 sm:my-1'; // Gap above and below
+      case 'start':
+        return 'mt-0.5 sm:mt-1 mb-0'; // Gap above, connects below
+      case 'middle':
+        return 'my-0'; // Connects both ways
+      case 'end':
+        return 'mt-0 mb-0.5 sm:mb-1'; // Connects above, gap below
+      default:
+        return 'my-0.5 sm:my-1';
+    }
+  };
 
-  // Reduce vertical padding when tiles need to connect
-  const isConnectedRow = userIsMultiDayStart || userIsMultiDayEnd || 
-                         friendIsMultiDayStart || friendIsMultiDayEnd;
+  // Negative margin for overlap - applied per container when connecting to previous
+  const getContainerOverlap = (position: TilePosition) => {
+    if (position === 'middle' || position === 'end') {
+      return '-mt-[1px]'; // Overlap to hide seam with previous tile
+    }
+    return '';
+  };
 
   return (
     <div
       className={cn(
-        'grid grid-cols-[80px_1fr_1fr] gap-2',
-        isConnectedRow ? 'py-0' : 'py-1',
+        'grid grid-cols-[50px_1fr_1fr] sm:grid-cols-[70px_1fr_1fr] gap-1 sm:gap-2',
         day.isWeekend && 'bg-gray-50/50'
       )}
     >
-      {/* Date column */}
-      <div className="flex flex-col items-center justify-center py-2">
-        <span className="text-xs font-medium text-gray-500">{day.dayName}</span>
-        <span className="text-2xl font-bold text-gray-900">{day.dayNumber}</span>
-        <span className="text-xs text-gray-400">{day.monthAbbrev}</span>
+      {/* Date column - compact on mobile */}
+      <div className="flex flex-col items-center justify-center py-1 sm:py-2">
+        <span className="text-[10px] sm:text-xs font-medium text-gray-500">{day.dayName}</span>
+        <span className="text-lg sm:text-2xl font-bold text-gray-900">{day.dayNumber}</span>
+        <span className="text-[10px] sm:text-xs text-gray-400">{day.monthAbbrev}</span>
       </div>
 
-      {/* User duty tile */}
+      {/* User duty tile - container margin based on its own position */}
       <div className={cn(
-        'min-h-[60px]',
-        userIsMultiDayStart && 'pb-0',
-        userIsMultiDayEnd && 'pt-0'
+        'min-h-[48px] sm:min-h-[60px]',
+        getContainerMargin(userGroupPosition),
+        getContainerOverlap(userGroupPosition)
       )}>
-        <DutyTile tile={userDuty} />
+        <DutyTile tile={userDuty} groupPosition={userGroupPosition} />
       </div>
 
-      {/* Friend duty tile */}
+      {/* Friend duty tile - container margin based on its own position */}
       <div className={cn(
-        'min-h-[60px]',
-        friendIsMultiDayStart && 'pb-0',
-        friendIsMultiDayEnd && 'pt-0'
+        'min-h-[48px] sm:min-h-[60px]',
+        getContainerMargin(friendGroupPosition),
+        getContainerOverlap(friendGroupPosition)
       )}>
-        <DutyTile tile={friendDuty} />
+        <DutyTile tile={friendDuty} groupPosition={friendGroupPosition} />
       </div>
     </div>
   );
@@ -336,19 +503,19 @@ function DayRow({ dayData }: DayRowProps) {
  */
 function LoadingSkeleton() {
   return (
-    <div className="space-y-1">
+    <div className="space-y-0.5 sm:space-y-1">
       {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-        <div key={i} className="grid grid-cols-[80px_1fr_1fr] gap-2 py-1">
+        <div key={i} className="grid grid-cols-[50px_1fr_1fr] sm:grid-cols-[70px_1fr_1fr] gap-1 sm:gap-2 py-0.5 sm:py-1">
           {/* Date skeleton */}
-          <div className="flex flex-col items-center justify-center py-2">
-            <div className="h-3 w-8 animate-pulse rounded-lg bg-gray-100" />
-            <div className="mt-1 h-7 w-6 animate-pulse rounded-lg bg-gray-100" />
-            <div className="mt-1 h-3 w-8 animate-pulse rounded-lg bg-gray-100" />
+          <div className="flex flex-col items-center justify-center py-1 sm:py-2">
+            <div className="h-2.5 sm:h-3 w-4 sm:w-8 animate-pulse rounded-lg bg-gray-100" />
+            <div className="mt-1 h-5 sm:h-7 w-5 sm:w-6 animate-pulse rounded-lg bg-gray-100" />
+            <div className="mt-1 h-2.5 sm:h-3 w-6 sm:w-8 animate-pulse rounded-lg bg-gray-100" />
           </div>
           {/* User tile skeleton */}
-          <div className="min-h-[60px] animate-pulse rounded-xl bg-gray-100" />
+          <div className="min-h-[48px] sm:min-h-[60px] animate-pulse rounded-xl bg-gray-100" />
           {/* Friend tile skeleton */}
-          <div className="min-h-[60px] animate-pulse rounded-xl bg-gray-100" />
+          <div className="min-h-[48px] sm:min-h-[60px] animate-pulse rounded-xl bg-gray-100" />
         </div>
       ))}
     </div>
