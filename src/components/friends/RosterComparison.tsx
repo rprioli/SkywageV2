@@ -14,7 +14,70 @@ import { useAuth } from '@/contexts/AuthProvider';
 import { FriendWithProfile, getFriendDisplayName, getFriendInitial } from '@/lib/database/friends';
 import { createMonthGrid, MonthGridData, DayWithDuties } from '@/lib/roster-comparison';
 import { DutyTile } from './roster-tiles';
+import { DutyTileData } from '@/lib/roster-comparison';
+import { DutyType } from '@/types/salary-calculator';
 import { cn } from '@/lib/utils';
+
+/**
+ * Connection category for determining which rows should connect without gaps
+ * - 'work': Flight duties and ground duties connect with each other
+ * - 'off': Days off connect only with other days off
+ * - 'rest': Rest never connects (always isolated)
+ * - 'annual_leave': Annual leave connects only with other annual leave
+ * - 'empty': No duty (never connects)
+ */
+type ConnectionCategory = 'work' | 'off' | 'rest' | 'annual_leave' | 'empty';
+
+/**
+ * Get the connection category for a duty type
+ */
+function getConnectionCategory(duty: DutyTileData | null): ConnectionCategory {
+  if (!duty) return 'empty';
+  
+  const dutyType: DutyType = duty.dutyType;
+  
+  switch (dutyType) {
+    // Work duties - flights and ground duties connect with each other
+    case 'turnaround':
+    case 'layover':
+    case 'asby':
+    case 'sby':
+    case 'recurrent':
+    case 'business_promotion':
+      return 'work';
+    
+    // Days off - connect only with other days off
+    case 'off':
+      return 'off';
+    
+    // Rest - never connects
+    case 'rest':
+      return 'rest';
+    
+    // Annual leave - connects only with other annual leave
+    case 'annual_leave':
+      return 'annual_leave';
+    
+    default:
+      return 'empty';
+  }
+}
+
+/**
+ * Check if two duties should connect (same connection category)
+ * Rest and empty never connect
+ */
+function shouldConnect(currentDuty: DutyTileData | null, previousDuty: DutyTileData | null): boolean {
+  const currentCategory = getConnectionCategory(currentDuty);
+  const previousCategory = getConnectionCategory(previousDuty);
+  
+  // Rest and empty never connect
+  if (currentCategory === 'rest' || currentCategory === 'empty') return false;
+  if (previousCategory === 'rest' || previousCategory === 'empty') return false;
+  
+  // Connect if same category
+  return currentCategory === previousCategory;
+}
 
 interface RosterComparisonProps {
   friend: FriendWithProfile;
@@ -252,8 +315,12 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
 
         {!loading && !error && gridData && (
           <div className="px-2 sm:px-4 py-2">
-            {gridData.days.map((dayData) => (
-              <DayRow key={dayData.day.dayNumber} dayData={dayData} />
+            {gridData.days.map((dayData, index) => (
+              <DayRow 
+                key={dayData.day.dayNumber} 
+                dayData={dayData}
+                previousDayData={index > 0 ? gridData.days[index - 1] : null}
+              />
             ))}
           </div>
         )}
@@ -275,16 +342,17 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
 /**
  * Day Row Component
  * Renders a single day with date column + user/friend duty tiles
- * Handles multi-day flight connections with reduced spacing
+ * Handles multi-day flight connections and consecutive duty connections
  */
 interface DayRowProps {
   dayData: DayWithDuties;
+  previousDayData: DayWithDuties | null;
 }
 
-function DayRow({ dayData }: DayRowProps) {
+function DayRow({ dayData, previousDayData }: DayRowProps) {
   const { day, userDuty, friendDuty } = dayData;
 
-  // Check if this row is part of a multi-day flight (for spacing adjustments)
+  // Check if this row is part of a multi-day flight (for tile padding adjustments)
   const userIsMultiDayEnd = userDuty?.isMultiDay && userDuty?.position === 'end';
   const userIsMultiDayStart = userDuty?.isMultiDay && userDuty?.position === 'start';
   const userIsMultiDayMiddle = userDuty?.isMultiDay && userDuty?.position === 'middle';
@@ -292,9 +360,22 @@ function DayRow({ dayData }: DayRowProps) {
   const friendIsMultiDayStart = friendDuty?.isMultiDay && friendDuty?.position === 'start';
   const friendIsMultiDayMiddle = friendDuty?.isMultiDay && friendDuty?.position === 'middle';
 
-  // Reduce vertical padding when tiles need to connect (start, middle, or end of multi-day)
-  const isConnectedRow = userIsMultiDayStart || userIsMultiDayMiddle || userIsMultiDayEnd || 
-                         friendIsMultiDayStart || friendIsMultiDayMiddle || friendIsMultiDayEnd;
+  // Check if this row should connect to the previous row based on connection categories
+  // User duties connect if same category (work-work, off-off, leave-leave)
+  const userConnectsToPrevious = previousDayData 
+    ? shouldConnect(userDuty, previousDayData.userDuty)
+    : false;
+  
+  // Friend duties connect if same category
+  const friendConnectsToPrevious = previousDayData
+    ? shouldConnect(friendDuty, previousDayData.friendDuty)
+    : false;
+
+  // Row should have no padding if either column connects to previous
+  const isMultiDayConnected = userIsMultiDayStart || userIsMultiDayMiddle || userIsMultiDayEnd || 
+                              friendIsMultiDayStart || friendIsMultiDayMiddle || friendIsMultiDayEnd;
+  const isConsecutiveConnected = userConnectsToPrevious || friendConnectsToPrevious;
+  const isConnectedRow = isMultiDayConnected || isConsecutiveConnected;
 
   return (
     <div
