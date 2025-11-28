@@ -52,7 +52,7 @@ export function FlightTile({
   return (
     <div
       className={cn(
-        'flex h-full min-h-[60px] items-center justify-center gap-4 px-4 py-3',
+        'flex h-full min-h-[48px] sm:min-h-[60px] items-center justify-center gap-2 sm:gap-4 px-2 py-2 sm:px-4 sm:py-3',
         'bg-[#4169E1] text-white', // Royal blue matching reference
         borderRadiusClasses,
         marginClasses,
@@ -61,18 +61,19 @@ export function FlightTile({
     >
       {showContent && (
         <>
-          {/* Airplane icon - centered */}
+          {/* Airplane icon - smaller on mobile */}
           <div className="flex-shrink-0">
-            <Plane className="h-5 w-5 rotate-45" fill="currentColor" />
+            <Plane className="h-4 w-4 sm:h-5 sm:w-5 rotate-45" fill="currentColor" />
           </div>
 
           {/* Airport code and flight number */}
           <div className="flex flex-col items-center text-center">
-            <span className="text-lg font-bold leading-tight">
+            <span className="text-base sm:text-lg font-bold leading-tight">
               {airportCode || 'FLT'}
             </span>
+            {/* Hide flight number on mobile for compact view */}
             {flightNumber && (
-              <span className="text-sm font-medium opacity-90">{flightNumber}</span>
+              <span className="hidden sm:block text-sm font-medium opacity-90">{flightNumber}</span>
             )}
           </div>
         </>

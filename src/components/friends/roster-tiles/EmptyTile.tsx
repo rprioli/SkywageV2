@@ -20,7 +20,7 @@ export function EmptyTile({ className }: EmptyTileProps) {
   return (
     <div
       className={cn(
-        'flex h-full min-h-[60px] items-center justify-center',
+        'flex h-full min-h-[48px] sm:min-h-[60px] items-center justify-center',
         'rounded-lg border border-dashed border-gray-200 bg-gray-50/50',
         className
       )}

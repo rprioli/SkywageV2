@@ -204,18 +204,18 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
         </div>
       </div>
 
-      {/* Avatar headers - sticky column headers, scrollable on mobile */}
-      <div className="flex-shrink-0 bg-gray-50/50 overflow-x-auto">
-        <div className="grid min-w-[400px] grid-cols-[80px_1fr_1fr] gap-2 px-4 py-3">
+      {/* Avatar headers - sticky column headers, responsive grid */}
+      <div className="flex-shrink-0 bg-gray-50/50">
+        <div className="grid grid-cols-[50px_1fr_1fr] sm:grid-cols-[70px_1fr_1fr] gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3">
           {/* Empty space for date column */}
           <div />
 
           {/* User avatar column */}
           <div className="flex flex-col items-center">
-            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
-              <span className="text-lg font-semibold text-white">{getUserInitial()}</span>
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
+              <span className="text-base sm:text-lg font-semibold text-white">{getUserInitial()}</span>
             </div>
-            <span className="mt-1.5 text-responsive-xs font-medium text-gray-600">You</span>
+            <span className="mt-1 sm:mt-1.5 text-responsive-xs font-medium text-gray-600">You</span>
           </div>
 
           {/* Friend avatar column */}
@@ -224,34 +224,34 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
               <img
                 src={friend.avatarUrl}
                 alt={friendDisplayName}
-                className="h-12 w-12 rounded-xl object-cover"
+                className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl object-cover"
               />
             ) : (
-              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
-                <span className="text-lg font-semibold text-white">{friendInitial}</span>
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
+                <span className="text-base sm:text-lg font-semibold text-white">{friendInitial}</span>
               </div>
             )}
-            <span className="mt-1.5 text-responsive-xs font-medium text-gray-600">{friend.firstName || friendDisplayName}</span>
+            <span className="mt-1 sm:mt-1.5 text-responsive-xs font-medium text-gray-600 truncate max-w-full">{friend.firstName || friendDisplayName}</span>
           </div>
         </div>
       </div>
 
-      {/* Grid content - scrollable on mobile */}
-      <div className="flex-1 overflow-y-auto overflow-x-auto">
+      {/* Grid content - responsive layout */}
+      <div className="flex-1 overflow-y-auto">
         {loading && (
-          <div className="min-w-[400px] px-4 py-2">
+          <div className="px-2 sm:px-4 py-2">
             <LoadingSkeleton />
           </div>
         )}
 
         {error && (
-          <div className="mx-4 my-4 rounded-2xl bg-red-50 p-4 text-responsive-sm text-red-700">
+          <div className="mx-2 sm:mx-4 my-4 rounded-2xl bg-red-50 p-4 text-responsive-sm text-red-700">
             {error}
           </div>
         )}
 
         {!loading && !error && gridData && (
-          <div className="min-w-[400px] px-4 py-2">
+          <div className="px-2 sm:px-4 py-2">
             {gridData.days.map((dayData) => (
               <DayRow key={dayData.day.dayNumber} dayData={dayData} />
             ))}
@@ -294,24 +294,30 @@ function DayRow({ dayData }: DayRowProps) {
   const isConnectedRow = userIsMultiDayStart || userIsMultiDayEnd || 
                          friendIsMultiDayStart || friendIsMultiDayEnd;
 
+  // Abbreviated day name for mobile (first letter only)
+  const abbreviatedDayName = day.dayName.slice(0, 1);
+
   return (
     <div
       className={cn(
-        'grid grid-cols-[80px_1fr_1fr] gap-2',
-        isConnectedRow ? 'py-0' : 'py-1',
+        'grid grid-cols-[50px_1fr_1fr] sm:grid-cols-[70px_1fr_1fr] gap-1 sm:gap-2',
+        isConnectedRow ? 'py-0' : 'py-0.5 sm:py-1',
         day.isWeekend && 'bg-gray-50/50'
       )}
     >
-      {/* Date column */}
-      <div className="flex flex-col items-center justify-center py-2">
-        <span className="text-xs font-medium text-gray-500">{day.dayName}</span>
-        <span className="text-2xl font-bold text-gray-900">{day.dayNumber}</span>
-        <span className="text-xs text-gray-400">{day.monthAbbrev}</span>
+      {/* Date column - compact on mobile */}
+      <div className="flex flex-col items-center justify-center py-1 sm:py-2">
+        <span className="text-[10px] sm:text-xs font-medium text-gray-500">
+          <span className="sm:hidden">{abbreviatedDayName}</span>
+          <span className="hidden sm:inline">{day.dayName}</span>
+        </span>
+        <span className="text-lg sm:text-2xl font-bold text-gray-900">{day.dayNumber}</span>
+        <span className="text-[10px] sm:text-xs text-gray-400">{day.monthAbbrev}</span>
       </div>
 
       {/* User duty tile */}
       <div className={cn(
-        'min-h-[60px]',
+        'min-h-[48px] sm:min-h-[60px]',
         userIsMultiDayStart && 'pb-0',
         userIsMultiDayEnd && 'pt-0'
       )}>
@@ -320,7 +326,7 @@ function DayRow({ dayData }: DayRowProps) {
 
       {/* Friend duty tile */}
       <div className={cn(
-        'min-h-[60px]',
+        'min-h-[48px] sm:min-h-[60px]',
         friendIsMultiDayStart && 'pb-0',
         friendIsMultiDayEnd && 'pt-0'
       )}>
@@ -336,19 +342,19 @@ function DayRow({ dayData }: DayRowProps) {
  */
 function LoadingSkeleton() {
   return (
-    <div className="space-y-1">
+    <div className="space-y-0.5 sm:space-y-1">
       {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-        <div key={i} className="grid grid-cols-[80px_1fr_1fr] gap-2 py-1">
+        <div key={i} className="grid grid-cols-[50px_1fr_1fr] sm:grid-cols-[70px_1fr_1fr] gap-1 sm:gap-2 py-0.5 sm:py-1">
           {/* Date skeleton */}
-          <div className="flex flex-col items-center justify-center py-2">
-            <div className="h-3 w-8 animate-pulse rounded-lg bg-gray-100" />
-            <div className="mt-1 h-7 w-6 animate-pulse rounded-lg bg-gray-100" />
-            <div className="mt-1 h-3 w-8 animate-pulse rounded-lg bg-gray-100" />
+          <div className="flex flex-col items-center justify-center py-1 sm:py-2">
+            <div className="h-2.5 sm:h-3 w-4 sm:w-8 animate-pulse rounded-lg bg-gray-100" />
+            <div className="mt-1 h-5 sm:h-7 w-5 sm:w-6 animate-pulse rounded-lg bg-gray-100" />
+            <div className="mt-1 h-2.5 sm:h-3 w-6 sm:w-8 animate-pulse rounded-lg bg-gray-100" />
           </div>
           {/* User tile skeleton */}
-          <div className="min-h-[60px] animate-pulse rounded-xl bg-gray-100" />
+          <div className="min-h-[48px] sm:min-h-[60px] animate-pulse rounded-xl bg-gray-100" />
           {/* Friend tile skeleton */}
-          <div className="min-h-[60px] animate-pulse rounded-xl bg-gray-100" />
+          <div className="min-h-[48px] sm:min-h-[60px] animate-pulse rounded-xl bg-gray-100" />
         </div>
       ))}
     </div>
