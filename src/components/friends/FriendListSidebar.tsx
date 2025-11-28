@@ -110,7 +110,7 @@ function FriendListItem({ friend, isActive, onClick }: FriendListItemProps) {
       onClick={onClick}
       className={cn(
         'w-full px-3 md:px-4 py-3 flex items-center gap-3 rounded-2xl transition-all duration-200',
-        'focus:outline-none focus:ring-2 focus:ring-[#4C49ED]/30',
+        'focus:outline-none',
         isActive 
           ? 'bg-[#4C49ED]/10' 
           : 'hover:bg-gray-50/80 active:bg-gray-100'
