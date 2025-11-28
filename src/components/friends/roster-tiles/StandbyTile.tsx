@@ -50,20 +50,20 @@ export function StandbyTile({
   return (
     <div
       className={cn(
-        'flex h-full min-h-[48px] sm:min-h-[60px] items-center justify-center px-2 py-2 sm:px-4 sm:py-3',
+        'relative flex h-full min-h-[48px] sm:min-h-[60px] items-center px-3 py-2 sm:px-4 sm:py-3',
         'bg-amber-50',
         borderRadiusClasses,
         borderClasses,
         className
       )}
     >
-      <div className="flex items-center gap-2 sm:gap-3">
-        {/* Icon container - fixed width for consistent alignment */}
-        <div className="w-5 sm:w-6 flex-shrink-0 flex justify-center">
-          <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600" />
-        </div>
+      {/* Icon - anchored to the left */}
+      <div className="flex-shrink-0">
+        <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600" />
+      </div>
 
-        {/* Label - left-aligned */}
+      {/* Label - centered in the tile */}
+      <div className="absolute inset-0 flex items-center justify-center">
         <span className="text-sm sm:text-base font-medium text-amber-700">
           {label}
         </span>
