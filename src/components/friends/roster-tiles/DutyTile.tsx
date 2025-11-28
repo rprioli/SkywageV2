@@ -31,9 +31,10 @@ export function DutyTile({ tile, groupPosition, className }: DutyTileProps) {
 
   const displayInfo = getDutyDisplayInfo(tile);
   
-  // For multi-day layovers, use the tile's native position
-  // For consecutive duty groups, use the groupPosition if provided
-  const effectivePosition = tile.isMultiDay ? tile.position : (groupPosition || 'single');
+  // Use groupPosition if provided - it accounts for connections beyond layover spans
+  // (e.g., a layover end connecting to a following turnaround)
+  // Otherwise fall back to the tile's native position
+  const effectivePosition = groupPosition || tile.position || 'single';
 
   switch (tile.type) {
     case 'flight':
@@ -42,7 +43,7 @@ export function DutyTile({ tile, groupPosition, className }: DutyTileProps) {
           airportCode={tile.airportCode}
           flightNumber={tile.flightNumber}
           isMultiDay={tile.isMultiDay}
-          position={tile.isMultiDay ? tile.position : effectivePosition}
+          position={effectivePosition}
           className={className}
         />
       );
