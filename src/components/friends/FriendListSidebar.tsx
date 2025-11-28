@@ -3,7 +3,7 @@
 /**
  * Friend List Sidebar Component
  * Displays friends list with avatars, search, and selection
- * Phase 2 - Friends Feature Redesign
+ * Phase 4 - Design alignment with Dashboard page
  */
 
 import { useState, useMemo } from 'react';
@@ -47,10 +47,10 @@ export function FriendListSidebar({
   }, [friends, searchQuery]);
 
   return (
-    <div className="h-full flex flex-col bg-white border-r border-gray-200">
+    <div className="h-full flex flex-col bg-white">
       {/* Header */}
-      <div className="px-4 py-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">Friends</h2>
+      <div className="card-responsive-padding pb-3">
+        <h2 className="text-responsive-xl font-bold mb-3" style={{ color: '#3A3780' }}>Friends</h2>
         
         {/* Search Input */}
         <div className="relative">
@@ -60,13 +60,13 @@ export function FriendListSidebar({
             placeholder="Search friends..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-with-left-icon"
+            className="input-with-left-icon rounded-xl border-gray-200"
           />
         </div>
       </div>
 
       {/* Friends List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto px-2 md:px-3">
         {loading ? (
           <LoadingState />
         ) : filteredFriends.length === 0 ? (
@@ -76,7 +76,7 @@ export function FriendListSidebar({
             <EmptyState />
           )
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className="space-y-1">
             {filteredFriends.map((friend) => (
               <FriendListItem
                 key={friend.friendshipId}
@@ -109,9 +109,11 @@ function FriendListItem({ friend, isActive, onClick }: FriendListItemProps) {
     <button
       onClick={onClick}
       className={cn(
-        'w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors',
-        'focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#4C49ED]',
-        isActive && 'bg-purple-50 border-l-4 border-[#4C49ED]'
+        'w-full px-3 md:px-4 py-3 flex items-center gap-3 rounded-2xl transition-all duration-200',
+        'focus:outline-none focus:ring-2 focus:ring-[#4C49ED]/30',
+        isActive 
+          ? 'bg-[#4C49ED]/10' 
+          : 'hover:bg-gray-50/80 active:bg-gray-100'
       )}
     >
       {/* Avatar or Initial */}
@@ -120,7 +122,7 @@ function FriendListItem({ friend, isActive, onClick }: FriendListItemProps) {
           <img
             src={friend.avatarUrl}
             alt={displayName}
-            className="w-10 h-10 rounded-full object-cover"
+            className="w-10 h-10 rounded-xl object-cover"
             onError={(e) => {
               // Fallback to initial circle on image error
               const target = e.target as HTMLImageElement;
@@ -128,7 +130,7 @@ function FriendListItem({ friend, isActive, onClick }: FriendListItemProps) {
               const parent = target.parentElement;
               if (parent) {
                 parent.innerHTML = `
-                  <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
+                  <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
                     <span class="text-white font-semibold text-lg">${initial}</span>
                   </div>
                 `;
@@ -136,7 +138,7 @@ function FriendListItem({ friend, isActive, onClick }: FriendListItemProps) {
             }}
           />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
             <span className="text-white font-semibold text-lg">{initial}</span>
           </div>
         )}
@@ -146,13 +148,13 @@ function FriendListItem({ friend, isActive, onClick }: FriendListItemProps) {
       <div className="flex-1 min-w-0 text-left">
         <p
           className={cn(
-            'font-medium truncate',
+            'font-medium truncate text-responsive-sm',
             isActive ? 'text-[#4C49ED]' : 'text-gray-900'
           )}
         >
           {displayName}
         </p>
-        <p className="text-sm text-gray-500 truncate">
+        <p className="text-responsive-xs text-gray-500 truncate">
           {friend.position}
         </p>
       </div>
@@ -165,13 +167,13 @@ function FriendListItem({ friend, isActive, onClick }: FriendListItemProps) {
  */
 function LoadingState() {
   return (
-    <div className="px-4 py-8 space-y-4">
+    <div className="px-2 py-6 space-y-3">
       {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="flex items-center gap-3 animate-pulse">
-          <div className="w-10 h-10 rounded-full bg-gray-200"></div>
+        <div key={i} className="flex items-center gap-3 animate-pulse p-3">
+          <div className="w-10 h-10 rounded-xl bg-gray-100"></div>
           <div className="flex-1 space-y-2">
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+            <div className="h-4 bg-gray-100 rounded-lg w-3/4"></div>
+            <div className="h-3 bg-gray-100 rounded-lg w-1/2"></div>
           </div>
         </div>
       ))}
@@ -185,9 +187,9 @@ function LoadingState() {
 function EmptyState() {
   return (
     <div className="px-4 py-12 text-center">
-      <Users className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-      <p className="text-gray-500 font-medium">No friends yet</p>
-      <p className="text-sm text-gray-400 mt-1">
+      <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+      <p className="text-responsive-base font-bold" style={{ color: '#3A3780' }}>No friends yet</p>
+      <p className="text-responsive-sm text-gray-500 mt-1">
         Add friends to see them here
       </p>
     </div>
@@ -200,9 +202,9 @@ function EmptyState() {
 function EmptySearchState({ query }: { query: string }) {
   return (
     <div className="px-4 py-12 text-center">
-      <Search className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-      <p className="text-gray-500 font-medium">No results for &quot;{query}&quot;</p>
-      <p className="text-sm text-gray-400 mt-1">
+      <Search className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+      <p className="text-responsive-base font-bold" style={{ color: '#3A3780' }}>No results for &quot;{query}&quot;</p>
+      <p className="text-responsive-sm text-gray-500 mt-1">
         Try searching by name, email, or airline
       </p>
     </div>
