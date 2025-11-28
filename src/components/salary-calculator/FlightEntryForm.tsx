@@ -124,6 +124,39 @@ export function FlightEntryForm({
   // eslint-disable-next-line react-hooks/exhaustive-deps -- Only run on mount to initialize form
   }, []);
 
+  // Auto-sync isCrossDay with detected value for proper real-time validation
+  // This fixes the issue where cross-day flights (e.g., report 16:00, debrief 01:00 next day)
+  // were failing validation because isCrossDay wasn't being updated when times changed
+  useEffect(() => {
+    // Helper to detect if debrief is on the next day (when debrief time < report time)
+    const detectCrossDay = (reportTime: string, debriefTime: string): boolean => {
+      if (!reportTime || !debriefTime) return false;
+      const [reportHour, reportMin] = reportTime.split(':').map(Number);
+      const [debriefHour, debriefMin] = debriefTime.split(':').map(Number);
+      if (isNaN(reportHour) || isNaN(reportMin) || isNaN(debriefHour) || isNaN(debriefMin)) return false;
+      const reportMinutes = reportHour * 60 + reportMin;
+      const debriefMinutes = debriefHour * 60 + debriefMin;
+      return debriefMinutes < reportMinutes;
+    };
+
+    const detectedCrossDay = formData.dutyType === 'layover'
+      ? detectCrossDay(formData.reportTimeInbound || '', formData.debriefTime)
+      : detectCrossDay(formData.reportTime, formData.debriefTime);
+    
+    // Only update if both times are filled and there's a change
+    const hasRequiredTimes = formData.dutyType === 'layover'
+      ? (formData.reportTimeInbound && formData.debriefTime)
+      : (formData.reportTime && formData.debriefTime);
+
+    if (hasRequiredTimes && detectedCrossDay !== formData.isCrossDay) {
+      setFormData(prev => ({
+        ...prev,
+        isCrossDay: detectedCrossDay
+      }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- Only react to time changes, not isCrossDay itself to avoid loops
+  }, [formData.reportTime, formData.debriefTime, formData.reportTimeInbound, formData.dutyType]);
+
   // Handle form field changes
   const handleFieldChange = <K extends keyof ManualFlightEntryData>(
     field: K,
