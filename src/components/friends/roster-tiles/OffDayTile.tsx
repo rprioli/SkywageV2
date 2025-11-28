@@ -1,13 +1,13 @@
 /**
  * OffDayTile Component
- * Outlined tile with green house icon for off days
+ * Outlined tile for off days, rest, and leave
  * Phase 4b - Friends Feature
  */
 
 'use client';
 
 import React from 'react';
-import { Home } from 'lucide-react';
+import { Home, Palmtree } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TilePosition } from '@/lib/roster-comparison';
 
@@ -15,6 +15,28 @@ interface OffDayTileProps {
   label?: string;
   position?: TilePosition;
   className?: string;
+}
+
+/**
+ * Get the appropriate icon based on the label
+ */
+function getIcon(label: string) {
+  if (label === 'LEAVE') {
+    return (
+      <Palmtree 
+        className="h-4 w-4 sm:h-5 sm:w-5 text-[#22C55E]" 
+        strokeWidth={2}
+      />
+    );
+  }
+  // Default: Home icon for OFF and REST
+  return (
+    <Home 
+      className="h-4 w-4 sm:h-5 sm:w-5 text-[#22C55E]" 
+      fill="#22C55E" 
+      strokeWidth={0}
+    />
+  );
 }
 
 /**
@@ -61,11 +83,7 @@ export function OffDayTile({
     >
       {/* Icon - anchored to the left */}
       <div className="flex-shrink-0">
-        <Home 
-          className="h-4 w-4 sm:h-5 sm:w-5 text-[#22C55E]" 
-          fill="#22C55E" 
-          strokeWidth={0}
-        />
+        {getIcon(label)}
       </div>
 
       {/* Label - centered in the tile */}
