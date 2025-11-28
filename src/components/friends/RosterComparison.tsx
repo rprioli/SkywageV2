@@ -111,29 +111,54 @@ function calculateGroupPositions(days: DayWithDuties[]): ProcessedDayData[] {
 
 /**
  * Calculate the position of a duty within a consecutive group
+ * Handles both regular duties and multi-day layovers that need to connect
+ * with adjacent work duties
  */
 function calculatePositionForDuty(
   current: DutyTileData | null,
   prev: DutyTileData | null,
   next: DutyTileData | null
 ): TilePosition {
-  // If it's already a multi-day duty (layover), don't override its position
-  if (current?.isMultiDay) {
-    return current.position || 'single';
-  }
-  
   const currentCategory = getConnectionCategory(current);
-  const prevCategory = getConnectionCategory(prev);
-  const nextCategory = getConnectionCategory(next);
   
   // If current can't connect, it's always single
   if (!canConnect(currentCategory)) {
     return 'single';
   }
   
+  const prevCategory = getConnectionCategory(prev);
+  const nextCategory = getConnectionCategory(next);
+  
   const connectsToPrev = canConnect(prevCategory) && currentCategory === prevCategory;
   const connectsToNext = canConnect(nextCategory) && currentCategory === nextCategory;
   
+  // For multi-day duties (layovers), combine their native position
+  // with potential connections to adjacent days in the same category
+  if (current?.isMultiDay) {
+    const nativePosition = current.position || 'single';
+    
+    switch (nativePosition) {
+      case 'start':
+        // Layover starts here - check if prev day should also connect
+        return connectsToPrev ? 'middle' : 'start';
+      
+      case 'end':
+        // Layover ends here - check if next day should also connect
+        return connectsToNext ? 'middle' : 'end';
+      
+      case 'middle':
+        return 'middle';
+      
+      default:
+        // Edge case: single-day multi-day duty
+        if (connectsToPrev && connectsToNext) return 'middle';
+        if (connectsToPrev) return 'end';
+        if (connectsToNext) return 'start';
+        return 'single';
+    }
+  }
+  
+  // Non-multi-day duties: normal connection logic
   if (connectsToPrev && connectsToNext) {
     return 'middle';
   } else if (connectsToPrev && !connectsToNext) {
