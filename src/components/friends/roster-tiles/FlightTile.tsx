@@ -66,15 +66,11 @@ export function FlightTile({
             <Plane className="h-4 w-4 sm:h-5 sm:w-5 rotate-45" fill="currentColor" />
           </div>
 
-          {/* Airport code and flight number */}
+          {/* Airport code */}
           <div className="flex flex-col items-center text-center">
-            <span className="text-base sm:text-lg font-bold leading-tight">
+            <span className="text-base sm:text-lg font-medium leading-tight">
               {airportCode || 'FLT'}
             </span>
-            {/* Hide flight number on mobile for compact view */}
-            {flightNumber && (
-              <span className="hidden sm:block text-sm font-medium opacity-90">{flightNumber}</span>
-            )}
           </div>
         </>
       )}

@@ -294,9 +294,6 @@ function DayRow({ dayData }: DayRowProps) {
   const isConnectedRow = userIsMultiDayStart || userIsMultiDayEnd || 
                          friendIsMultiDayStart || friendIsMultiDayEnd;
 
-  // Abbreviated day name for mobile (first letter only)
-  const abbreviatedDayName = day.dayName.slice(0, 1);
-
   return (
     <div
       className={cn(
@@ -307,10 +304,7 @@ function DayRow({ dayData }: DayRowProps) {
     >
       {/* Date column - compact on mobile */}
       <div className="flex flex-col items-center justify-center py-1 sm:py-2">
-        <span className="text-[10px] sm:text-xs font-medium text-gray-500">
-          <span className="sm:hidden">{abbreviatedDayName}</span>
-          <span className="hidden sm:inline">{day.dayName}</span>
-        </span>
+        <span className="text-[10px] sm:text-xs font-medium text-gray-500">{day.dayName}</span>
         <span className="text-lg sm:text-2xl font-bold text-gray-900">{day.dayNumber}</span>
         <span className="text-[10px] sm:text-xs text-gray-400">{day.monthAbbrev}</span>
       </div>

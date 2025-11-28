@@ -38,7 +38,7 @@ export function StandbyTile({
       </div>
 
       {/* Label */}
-      <span className="text-sm sm:text-base font-semibold text-amber-700">
+      <span className="text-sm sm:text-base font-medium text-amber-700">
         {label}
       </span>
     </div>

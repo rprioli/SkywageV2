@@ -41,7 +41,7 @@ export function OffDayTile({
       </div>
 
       {/* Label */}
-      <span className="text-base sm:text-lg font-bold text-gray-600">
+      <span className="text-base sm:text-lg font-medium text-gray-600">
         {label}
       </span>
     </div>
