@@ -9,7 +9,7 @@
 import { useState } from 'react';
 import { useFriendsContext } from '@/contexts/FriendsProvider';
 import { useMobileNavigation } from '@/contexts/MobileNavigationProvider';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Menu, UserPlus, Mail, Check, X, Users } from 'lucide-react';
@@ -128,14 +128,12 @@ export default function FriendsPage() {
 
         {/* Add Friend Section */}
         <Card className="bg-white rounded-3xl !border-0 !shadow-none">
-          <CardHeader className="card-responsive-padding pb-0">
-            <CardTitle className="flex items-center gap-2 text-responsive-xl" style={{ color: '#3A3780' }}>
+          <CardContent className="card-responsive-padding">
+            <h2 className="flex items-center gap-2 text-responsive-xl font-bold mb-3" style={{ color: '#3A3780' }}>
               <UserPlus className="h-5 w-5" style={{ color: '#4C49ED' }} />
               Add Friend
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="card-responsive-padding pt-4">
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            </h2>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
               <Input
                 type="email"
                 placeholder="Enter friend's email address"
@@ -143,13 +141,13 @@ export default function FriendsPage() {
                 onChange={(e) => setEmailInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendRequest()}
                 disabled={sendingRequest}
-                className="flex-1"
+                className="flex-1 rounded-xl h-10 py-2"
               />
               <Button
                 onClick={handleSendRequest}
                 disabled={sendingRequest || !emailInput.trim()}
                 style={{ backgroundColor: '#4C49ED' }}
-                className="hover:opacity-90 whitespace-nowrap"
+                className="hover:opacity-90 whitespace-nowrap rounded-xl h-10"
               >
                 <Mail className="h-4 w-4 mr-2" />
                 Send Request
@@ -161,13 +159,12 @@ export default function FriendsPage() {
         {/* Pending Requests Section */}
         {(pendingRequests.received.length > 0 || pendingRequests.sent.length > 0) && (
           <Card className="bg-white rounded-3xl !border-0 !shadow-none">
-            <CardHeader className="card-responsive-padding pb-0">
-              <CardTitle className="flex items-center gap-2 text-responsive-xl" style={{ color: '#3A3780' }}>
+            <CardContent className="card-responsive-padding">
+              <h2 className="flex items-center gap-2 text-responsive-xl font-bold mb-3" style={{ color: '#3A3780' }}>
                 <Mail className="h-5 w-5" style={{ color: '#4C49ED' }} />
                 Pending Requests
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="card-responsive-padding pt-4 space-y-4">
+              </h2>
+              <div className="space-y-4">
               {/* Received Requests */}
               {pendingRequests.received.length > 0 && (
                 <div className="space-y-2">
@@ -234,6 +231,7 @@ export default function FriendsPage() {
                   </div>
                 </div>
               )}
+              </div>
             </CardContent>
           </Card>
         )}

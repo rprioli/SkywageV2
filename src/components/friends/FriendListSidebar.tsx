@@ -60,7 +60,7 @@ export function FriendListSidebar({
             placeholder="Search friends..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-with-left-icon rounded-xl border-gray-200"
+            className="input-with-left-icon rounded-xl border-gray-200 h-10 py-2"
           />
         </div>
       </div>
