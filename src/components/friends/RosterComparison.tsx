@@ -206,10 +206,12 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
   const friendInitial = getFriendInitial(friend);
 
   // Fetch roster data when month/year changes
+  // Note: Using session?.access_token instead of session object to avoid
+  // unnecessary refetches on tab focus (session object reference changes)
   useEffect(() => {
     fetchRosterData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMonth, selectedYear, friend.userId, session]);
+  }, [selectedMonth, selectedYear, friend.userId, session?.access_token]);
 
   // Generate grid data when roster data changes
   useEffect(() => {
