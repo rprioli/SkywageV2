@@ -122,7 +122,7 @@ function FriendListItem({ friend, isActive, onClick }: FriendListItemProps) {
           <img
             src={friend.avatarUrl}
             alt={displayName}
-            className="w-10 h-10 rounded-xl object-cover"
+            className="w-10 h-10 rounded-full object-cover"
             onError={(e) => {
               // Fallback to initial circle on image error
               const target = e.target as HTMLImageElement;
@@ -130,7 +130,7 @@ function FriendListItem({ friend, isActive, onClick }: FriendListItemProps) {
               const parent = target.parentElement;
               if (parent) {
                 parent.innerHTML = `
-                  <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
+                  <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
                     <span class="text-white font-semibold text-lg">${initial}</span>
                   </div>
                 `;
@@ -138,7 +138,7 @@ function FriendListItem({ friend, isActive, onClick }: FriendListItemProps) {
             }}
           />
         ) : (
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
             <span className="text-white font-semibold text-lg">{initial}</span>
           </div>
         )}
@@ -170,7 +170,7 @@ function LoadingState() {
     <div className="px-2 py-6 space-y-3">
       {[1, 2, 3, 4, 5].map((i) => (
         <div key={i} className="flex items-center gap-3 animate-pulse p-3">
-          <div className="w-10 h-10 rounded-xl bg-gray-100"></div>
+          <div className="w-10 h-10 rounded-full bg-gray-100"></div>
           <div className="flex-1 space-y-2">
             <div className="h-4 bg-gray-100 rounded-lg w-3/4"></div>
             <div className="h-3 bg-gray-100 rounded-lg w-1/2"></div>
