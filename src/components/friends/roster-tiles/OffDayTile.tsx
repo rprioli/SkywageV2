@@ -7,7 +7,7 @@
 'use client';
 
 import React from 'react';
-import { Home, Sun } from 'lucide-react';
+import { Home, Palmtree } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TilePosition } from '@/lib/roster-comparison';
 
@@ -23,10 +23,9 @@ interface OffDayTileProps {
 function getIcon(label: string) {
   if (label === 'LEAVE') {
     return (
-      <Sun 
+      <Palmtree 
         className="h-4 w-4 sm:h-5 sm:w-5 text-[#22C55E]" 
-        fill="#22C55E" 
-        strokeWidth={0}
+        strokeWidth={2}
       />
     );
   }
