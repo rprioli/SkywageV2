@@ -27,8 +27,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main Content - Centered on desktop, full-width on mobile/tablet */}
+      {/* overflow-y-scroll ensures scrollbar space is always reserved, preventing layout shift */}
       <main className={`
-        flex-1 overflow-auto transition-all duration-300
+        flex-1 overflow-y-scroll overflow-x-hidden transition-all duration-300
         ${isDesktop ? 'ml-[280px]' : ''}
       `}>
         {/* Centered content wrapper - only applies max-width on desktop */}
