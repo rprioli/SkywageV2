@@ -433,16 +433,39 @@ interface DayRowProps {
 function DayRow({ dayData }: DayRowProps) {
   const { day, userDuty, friendDuty, userGroupPosition, friendGroupPosition } = dayData;
 
-  // Determine if row has connected tiles (requires no padding between rows)
-  const userIsConnected = userGroupPosition !== 'single';
-  const friendIsConnected = friendGroupPosition !== 'single';
-  const isConnectedRow = userIsConnected || friendIsConnected;
+  // Helper to get container margin classes based on position
+  // Each container handles its own vertical spacing INDEPENDENTLY
+  // - 'single': Has margin top AND bottom (for gaps with neighbors)
+  // - 'start': Has margin top (gap above), NO margin bottom (connects to next)
+  // - 'middle': NO margins (connects both ways)
+  // - 'end': NO margin top (connects to prev), HAS margin bottom (gap below)
+  const getContainerMargin = (position: TilePosition) => {
+    switch (position) {
+      case 'single':
+        return 'my-0.5 sm:my-1'; // Gap above and below
+      case 'start':
+        return 'mt-0.5 sm:mt-1 mb-0'; // Gap above, connects below
+      case 'middle':
+        return 'my-0'; // Connects both ways
+      case 'end':
+        return 'mt-0 mb-0.5 sm:mb-1'; // Connects above, gap below
+      default:
+        return 'my-0.5 sm:my-1';
+    }
+  };
+
+  // Negative margin for overlap - applied per container when connecting to previous
+  const getContainerOverlap = (position: TilePosition) => {
+    if (position === 'middle' || position === 'end') {
+      return '-mt-[1px]'; // Overlap to hide seam with previous tile
+    }
+    return '';
+  };
 
   return (
     <div
       className={cn(
         'grid grid-cols-[50px_1fr_1fr] sm:grid-cols-[70px_1fr_1fr] gap-1 sm:gap-2',
-        isConnectedRow ? 'py-0' : 'py-0.5 sm:py-1',
         day.isWeekend && 'bg-gray-50/50'
       )}
     >
@@ -453,13 +476,21 @@ function DayRow({ dayData }: DayRowProps) {
         <span className="text-[10px] sm:text-xs text-gray-400">{day.monthAbbrev}</span>
       </div>
 
-      {/* User duty tile */}
-      <div className="min-h-[48px] sm:min-h-[60px]">
+      {/* User duty tile - container margin based on its own position */}
+      <div className={cn(
+        'min-h-[48px] sm:min-h-[60px]',
+        getContainerMargin(userGroupPosition),
+        getContainerOverlap(userGroupPosition)
+      )}>
         <DutyTile tile={userDuty} groupPosition={userGroupPosition} />
       </div>
 
-      {/* Friend duty tile */}
-      <div className="min-h-[48px] sm:min-h-[60px]">
+      {/* Friend duty tile - container margin based on its own position */}
+      <div className={cn(
+        'min-h-[48px] sm:min-h-[60px]',
+        getContainerMargin(friendGroupPosition),
+        getContainerOverlap(friendGroupPosition)
+      )}>
         <DutyTile tile={friendDuty} groupPosition={friendGroupPosition} />
       </div>
     </div>

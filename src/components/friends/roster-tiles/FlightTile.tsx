@@ -27,6 +27,7 @@ interface FlightTileProps {
 export function FlightTile({
   airportCode,
   flightNumber,
+  isMultiDay = false,
   position = 'single',
   className,
 }: FlightTileProps) {
@@ -45,9 +46,9 @@ export function FlightTile({
     'mt-0': position === 'end',
   });
 
-  // For multi-day layovers, only show content on the first day (start)
-  // Middle and end days show just the blue background (continuation)
-  const showContent = position === 'single' || position === 'start';
+  // Only hide content for actual multi-day layovers (same flight spanning days)
+  // NOT for consecutive but separate work duties (each should show its destination)
+  const showContent = !isMultiDay || position === 'single' || position === 'start';
 
   return (
     <div
