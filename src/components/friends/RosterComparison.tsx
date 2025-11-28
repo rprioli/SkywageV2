@@ -3,11 +3,11 @@
 /**
  * Roster Comparison Component - Redesigned
  * Calendar-style grid comparing user and friend rosters
- * Phase 4c - Friends Feature
+ * Phase 4 - Design alignment with Dashboard page
  */
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, X, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Search, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FlightDuty } from '@/types/salary-calculator';
 import { useAuth } from '@/contexts/AuthProvider';
@@ -150,14 +150,14 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
   };
 
   return (
-    <div className="flex h-full flex-col bg-gray-50">
+    <div className="flex h-full flex-col bg-white">
       {/* Header */}
-      <div className="flex-shrink-0 border-b border-gray-200 bg-white px-4 py-3">
+      <div className="flex-shrink-0 card-responsive-padding pb-3">
         {/* Top row: Back button and title */}
         <div className="mb-3 flex items-center justify-between">
           <button
             onClick={onClose}
-            className="flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-gray-900"
+            className="flex items-center gap-1 text-responsive-sm font-medium text-gray-600 hover:text-[#4C49ED] transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
             <span>Compare Roster</span>
@@ -167,11 +167,11 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
         {/* Search bar with selected friend chip */}
         <div className="mb-4 flex items-center gap-2">
           <Search className="h-4 w-4 text-gray-400" />
-          <div className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5">
-            <span className="text-sm text-gray-700">{friendDisplayName}</span>
+          <div className="inline-flex items-center gap-2 rounded-2xl bg-[#4C49ED]/10 px-3 py-1.5">
+            <span className="text-responsive-sm text-[#4C49ED] font-medium">{friendDisplayName}</span>
             <button
               onClick={onClose}
-              className="rounded-full p-0.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+              className="rounded-full p-0.5 text-[#4C49ED]/60 hover:bg-[#4C49ED]/20 hover:text-[#4C49ED] transition-colors"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -181,23 +181,23 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
         {/* Month navigation */}
         <div className="flex items-center justify-center gap-3">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={handlePreviousMonth}
             disabled={loading}
-            className="h-8 w-8 p-0"
+            className="h-9 w-9 p-0 rounded-xl hover:bg-gray-100"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="min-w-[140px] text-center text-sm font-semibold text-gray-700">
+          <span className="min-w-[140px] text-center text-responsive-base font-bold" style={{ color: '#3A3780' }}>
             {gridData?.monthName || ''} {selectedYear}
           </span>
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             onClick={handleNextMonth}
             disabled={loading}
-            className="h-8 w-8 p-0"
+            className="h-9 w-9 p-0 rounded-xl hover:bg-gray-100"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -205,17 +205,17 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
       </div>
 
       {/* Avatar headers - sticky column headers, scrollable on mobile */}
-      <div className="flex-shrink-0 border-b border-gray-200 bg-white overflow-x-auto">
+      <div className="flex-shrink-0 bg-gray-50/50 overflow-x-auto">
         <div className="grid min-w-[400px] grid-cols-[80px_1fr_1fr] gap-2 px-4 py-3">
           {/* Empty space for date column */}
           <div />
 
           {/* User avatar column */}
           <div className="flex flex-col items-center">
-            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
               <span className="text-lg font-semibold text-white">{getUserInitial()}</span>
             </div>
-            <span className="mt-1 text-xs font-medium text-gray-600">You</span>
+            <span className="mt-1.5 text-responsive-xs font-medium text-gray-600">You</span>
           </div>
 
           {/* Friend avatar column */}
@@ -224,14 +224,14 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
               <img
                 src={friend.avatarUrl}
                 alt={friendDisplayName}
-                className="h-12 w-12 rounded-full object-cover"
+                className="h-12 w-12 rounded-xl object-cover"
               />
             ) : (
-              <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
+              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
                 <span className="text-lg font-semibold text-white">{friendInitial}</span>
               </div>
             )}
-            <span className="mt-1 text-xs font-medium text-gray-600">{friend.firstName || friendDisplayName}</span>
+            <span className="mt-1.5 text-responsive-xs font-medium text-gray-600">{friend.firstName || friendDisplayName}</span>
           </div>
         </div>
       </div>
@@ -245,7 +245,7 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
         )}
 
         {error && (
-          <div className="mx-4 my-4 rounded-md bg-red-50 p-4 text-sm text-red-700">
+          <div className="mx-4 my-4 rounded-2xl bg-red-50 p-4 text-responsive-sm text-red-700">
             {error}
           </div>
         )}
@@ -259,8 +259,12 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
         )}
 
         {!loading && !error && gridData && gridData.userDutyCount === 0 && gridData.friendDutyCount === 0 && (
-          <div className="px-4 py-8 text-center text-sm text-gray-500">
-            No roster data for this month
+          <div className="px-4 py-8 md:py-12 text-center">
+            <Calendar className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 text-gray-400" />
+            <p className="text-responsive-base font-bold" style={{ color: '#3A3780' }}>No roster data</p>
+            <p className="text-responsive-sm text-gray-500 mt-1">
+              No duties found for this month
+            </p>
           </div>
         )}
       </div>
@@ -337,14 +341,14 @@ function LoadingSkeleton() {
         <div key={i} className="grid grid-cols-[80px_1fr_1fr] gap-2 py-1">
           {/* Date skeleton */}
           <div className="flex flex-col items-center justify-center py-2">
-            <div className="h-3 w-8 animate-pulse rounded bg-gray-200" />
-            <div className="mt-1 h-7 w-6 animate-pulse rounded bg-gray-200" />
-            <div className="mt-1 h-3 w-8 animate-pulse rounded bg-gray-200" />
+            <div className="h-3 w-8 animate-pulse rounded-lg bg-gray-100" />
+            <div className="mt-1 h-7 w-6 animate-pulse rounded-lg bg-gray-100" />
+            <div className="mt-1 h-3 w-8 animate-pulse rounded-lg bg-gray-100" />
           </div>
           {/* User tile skeleton */}
-          <div className="min-h-[60px] animate-pulse rounded-lg bg-gray-200" />
+          <div className="min-h-[60px] animate-pulse rounded-xl bg-gray-100" />
           {/* Friend tile skeleton */}
-          <div className="min-h-[60px] animate-pulse rounded-lg bg-gray-200" />
+          <div className="min-h-[60px] animate-pulse rounded-xl bg-gray-100" />
         </div>
       ))}
     </div>

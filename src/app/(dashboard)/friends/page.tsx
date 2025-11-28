@@ -3,16 +3,16 @@
 /**
  * Friends Page
  * Allows users to manage their friends, send/accept requests
- * Phase 3 - Integrated Layout with Sidebar
+ * Phase 4 - Design alignment with Dashboard page
  */
 
 import { useState } from 'react';
 import { useFriendsContext } from '@/contexts/FriendsProvider';
 import { useMobileNavigation } from '@/contexts/MobileNavigationProvider';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Menu, UserPlus, Mail, Check, X, Calendar as CalendarIcon } from 'lucide-react';
+import { Menu, UserPlus, Mail, Check, X, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { RosterComparison } from '@/components/friends/RosterComparison';
 import { FriendListSidebar } from '@/components/friends/FriendListSidebar';
@@ -28,7 +28,7 @@ export default function FriendsPage() {
     respondToRequest,
   } = useFriendsContext();
 
-  const { isMobile, toggleSidebar } = useMobileNavigation();
+  const { isMobile, toggleSidebar, isSidebarOpen } = useMobileNavigation();
   const { showSuccess, showError } = useToast();
 
   const [emailInput, setEmailInput] = useState('');
@@ -87,21 +87,27 @@ export default function FriendsPage() {
       <div className="space-y-6 px-6 pt-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-3xl font-bold mb-1" style={{ color: '#3A3780' }}>
+            <h1 className="text-responsive-3xl font-bold space-responsive-sm" style={{ color: '#3A3780' }}>
               Friends
             </h1>
-            <p className="text-primary font-bold">
+            <p className="text-responsive-base text-primary font-bold">
               Connect with colleagues and compare rosters
             </p>
           </div>
 
-          {/* Mobile hamburger menu */}
+          {/* Mobile hamburger menu - matching Dashboard styling */}
           {isMobile && (
             <Button
               variant="ghost"
-              size="icon"
+              size="sm"
               onClick={toggleSidebar}
-              className="shrink-0"
+              className={`flex-shrink-0 p-3 rounded-lg touch-target transition-colors ${
+                isSidebarOpen
+                  ? 'bg-primary/10 hover:bg-primary/20 text-primary'
+                  : 'hover:bg-gray-100 active:bg-gray-200 text-gray-700'
+              }`}
+              aria-label="Toggle navigation menu"
+              aria-expanded={isSidebarOpen}
             >
               <Menu className="h-6 w-6" />
             </Button>
@@ -110,26 +116,24 @@ export default function FriendsPage() {
       </div>
 
       {/* Main Content */}
-      <div className="px-6 pb-6 space-y-6">
+      <div className="responsive-container pb-6 space-y-4 md:space-y-6">
         {/* Error State */}
         {error && (
-          <Card className="border-red-200 bg-red-50">
-            <CardContent className="pt-6">
-              <p className="text-red-600">{error}</p>
+          <Card className="bg-red-50 rounded-3xl !border-0 !shadow-none">
+            <CardContent className="card-responsive-padding">
+              <p className="text-red-600 text-responsive-sm">{error}</p>
             </CardContent>
           </Card>
         )}
 
         {/* Add Friend Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+        <Card className="bg-white rounded-3xl !border-0 !shadow-none">
+          <CardContent className="card-responsive-padding">
+            <h2 className="flex items-center gap-2 text-responsive-xl font-bold mb-3" style={{ color: '#3A3780' }}>
               <UserPlus className="h-5 w-5" style={{ color: '#4C49ED' }} />
               Add Friend
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2">
+            </h2>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
               <Input
                 type="email"
                 placeholder="Enter friend's email address"
@@ -137,12 +141,13 @@ export default function FriendsPage() {
                 onChange={(e) => setEmailInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendRequest()}
                 disabled={sendingRequest}
+                className="flex-1 rounded-xl h-10 py-2"
               />
               <Button
                 onClick={handleSendRequest}
                 disabled={sendingRequest || !emailInput.trim()}
                 style={{ backgroundColor: '#4C49ED' }}
-                className="hover:opacity-90"
+                className="hover:opacity-90 whitespace-nowrap rounded-xl h-10"
               >
                 <Mail className="h-4 w-4 mr-2" />
                 Send Request
@@ -153,29 +158,28 @@ export default function FriendsPage() {
 
         {/* Pending Requests Section */}
         {(pendingRequests.received.length > 0 || pendingRequests.sent.length > 0) && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <Card className="bg-white rounded-3xl !border-0 !shadow-none">
+            <CardContent className="card-responsive-padding">
+              <h2 className="flex items-center gap-2 text-responsive-xl font-bold mb-3" style={{ color: '#3A3780' }}>
                 <Mail className="h-5 w-5" style={{ color: '#4C49ED' }} />
                 Pending Requests
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              </h2>
+              <div className="space-y-4">
               {/* Received Requests */}
               {pendingRequests.received.length > 0 && (
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-sm text-gray-600">
+                  <h3 className="font-semibold text-responsive-sm text-gray-600">
                     Received ({pendingRequests.received.length})
                   </h3>
                   <div className="space-y-2">
                     {pendingRequests.received.map((request) => (
                       <div
                         key={request.friendshipId}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                        className="flex items-center justify-between p-3 md:p-4 bg-gray-50/50 rounded-2xl hover:bg-gray-100/50 transition-colors"
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{request.email}</p>
-                          <p className="text-sm text-gray-500">
+                          <p className="font-medium truncate text-responsive-base">{request.email}</p>
+                          <p className="text-responsive-sm text-gray-500">
                             {request.airline} • {request.position}
                           </p>
                         </div>
@@ -184,7 +188,7 @@ export default function FriendsPage() {
                             size="sm"
                             onClick={() => handleAccept(request.friendshipId)}
                             style={{ backgroundColor: '#6DDC91' }}
-                            className="hover:opacity-90"
+                            className="hover:opacity-90 rounded-xl"
                           >
                             <Check className="h-4 w-4" />
                           </Button>
@@ -192,6 +196,7 @@ export default function FriendsPage() {
                             size="sm"
                             variant="outline"
                             onClick={() => handleReject(request.friendshipId)}
+                            className="rounded-xl"
                           >
                             <X className="h-4 w-4" />
                           </Button>
@@ -205,63 +210,64 @@ export default function FriendsPage() {
               {/* Sent Requests */}
               {pendingRequests.sent.length > 0 && (
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-sm text-gray-600">
+                  <h3 className="font-semibold text-responsive-sm text-gray-600">
                     Sent ({pendingRequests.sent.length})
                   </h3>
                   <div className="space-y-2">
                     {pendingRequests.sent.map((request) => (
                       <div
                         key={request.friendshipId}
-                        className="flex items-center justify-between p-3 border rounded-lg bg-gray-50"
+                        className="flex items-center justify-between p-3 md:p-4 bg-gray-50/50 rounded-2xl"
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{request.email}</p>
-                          <p className="text-sm text-gray-500">
+                          <p className="font-medium truncate text-responsive-base">{request.email}</p>
+                          <p className="text-responsive-sm text-gray-500">
                             {request.airline} • {request.position}
                           </p>
                         </div>
-                        <span className="text-sm text-gray-500 ml-4">Pending</span>
+                        <span className="text-responsive-sm text-gray-500 ml-4">Pending</span>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
+              </div>
             </CardContent>
           </Card>
         )}
 
         {/* Friends & Roster Comparison - Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-32rem)]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 h-[calc(100vh-32rem)] min-h-[400px]">
           {/* Left Column: Friend List Sidebar */}
           <div className="lg:col-span-4 xl:col-span-3 h-full">
-            <div className="border border-gray-200 rounded-lg overflow-hidden h-full bg-white">
+            <Card className="bg-white rounded-3xl !border-0 !shadow-none overflow-hidden h-full">
               <FriendListSidebar
                 friends={friends}
                 loading={loading}
                 selectedFriendId={selectedFriend?.userId || null}
                 onSelectFriend={(friend) => setSelectedFriend(friend)}
               />
-            </div>
+            </Card>
           </div>
 
           {/* Right Column: Roster Comparison Canvas */}
           <div className="lg:col-span-8 xl:col-span-9 h-full">
             {selectedFriend ? (
-              <div className="h-full overflow-hidden border border-gray-200 rounded-lg">
+              <Card className="bg-white rounded-3xl !border-0 !shadow-none overflow-hidden h-full">
                 <RosterComparison
                   friend={selectedFriend}
                   onClose={() => setSelectedFriend(null)}
                 />
-              </div>
+              </Card>
             ) : (
-              <Card className="h-full flex items-center justify-center border-2 border-dashed border-gray-300 bg-gray-50/50">
-                <CardContent className="text-center py-12">
-                  <CalendarIcon className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                    Select a friend to compare rosters
+              <Card className="bg-white rounded-3xl !border-0 !shadow-none overflow-hidden h-full flex items-center justify-center">
+                <CardContent className="text-center py-6 md:py-8">
+                  <Users className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 md:mb-6 text-gray-400" />
+                  <h3 className="text-responsive-2xl font-bold space-responsive-md tracking-tight" style={{ color: '#3A3780' }}>
+                    Select a Friend
                   </h3>
-                  <p className="text-sm text-gray-500 max-w-md mx-auto">
-                    Choose a friend from the list on the left to view and compare your rosters side by side
+                  <p className="text-responsive-sm text-gray-500 max-w-sm mx-auto leading-relaxed">
+                    Choose a friend from the list to view and compare your rosters side by side
                   </p>
                 </CardContent>
               </Card>
