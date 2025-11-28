@@ -287,12 +287,14 @@ function DayRow({ dayData }: DayRowProps) {
   // Check if this row is part of a multi-day flight (for spacing adjustments)
   const userIsMultiDayEnd = userDuty?.isMultiDay && userDuty?.position === 'end';
   const userIsMultiDayStart = userDuty?.isMultiDay && userDuty?.position === 'start';
+  const userIsMultiDayMiddle = userDuty?.isMultiDay && userDuty?.position === 'middle';
   const friendIsMultiDayEnd = friendDuty?.isMultiDay && friendDuty?.position === 'end';
   const friendIsMultiDayStart = friendDuty?.isMultiDay && friendDuty?.position === 'start';
+  const friendIsMultiDayMiddle = friendDuty?.isMultiDay && friendDuty?.position === 'middle';
 
-  // Reduce vertical padding when tiles need to connect
-  const isConnectedRow = userIsMultiDayStart || userIsMultiDayEnd || 
-                         friendIsMultiDayStart || friendIsMultiDayEnd;
+  // Reduce vertical padding when tiles need to connect (start, middle, or end of multi-day)
+  const isConnectedRow = userIsMultiDayStart || userIsMultiDayMiddle || userIsMultiDayEnd || 
+                         friendIsMultiDayStart || friendIsMultiDayMiddle || friendIsMultiDayEnd;
 
   return (
     <div
@@ -313,6 +315,7 @@ function DayRow({ dayData }: DayRowProps) {
       <div className={cn(
         'min-h-[48px] sm:min-h-[60px]',
         userIsMultiDayStart && 'pb-0',
+        userIsMultiDayMiddle && 'py-0',
         userIsMultiDayEnd && 'pt-0'
       )}>
         <DutyTile tile={userDuty} />
@@ -322,6 +325,7 @@ function DayRow({ dayData }: DayRowProps) {
       <div className={cn(
         'min-h-[48px] sm:min-h-[60px]',
         friendIsMultiDayStart && 'pb-0',
+        friendIsMultiDayMiddle && 'py-0',
         friendIsMultiDayEnd && 'pt-0'
       )}>
         <DutyTile tile={friendDuty} />
