@@ -53,7 +53,7 @@ export function FlightTile({
   return (
     <div
       className={cn(
-        'flex h-full min-h-[48px] sm:min-h-[60px] items-center justify-center gap-2 sm:gap-4 px-2 py-2 sm:px-4 sm:py-3',
+        'flex h-full min-h-[48px] sm:min-h-[60px] items-center justify-center px-2 py-2 sm:px-4 sm:py-3',
         'bg-[#4169E1] text-white', // Royal blue matching reference
         borderRadiusClasses,
         marginClasses,
@@ -61,19 +61,17 @@ export function FlightTile({
       )}
     >
       {showContent && (
-        <>
-          {/* Airplane icon - smaller on mobile */}
-          <div className="flex-shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Icon container - fixed width for consistent alignment */}
+          <div className="w-5 sm:w-6 flex-shrink-0 flex justify-center">
             <Plane className="h-4 w-4 sm:h-5 sm:w-5 rotate-45" fill="currentColor" />
           </div>
 
-          {/* Airport code */}
-          <div className="flex flex-col items-center text-center">
-            <span className="text-base sm:text-lg font-medium leading-tight">
-              {airportCode || 'FLT'}
-            </span>
-          </div>
-        </>
+          {/* Duty label - left-aligned, truncated if too long */}
+          <span className="text-sm sm:text-base font-medium leading-tight truncate max-w-[80px] sm:max-w-[120px]">
+            {airportCode || 'FLT'}
+          </span>
+        </div>
       )}
     </div>
   );

@@ -52,26 +52,28 @@ export function OffDayTile({
   return (
     <div
       className={cn(
-        'flex h-full min-h-[48px] sm:min-h-[60px] items-center justify-center gap-2 sm:gap-4 px-2 py-2 sm:px-4 sm:py-3',
+        'flex h-full min-h-[48px] sm:min-h-[60px] items-center justify-center px-2 py-2 sm:px-4 sm:py-3',
         'bg-white',
         borderRadiusClasses,
         borderClasses,
         className
       )}
     >
-      {/* House icon - green like the accent color, smaller on mobile */}
-      <div className="flex-shrink-0">
-        <Home 
-          className="h-4 w-4 sm:h-5 sm:w-5 text-[#22C55E]" 
-          fill="#22C55E" 
-          strokeWidth={0}
-        />
-      </div>
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Icon container - fixed width for consistent alignment */}
+        <div className="w-5 sm:w-6 flex-shrink-0 flex justify-center">
+          <Home 
+            className="h-4 w-4 sm:h-5 sm:w-5 text-[#22C55E]" 
+            fill="#22C55E" 
+            strokeWidth={0}
+          />
+        </div>
 
-      {/* Label */}
-      <span className="text-base sm:text-lg font-medium text-gray-600">
-        {label}
-      </span>
+        {/* Label - left-aligned */}
+        <span className="text-sm sm:text-base font-medium text-gray-600">
+          {label}
+        </span>
+      </div>
     </div>
   );
 }
