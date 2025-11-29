@@ -28,8 +28,7 @@ export function PositionUpdate() {
           if (profile && !error) {
             setPosition(profile.position || '');
           }
-        } catch (err) {
-          console.warn('Failed to load position from profile:', err);
+        } catch {
           // Fallback to auth metadata if database fails
           setPosition(user?.user_metadata?.position || '');
         }
@@ -61,7 +60,6 @@ export function PositionUpdate() {
       const { data: monthlyCalculations, error } = await getAllMonthlyCalculations(user.id);
 
       if (error || !monthlyCalculations) {
-        console.warn('No existing calculations found to recalculate');
         return;
       }
 
@@ -72,18 +70,8 @@ export function PositionUpdate() {
 
       const results = await Promise.allSettled(recalculationPromises);
 
-      // Log any failures
-      results.forEach((result, index) => {
-        if (result.status === 'rejected') {
-          const calc = monthlyCalculations[index];
-          console.error(`Failed to recalculate ${calc.month}/${calc.year}:`, result.reason);
-        }
-      });
-
-      console.log(`Recalculated ${results.length} months with new position: ${newPosition}`);
-
-    } catch (error) {
-      console.error('Error during bulk recalculation:', error);
+    } catch {
+      // Silently handle bulk recalculation errors
     }
   };
 
@@ -122,7 +110,6 @@ export function PositionUpdate() {
       }, 3000);
 
     } catch (err) {
-      console.error('Error updating position:', err);
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
       setIsUpdating(false);

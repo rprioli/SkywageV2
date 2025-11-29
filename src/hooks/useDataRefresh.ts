@@ -71,7 +71,6 @@ export function useDataRefresh(
         await onCalculationsUpdate();
         return { success: true };
       } catch (error) {
-        console.error('Error refreshing data:', error);
         return { success: false, error };
       }
     },
@@ -98,13 +97,6 @@ export function useDataRefresh(
     setIsRefreshing(true);
 
     try {
-      console.log(
-        '🔄 REFRESH AFTER DELETE: Starting refresh for month',
-        selectedMonthOneBased,
-        'year',
-        selectedYear
-      );
-
       // CRITICAL: Trigger recalculation FIRST before fetching updated data
       const recalcResult = await recalculateMonthlyTotals(
         userId,
@@ -114,10 +106,6 @@ export function useDataRefresh(
       );
 
       if (!recalcResult.success) {
-        console.log(
-          '🚨 REFRESH AFTER DELETE: Recalculation failed:',
-          recalcResult.errors
-        );
         onError(
           'Recalculation Failed',
           `Failed to recalculate monthly totals: ${recalcResult.errors.join(', ')}`
@@ -125,14 +113,8 @@ export function useDataRefresh(
         return;
       }
 
-      console.log('✅ REFRESH AFTER DELETE: Recalculation successful');
-
       // Fetch and update all data
-      const result = await fetchAndUpdateData();
-
-      if (result.success) {
-        console.log('✅ REFRESH AFTER DELETE: Data refresh complete');
-      }
+      await fetchAndUpdateData();
     } catch (error) {
       onError(
         'Refresh Failed',
@@ -268,23 +250,12 @@ export function useDataRefresh(
     setIsRefreshing(true);
 
     try {
-      console.log(
-        '🔄 MANUAL ENTRY SUCCESS: Refreshing dashboard data for month',
-        selectedMonthOneBased,
-        'year',
-        selectedYear
-      );
-
       // CRITICAL: Add a small delay to ensure database updates are complete
       // The manual entry process calls recalculateMonthlyTotals() which needs time to complete
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Fetch and update all data
-      const result = await fetchAndUpdateData();
-
-      if (result.success) {
-        console.log('✅ MANUAL ENTRY SUCCESS: Data refresh complete');
-      }
+      await fetchAndUpdateData();
     } catch (error) {
       onError(
         'Refresh Failed',

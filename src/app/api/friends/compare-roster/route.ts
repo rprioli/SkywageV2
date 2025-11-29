@@ -30,7 +30,6 @@ export async function GET(request: NextRequest) {
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Missing Supabase environment variables for compare-roster auth');
       return NextResponse.json(
         { error: 'Server configuration error' },
         { status: 500 }
@@ -46,7 +45,6 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser(accessToken);
 
     if (authError || !user) {
-      console.error('compare-roster auth error', authError);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -89,7 +87,6 @@ export async function GET(request: NextRequest) {
       .maybeSingle();
 
     if (friendshipError) {
-      console.error('Error verifying friendship in compare-roster:', friendshipError);
       return NextResponse.json(
         { error: 'Failed to verify friendship' },
         { status: 500 }
@@ -122,7 +119,6 @@ export async function GET(request: NextRequest) {
     ]);
 
     if (myRosterResult.error) {
-      console.error('Error fetching my roster:', myRosterResult.error);
       return NextResponse.json(
         { error: 'Failed to fetch your roster' },
         { status: 500 }
@@ -130,7 +126,6 @@ export async function GET(request: NextRequest) {
     }
 
     if (friendRosterResult.error) {
-      console.error('Error fetching friend roster:', friendRosterResult.error);
       return NextResponse.json(
         { error: 'Failed to fetch friend roster' },
         { status: 500 }
@@ -161,8 +156,7 @@ export async function GET(request: NextRequest) {
       },
       { status: 200 }
     );
-  } catch (error) {
-    console.error('Error in compare-roster API:', error);
+  } catch {
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

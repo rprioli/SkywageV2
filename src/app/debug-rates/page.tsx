@@ -28,12 +28,10 @@ export default function DebugRatesPage() {
     
     try {
       // Step 1: Test rate structures directly
-      console.log('Step 1: Testing rate structures...');
       addDebugResult('FLYDUBAI_RATES_LEGACY.CCM', FLYDUBAI_RATES_LEGACY.CCM);
       addDebugResult('FLYDUBAI_RATES_NEW.CCM', FLYDUBAI_RATES_NEW.CCM);
       
       // Step 2: Test getRatesForDate function
-      console.log('Step 2: Testing getRatesForDate...');
       const june2025Rates = getRatesForDate(2025, 6);
       const july2025Rates = getRatesForDate(2025, 7);
       
@@ -41,7 +39,6 @@ export default function DebugRatesPage() {
       addDebugResult('getRatesForDate(2025, 7)', july2025Rates);
       
       // Step 3: Test getPositionRatesForDate function
-      console.log('Step 3: Testing getPositionRatesForDate...');
       const ccmJune = getPositionRatesForDate('CCM', 2025, 6);
       const ccmJuly = getPositionRatesForDate('CCM', 2025, 7);
       
@@ -49,15 +46,12 @@ export default function DebugRatesPage() {
       addDebugResult('getPositionRatesForDate(CCM, 2025, 7)', ccmJuly);
       
       // Step 4: Test individual property access
-      console.log('Step 4: Testing property access...');
       addDebugResult('ccmJune.basicSalary', ccmJune?.basicSalary);
       addDebugResult('ccmJune.housingAllowance', ccmJune?.housingAllowance);
       addDebugResult('ccmJuly.basicSalary', ccmJuly?.basicSalary);
       addDebugResult('ccmJuly.housingAllowance', ccmJuly?.housingAllowance);
       
-      // Step 5: Test calculateMonthlySalary with detailed logging
-      console.log('Step 5: Testing calculateMonthlySalary...');
-      
+      // Step 5: Test calculateMonthlySalary
       // Test June 2025
       const juneResult = calculateMonthlySalary([], [], 'CCM', 6, 2025, 'debug-user');
       addDebugResult('calculateMonthlySalary June 2025 - Full Result', juneResult);
@@ -73,7 +67,6 @@ export default function DebugRatesPage() {
       addDebugResult('calculateMonthlySalary July 2025 - Housing Allowance', julyResult?.monthlyCalculation?.housingAllowance);
       
       // Step 6: Test date comparison logic
-      console.log('Step 6: Testing date comparison...');
       const effectiveDate = new Date(2025, 6, 1); // July 1, 2025
       const juneDate = new Date(2025, 5, 1); // June 1, 2025 (month is 0-indexed)
       const julyDate = new Date(2025, 6, 1); // July 1, 2025

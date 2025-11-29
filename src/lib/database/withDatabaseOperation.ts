@@ -121,7 +121,6 @@ export function withDatabaseOperation<TRaw, TResult, Args extends unknown[]>(
       const { data, error } = await operation(...args);
 
       if (error) {
-        console.error(`Database operation '${operationName}' failed:`, error);
         return { data: null, error: error.message };
       }
 
@@ -134,7 +133,6 @@ export function withDatabaseOperation<TRaw, TResult, Args extends unknown[]>(
       return { data: result, error: null };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      console.error(`Database operation '${operationName}' threw exception:`, error);
       return { data: null, error: errorMessage };
     }
   };
@@ -167,7 +165,6 @@ export function withDatabaseArrayOperation<TRaw, TResult, Args extends unknown[]
       const { data, error } = await operation(...args);
 
       if (error) {
-        console.error(`Database operation '${operationName}' failed:`, error);
         return { data: null, error: error.message };
       }
 
@@ -181,12 +178,8 @@ export function withDatabaseArrayOperation<TRaw, TResult, Args extends unknown[]
         for (const item of data) {
           try {
             results.push(transform(item));
-          } catch (transformError) {
-            console.error(
-              `Failed to transform item in '${operationName}':`,
-              transformError
-            );
-            // Continue with other items
+          } catch {
+            // Skip items that fail to transform
           }
         }
         return { data: results, error: null };
@@ -195,7 +188,6 @@ export function withDatabaseArrayOperation<TRaw, TResult, Args extends unknown[]
       return { data: data as unknown as TResult[], error: null };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      console.error(`Database operation '${operationName}' threw exception:`, error);
       return { data: null, error: errorMessage };
     }
   };
@@ -223,14 +215,12 @@ export function withDatabaseVoidOperation<Args extends unknown[]>(
       const { error } = await operation(...args);
 
       if (error) {
-        console.error(`Database operation '${operationName}' failed:`, error);
         return { data: null, error: error.message };
       }
 
       return { data: null, error: null };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      console.error(`Database operation '${operationName}' threw exception:`, error);
       return { data: null, error: errorMessage };
     }
   };
