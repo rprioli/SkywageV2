@@ -30,16 +30,11 @@ export function parseCSVContent(content: string): string[][] {
       transform: (value: string) => value.trim() // Trim whitespace from each cell
     });
 
-    if (result.errors.length > 0) {
-      console.warn('CSV parsing warnings:', result.errors);
-    }
-
     // Convert ParseResult data to string[][]
     const rows: string[][] = result.data as string[][];
 
     return rows;
-  } catch (error) {
-    console.error('CSV parsing error:', error);
+  } catch {
     // Fallback to basic parsing if PapaParse fails
     return content.split('\n').map(line => [line.trim()]);
   }
@@ -88,20 +83,11 @@ export function extractMonthFromCSV(content: string): { month: number; year: num
       year += 2000; // Convert 2-digit year to 4-digit
     }
 
-    // Debug: Log the year extraction
-    console.log('CSV Parser - Year extraction:', {
-      originalText: text,
-      yearMatch: yearMatch[1],
-      parsedYear: year
-    });
-
     // Handle common year parsing issues
     if (year < 2020) {
-      console.log('CSV Parser - Year too old, attempting to fix:', year);
       // If year is like 2004, it might be a parsing error for 2025
       if (year >= 2000 && year <= 2010) {
         year = year + 21; // Convert 2004 -> 2025
-        console.log('CSV Parser - Adjusted year to:', year);
       }
     }
   }
@@ -124,14 +110,6 @@ export function extractMonthFromCSV(content: string): { month: number; year: num
       if (startDay === 1 && endDay >= 28 && startMonth === endMonth) {
         month = startMonth;
         year = startYear < 100 ? startYear + 2000 : startYear;
-
-        console.log('CSV Parser - Date range extraction (DD/MM/YYYY):', {
-          originalText: text,
-          startDay, startMonth, startYear,
-          endDay, endMonth, endYear,
-          parsedMonth: month,
-          parsedYear: year
-        });
       }
     }
 
@@ -145,20 +123,10 @@ export function extractMonthFromCSV(content: string): { month: number; year: num
           year += 2000;
         }
 
-        console.log('CSV Parser - Simple numeric month/year extraction:', {
-          originalText: text,
-          monthMatch: monthMatch[1],
-          yearMatch: monthMatch[2],
-          parsedMonth: month,
-          parsedYear: year
-        });
-
         // Handle year parsing issues for numeric format too
         if (year < 2020) {
-          console.log('CSV Parser - Numeric year too old, attempting to fix:', year);
           if (year >= 2000 && year <= 2010) {
             year = year + 21; // Convert 2004 -> 2025
-            console.log('CSV Parser - Adjusted numeric year to:', year);
           }
         }
       }
@@ -348,7 +316,6 @@ export function parseFlightDutyRow(
         const simpleTimeMatch = trimmedValue.match(/^(\d{1,2}:\d{2})(\?[¹²³⁴⁵⁶⁷⁸⁹♦◆�]|[¹²³⁴⁵⁶⁷⁸⁹♦◆�])*$/);
         if (simpleTimeMatch) {
           reportTimeStr = simpleTimeMatch[1]; // Extract just the time part without suffixes
-          console.log(`CSV Debug - Found simple report time in column ${col}: "${reportTimeStr}" (from "${trimmedValue}")`);
           break;
         }
 
@@ -356,7 +323,6 @@ export function parseFlightDutyRow(
         const aPrefixMatch = trimmedValue.match(/^A(\d{1,2}:\d{2})[♦◆]/);
         if (aPrefixMatch) {
           reportTimeStr = aPrefixMatch[1]; // Extract just the time part
-          console.log(`CSV Debug - Found A-prefixed report time in column ${col}: "${reportTimeStr}" (from "${trimmedValue}")`);
           break;
         }
 
@@ -364,7 +330,6 @@ export function parseFlightDutyRow(
         const rangeMatch = trimmedValue.match(/A(\d{1,2}:\d{2})[♦◆]\s*-\s*A(\d{1,2}:\d{2})[♦◆]/);
         if (rangeMatch) {
           reportTimeStr = rangeMatch[1]; // Extract the first time
-          console.log(`CSV Debug - Found report time from range in column ${col}: "${reportTimeStr}" (from "${trimmedValue}")`);
           break;
         }
       }
@@ -373,7 +338,6 @@ export function parseFlightDutyRow(
 
   // Smart extraction for debrief time - handle empty cells and merged cell issues
   let debriefTimeStr = paddedRow[5]; // Debrief times column (skip col 4 which is Actual times/Delays)
-  console.log(`CSV Debug - Initial debrief time from column 5: "${debriefTimeStr}" (chars: ${debriefTimeStr ? Array.from(debriefTimeStr).map(c => c.charCodeAt(0)).join(',') : 'null'})`);
   if (!debriefTimeStr || debriefTimeStr.trim() === '') {
     // Search for time pattern in ALL columns if the expected column is empty
     for (let col = 0; col <= 7; col++) {
@@ -386,7 +350,6 @@ export function parseFlightDutyRow(
         const simpleTimeMatch = trimmedValue.match(/^(\d{1,2}:\d{2})(\?[¹²³⁴⁵⁶⁷⁸⁹♦◆�]|[¹²³⁴⁵⁶⁷⁸⁹♦◆�])*$/);
         if (simpleTimeMatch && col !== 3) { // Skip col 3 as it's likely report time
           debriefTimeStr = simpleTimeMatch[1]; // Extract just the time part without suffixes
-          console.log(`CSV Debug - Found simple debrief time in column ${col}: "${debriefTimeStr}" (from "${trimmedValue}")`);
           break;
         }
 
@@ -394,7 +357,6 @@ export function parseFlightDutyRow(
         const aPrefixMatch = trimmedValue.match(/^A(\d{1,2}:\d{2})[♦◆]/);
         if (aPrefixMatch && col !== 3) {
           debriefTimeStr = aPrefixMatch[1]; // Extract just the time part
-          console.log(`CSV Debug - Found A-prefixed debrief time in column ${col}: "${debriefTimeStr}" (from "${trimmedValue}")`);
           break;
         }
 
@@ -404,12 +366,10 @@ export function parseFlightDutyRow(
           // If we haven't found report time yet, use first time for report, second for debrief
           reportTimeStr = rangeMatch[1];
           debriefTimeStr = rangeMatch[2];
-          console.log(`CSV Debug - Found both times from range in column ${col}: report="${reportTimeStr}", debrief="${debriefTimeStr}" (from "${trimmedValue}")`);
           break;
         } else if (rangeMatch && reportTimeStr) {
           // If we already have report time, use second time for debrief
           debriefTimeStr = rangeMatch[2];
-          console.log(`CSV Debug - Found debrief time from range in column ${col}: "${debriefTimeStr}" (from "${trimmedValue}")`);
           break;
         }
       }
@@ -420,7 +380,6 @@ export function parseFlightDutyRow(
 
   // Skip rows that look like headers
   if (dateStr && dateStr.toLowerCase().trim() === 'date') {
-    console.log(`CSV Debug - Skipping header row ${rowIndex + 1}: [${paddedRow.join(', ')}]`);
     return { flightDuty: null, errors, warnings };
   }
 
@@ -430,13 +389,11 @@ export function parseFlightDutyRow(
 
     // Skip if it looks like a flight number (starts with letters)
     if (/^[A-Z]{2,3}\d+/.test(trimmedDate)) {
-      console.log(`CSV Debug - Skipping flight number row ${rowIndex + 1}: "${trimmedDate}"`);
       return { flightDuty: null, errors, warnings };
     }
 
     // Skip if it looks like a sector (contains " - " or " -> ")
     if (trimmedDate.includes(' - ') || trimmedDate.includes(' -> ')) {
-      console.log(`CSV Debug - Skipping sector row ${rowIndex + 1}: "${trimmedDate}"`);
       return { flightDuty: null, errors, warnings };
     }
 
@@ -459,7 +416,6 @@ export function parseFlightDutyRow(
 
     for (const pattern of nonDatePatterns) {
       if (pattern.test(trimmedDate)) {
-        console.log(`CSV Debug - Skipping non-date pattern row ${rowIndex + 1}: "${trimmedDate}"`);
         return { flightDuty: null, errors, warnings };
       }
     }
@@ -470,7 +426,6 @@ export function parseFlightDutyRow(
   if (!date) {
     // Only error if the date string is not empty (skip empty date rows)
     if (dateStr && dateStr.trim() !== '') {
-      console.log(`CSV Debug - Date parsing failed for row ${rowIndex + 1}: "${dateStr}"`);
       errors.push(`Row ${rowIndex + 1}: Invalid date format "${dateStr}"`);
     }
     return { flightDuty: null, errors, warnings };
@@ -541,22 +496,12 @@ export function parseFlightDutyRow(
   const sectorValidation = validateSectors(details, rowIndex);
   warnings.push(...sectorValidation.warnings);
 
-  // Check for empty time strings first and provide detailed error info
+  // Check for empty time strings first
   if (!reportTimeStr || reportTimeStr.trim() === '') {
-    console.log(`CSV Debug - Empty report time at row ${rowIndex + 1}:`, {
-      reportTimeStr: `"${reportTimeStr}"`,
-      reportTimeColumn: paddedRow[3],
-      allColumns: paddedRow
-    });
     errors.push(`Row ${rowIndex + 1}: Invalid report time "": Invalid time string provided`);
   }
 
   if (!debriefTimeStr || debriefTimeStr.trim() === '') {
-    console.log(`CSV Debug - Empty debrief time at row ${rowIndex + 1}:`, {
-      debriefTimeStr: `"${debriefTimeStr}"`,
-      debriefTimeColumn: paddedRow[5],
-      allColumns: paddedRow
-    });
     errors.push(`Row ${rowIndex + 1}: Invalid debrief time "": Invalid time string provided`);
   }
 
@@ -566,29 +511,20 @@ export function parseFlightDutyRow(
 
   // Use enhanced cross-day detection for both times
   if (reportTimeStr && reportTimeStr.trim() !== '' && debriefTimeStr && debriefTimeStr.trim() !== '') {
-    console.log(`CSV Debug - Parsing times with cross-day detection: Report "${reportTimeStr}", Debrief "${debriefTimeStr}"`);
-
     const timeParseResult = parseTimeStringWithCrossDay(reportTimeStr, debriefTimeStr);
     reportTimeResult = timeParseResult.reportTime;
     debriefTimeResult = timeParseResult.debriefTime;
 
     if (!reportTimeResult.success) {
-      console.log(`CSV Debug - Report time parsing failed:`, reportTimeResult);
       errors.push(`Row ${rowIndex + 1}: Invalid report time "${reportTimeStr}": ${reportTimeResult.error}`);
     }
 
     if (!debriefTimeResult.success) {
-      console.log(`CSV Debug - Debrief time parsing failed:`, debriefTimeResult);
       errors.push(`Row ${rowIndex + 1}: Invalid debrief time "${debriefTimeStr}": ${debriefTimeResult.error}`);
-    }
-
-    if (reportTimeResult.success && debriefTimeResult.success) {
-      console.log(`CSV Debug - Cross-day detection result: ${timeParseResult.isCrossDay ? 'NEXT DAY' : 'SAME DAY'}`);
     }
   } else {
     // Fallback to individual parsing if one time is missing
     if (reportTimeStr && reportTimeStr.trim() !== '') {
-      console.log(`CSV Debug - Parsing report time individually: "${reportTimeStr}"`);
       reportTimeResult = parseTimeString(reportTimeStr);
       if (!reportTimeResult.success) {
         errors.push(`Row ${rowIndex + 1}: Invalid report time "${reportTimeStr}": ${reportTimeResult.error}`);
@@ -596,7 +532,6 @@ export function parseFlightDutyRow(
     }
 
     if (debriefTimeStr && debriefTimeStr.trim() !== '') {
-      console.log(`CSV Debug - Parsing debrief time individually: "${debriefTimeStr}"`);
       debriefTimeResult = parseTimeString(debriefTimeStr);
       if (!debriefTimeResult.success) {
         errors.push(`Row ${rowIndex + 1}: Invalid debrief time "${debriefTimeStr}": ${debriefTimeResult.error}`);
@@ -680,22 +615,14 @@ export function parseFlightDutiesFromCSV(
 
     // Find the actual data start row by looking for the header row
     let dataStartRow = 5; // Default to row 5 (0-based index) which is row 6 in Excel
-    let headerRowFound = false;
 
     for (let i = 0; i < Math.min(rows.length, 15); i++) {
       const row = rows[i];
-      console.log(`CSV Debug - Checking row ${i} for headers:`, row);
 
       if (row.length > 0 && row[0] && row[0].toLowerCase().trim() === 'date') {
         dataStartRow = i + 1; // Data starts after the header row
-        headerRowFound = true;
-        console.log(`CSV Debug - Found header row at ${i} (Excel row ${i + 1}), data starts at ${dataStartRow} (Excel row ${dataStartRow + 1})`);
         break;
       }
-    }
-
-    if (!headerRowFound) {
-      console.log(`CSV Debug - Header row not found, using default data start at ${dataStartRow} (Excel row ${dataStartRow + 1})`);
     }
 
     // Skip header rows and start from actual data
@@ -713,7 +640,6 @@ export function parseFlightDutiesFromCSV(
 
       // Also stop if any cell contains the full end marker phrase
       if (row.some(cell => cell && cell.toLowerCase().includes('total hours and statistics'))) {
-        console.log(`CSV Debug - Found end marker phrase at row ${actualRowIndex}, stopping processing`);
         break;
       }
 
@@ -722,11 +648,9 @@ export function parseFlightDutiesFromCSV(
       let rowsUsed = 1;
 
       if (needsRowMerging(row)) {
-        console.log(`CSV Debug - Row ${actualRowIndex} needs merging, looking ahead...`);
         const mergeResult = mergeRelatedRows(dataRows, i);
         processedRow = mergeResult.mergedRow;
         rowsUsed = mergeResult.rowsUsed;
-        console.log(`CSV Debug - Merged ${rowsUsed} rows for processing`);
       }
 
       const result = parseFlightDutyRow(processedRow, actualRowIndex, userId, month, year);

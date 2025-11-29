@@ -1,6 +1,7 @@
 # Skywage Codebase Refactoring Plan
 
 > **Created:** November 27, 2025  
+> **Last Updated:** November 29, 2025  
 > **Status:** Planning  
 > **Risk Level:** Medium (phased approach minimizes risk)
 
@@ -37,33 +38,35 @@ This refactoring addresses **technical debt** accumulated during rapid feature d
 
 ### 🎯 Immediate Benefits
 
-| Benefit | Description | Impact |
-|---------|-------------|--------|
-| **Faster Debugging** | Smaller files = easier to locate issues | High |
-| **Reduced Cognitive Load** | Developers can understand modules in isolation | High |
-| **Better Test Coverage** | Smaller units are easier to test | Medium |
-| **Cleaner Git History** | Changes are localized to specific modules | Medium |
-| **Faster Code Reviews** | Reviewers can focus on specific functionality | Medium |
+| Benefit                    | Description                                    | Impact |
+| -------------------------- | ---------------------------------------------- | ------ |
+| **Faster Debugging**       | Smaller files = easier to locate issues        | High   |
+| **Reduced Cognitive Load** | Developers can understand modules in isolation | High   |
+| **Better Test Coverage**   | Smaller units are easier to test               | Medium |
+| **Cleaner Git History**    | Changes are localized to specific modules      | Medium |
+| **Faster Code Reviews**    | Reviewers can focus on specific functionality  | Medium |
 
 ### 📈 Long-Term Benefits
 
-| Benefit | Description | Impact |
-|---------|-------------|--------|
-| **Easier Onboarding** | New developers understand codebase faster | High |
-| **Reduced Bug Surface** | Single-responsibility modules have fewer edge cases | High |
-| **Feature Velocity** | Adding features is faster with clear boundaries | High |
-| **Reusability** | Extracted utilities can be shared across features | Medium |
-| **Production Stability** | No console.log noise in production logs | Medium |
+| Benefit                  | Description                                         | Impact |
+| ------------------------ | --------------------------------------------------- | ------ |
+| **Easier Onboarding**    | New developers understand codebase faster           | High   |
+| **Reduced Bug Surface**  | Single-responsibility modules have fewer edge cases | High   |
+| **Feature Velocity**     | Adding features is faster with clear boundaries     | High   |
+| **Reusability**          | Extracted utilities can be shared across features   | Medium |
+| **Production Stability** | No console.log noise in production logs             | Medium |
 
 ### 📊 Quantitative Goals
 
-| Metric | Current | Target | Improvement |
-|--------|---------|--------|-------------|
-| Files over 300 lines | 25+ | 0 | -100% |
-| Largest file (lines) | 1,026 | <300 | -71% |
-| Console.log statements | 327 | 0 | -100% |
-| Empty directories | 6 | 0 | -100% |
-| Average file size | ~350 | <200 | -43% |
+| Metric                 | Current (Nov 29) | Target | Improvement |
+| ---------------------- | ---------------- | ------ | ----------- |
+| Files over 300 lines   | **30**           | 0      | -100%       |
+| Largest file (lines)   | 1,026            | <300   | -71%        |
+| Console.log statements | 327              | 0      | -100%       |
+| Empty directories      | 6                | 0      | -100%       |
+| Average file size      | ~380             | <200   | -47%        |
+
+> ⚠️ **Note:** File count increased from 25+ to 30 since initial analysis due to ongoing feature development (Friends roster comparison).
 
 ---
 
@@ -89,12 +92,12 @@ main
 
 ### Branch Groupings Rationale
 
-| Branch | Phases | Rationale |
-|--------|--------|-----------|
-| `refactor/cleanup-and-hygiene` | 1 + 2 | Low-risk changes, no logic changes, easy to test together |
-| `refactor/parsers-consolidation` | 3 | Core parsing logic, needs isolated testing |
-| `refactor/processors-split` | 4 | Business logic extraction, critical to test thoroughly |
-| `refactor/components-split` | 5 + 6 | UI changes, can be visually tested together |
+| Branch                           | Phases | Rationale                                                 |
+| -------------------------------- | ------ | --------------------------------------------------------- |
+| `refactor/cleanup-and-hygiene`   | 1 + 2  | Low-risk changes, no logic changes, easy to test together |
+| `refactor/parsers-consolidation` | 3      | Core parsing logic, needs isolated testing                |
+| `refactor/processors-split`      | 4      | Business logic extraction, critical to test thoroughly    |
+| `refactor/components-split`      | 5 + 6  | UI changes, can be visually tested together               |
 
 ### Branch Rules
 
@@ -108,14 +111,16 @@ main
 
 ## Phase Overview
 
-| Phase | Focus | Files Affected | Risk | Effort |
-|-------|-------|----------------|------|--------|
-| 1 | Console.log Cleanup | 47 files | 🟢 Low | 1-2 hours |
-| 2 | Empty Directory & Dead Code Removal | 6 directories | 🟢 Low | 30 min |
-| 3 | Parser Consolidation | 4 files → 6 files | 🟡 Medium | 3-4 hours |
-| 4 | Processor File Splits | 2 files → 8 files | 🟡 Medium | 4-5 hours |
-| 5 | Component File Splits | 3 files → 12 files | 🟡 Medium | 3-4 hours |
-| 6 | Dashboard Page Split | 1 file → 4 files | 🟡 Medium | 2-3 hours |
+| Phase | Focus                               | Files Affected         | Risk      | Effort        |
+| ----- | ----------------------------------- | ---------------------- | --------- | ------------- |
+| 1     | Console.log Cleanup                 | 47 files               | 🟢 Low    | 1-2 hours     |
+| 2     | Empty Directory & Dead Code Removal | 6 directories          | 🟢 Low    | 30 min        |
+| 3     | Parser Consolidation                | 4 files → 6 files      | 🟡 Medium | 3-4 hours     |
+| 4     | Processor File Splits               | 2 files → 8 files      | 🟡 Medium | 4-5 hours     |
+| 5     | Component File Splits               | **4 files → 16 files** | 🟡 Medium | **4-5 hours** |
+| 6     | Dashboard Page Split                | 1 file → 4 files       | 🟡 Medium | 2-3 hours     |
+
+> ⚠️ **Updated Nov 29:** Phase 5 now includes `RosterComparison.tsx` (558 lines) which grew during Friends feature development.
 
 ---
 
@@ -128,29 +133,32 @@ main
 **Effort:** 1-2 hours
 
 #### Objective
+
 Remove all 327 console.log/warn/error statements from production code.
 
 #### Strategy
+
 1. **Keep essential error logging** - Replace with proper error boundaries or toast notifications
 2. **Remove debug logs** - All `console.log` used for debugging
 3. **Convert warnings to proper handling** - Replace `console.warn` with user-facing feedback where appropriate
 
 #### Files to Update (Top 10 by count)
 
-| File | Console Calls | Action |
-|------|---------------|--------|
-| `flydubai-excel-parser.ts` | 47 | Remove debug, keep parse errors as thrown errors |
-| `csv-parser.ts` | 36 | Remove debug, keep parse errors as thrown errors |
-| `database/flights.ts` | 22 | Remove debug, errors should throw |
-| `database/friends.ts` | 20 | Remove debug, errors should throw |
-| `auth.ts` | 19 | Remove debug, critical errors can stay temporarily |
-| `manual-entry-processor.ts` | 14 | Remove debug logs |
-| `calculation-engine.ts` | 14 | Remove debug logs |
-| `database/calculations.ts` | 17 | Remove debug, errors should throw |
-| `AuthProvider.tsx` | 14 | Remove debug logs |
-| `database/audit.ts` | 13 | Remove debug logs |
+| File                        | Console Calls | Action                                             |
+| --------------------------- | ------------- | -------------------------------------------------- |
+| `flydubai-excel-parser.ts`  | 47            | Remove debug, keep parse errors as thrown errors   |
+| `csv-parser.ts`             | 36            | Remove debug, keep parse errors as thrown errors   |
+| `database/flights.ts`       | 22            | Remove debug, errors should throw                  |
+| `database/friends.ts`       | 20            | Remove debug, errors should throw                  |
+| `auth.ts`                   | 19            | Remove debug, critical errors can stay temporarily |
+| `manual-entry-processor.ts` | 14            | Remove debug logs                                  |
+| `calculation-engine.ts`     | 14            | Remove debug logs                                  |
+| `database/calculations.ts`  | 17            | Remove debug, errors should throw                  |
+| `AuthProvider.tsx`          | 14            | Remove debug logs                                  |
+| `database/audit.ts`         | 13            | Remove debug logs                                  |
 
 #### Acceptance Criteria
+
 - [ ] Zero `console.log` statements in `src/`
 - [ ] Zero `console.warn` statements (converted to proper handling)
 - [ ] `console.error` only in catch blocks that re-throw or notify user
@@ -165,6 +173,7 @@ Remove all 327 console.log/warn/error statements from production code.
 **Effort:** 30 minutes
 
 #### Objective
+
 Remove empty directories and any orphaned code.
 
 #### Directories to Remove
@@ -179,11 +188,13 @@ src/app/(dashboard)/settings/   # Empty
 ```
 
 #### Additional Cleanup
+
 - Review `DashboardSidebar.tsx` for links to removed routes
 - Update any navigation that references these empty routes
 - Check for dead imports
 
 #### Acceptance Criteria
+
 - [ ] All empty directories removed
 - [ ] No broken navigation links
 - [ ] No TypeScript errors
@@ -198,6 +209,7 @@ src/app/(dashboard)/settings/   # Empty
 **Effort:** 3-4 hours
 
 #### Objective
+
 Extract shared parsing utilities and reduce duplication between CSV and Excel parsers.
 
 #### Current State
@@ -238,6 +250,7 @@ parsing/
 6. **Refactor Excel parser** to use shared utilities
 
 #### Acceptance Criteria
+
 - [ ] All parser files under 300 lines
 - [ ] Existing tests pass
 - [ ] CSV upload works identically
@@ -253,6 +266,7 @@ parsing/
 **Effort:** 4-5 hours
 
 #### Objective
+
 Split the two massive processor files into focused modules.
 
 #### File 1: `upload-processor.ts` (1,026 lines → ~4 files)
@@ -313,6 +327,7 @@ manual-entry/
 ```
 
 #### Acceptance Criteria
+
 - [ ] All files under 300 lines
 - [ ] Existing functionality unchanged
 - [ ] Upload roster flow works
@@ -326,12 +341,13 @@ manual-entry/
 
 **Branch:** `refactor/components-split`  
 **Risk:** Medium  
-**Effort:** 3-4 hours
+**Effort:** 4-5 hours
 
 #### Objective
+
 Split large component files into focused sub-components.
 
-#### File 1: `FlightEntryForm.tsx` (803 lines → ~5 files)
+#### File 1: `FlightEntryForm.tsx` (836 lines → ~5 files)
 
 **Target Structure:**
 
@@ -359,7 +375,22 @@ flight-duty-card/
 └── index.ts
 ```
 
-#### File 3: `FlightDutiesTable.tsx` (410 lines → ~3 files)
+#### File 3: `RosterComparison.tsx` (558 lines → ~4 files) ⚠️ NEW
+
+**Target Structure:**
+
+```
+roster-comparison/
+├── RosterComparison.tsx (~150 lines)    # Main comparison container
+├── ComparisonHeader.tsx (~80 lines)     # Friend selector, controls
+├── ComparisonGrid.tsx (~150 lines)      # Side-by-side roster grid
+├── ComparisonLegend.tsx (~60 lines)     # Legend/key for tile types
+└── index.ts
+```
+
+> ⚠️ This file grew from 352 → 558 lines due to Friends feature enhancements.
+
+#### File 4: `FlightDutiesTable.tsx` (410 lines → ~3 files)
 
 **Target Structure:**
 
@@ -372,10 +403,12 @@ flight-duties-table/
 ```
 
 #### Acceptance Criteria
+
 - [ ] All component files under 300 lines
 - [ ] No visual changes to UI
 - [ ] All interactions work identically
 - [ ] No TypeScript errors
+- [ ] Roster comparison feature works correctly
 
 ---
 
@@ -386,6 +419,7 @@ flight-duties-table/
 **Effort:** 2-3 hours
 
 #### Objective
+
 Split the dashboard page into logical sections.
 
 #### Current: `dashboard/page.tsx` (592 lines)
@@ -408,6 +442,7 @@ dashboard/
 #### State Extraction
 
 Move to `useDashboardState.ts`:
+
 - `selectedOverviewMonth` / `setSelectedOverviewMonth`
 - `selectedYear` / `setSelectedYear`
 - `deleteDialogOpen` / `selectedFlightForDelete`
@@ -415,6 +450,7 @@ Move to `useDashboardState.ts`:
 - Delete handlers
 
 #### Acceptance Criteria
+
 - [ ] Dashboard page under 150 lines
 - [ ] All dashboard functionality works
 - [ ] Month/year selection works
@@ -428,27 +464,37 @@ Move to `useDashboardState.ts`:
 ### After Each Phase
 
 #### Automated Tests
+
 - [ ] `npm run lint` passes
 - [ ] `npm run build` succeeds
 - [ ] Existing unit tests pass
 
 #### Manual Testing - Core Flows
 
-| Flow | Test Steps | Pass? |
-|------|------------|-------|
-| **Upload Roster (CSV)** | Dashboard → Upload → Select CSV → Verify duties appear | ☐ |
-| **Upload Roster (Excel)** | Dashboard → Upload → Select Excel → Verify duties appear | ☐ |
-| **Manual Entry** | Dashboard → Manual → Enter flight → Save → Verify | ☐ |
-| **Batch Entry** | Manual → Add multiple → Save batch → Verify all | ☐ |
-| **Edit Flight** | Click duty → Edit → Save → Verify changes | ☐ |
-| **Delete Flight** | Click duty → Delete → Confirm → Verify removed | ☐ |
-| **Bulk Delete** | Select multiple → Delete → Confirm → Verify | ☐ |
-| **Month Switch** | Change month → Verify correct data loads | ☐ |
-| **Year Switch** | Change year → Verify correct data loads | ☐ |
-| **Salary Calculation** | Upload roster → Check salary breakdown | ☐ |
-| **Friends Roster Compare** | Friends → Select friend → Compare rosters | ☐ |
-| **Statistics** | Statistics page → Verify charts render | ☐ |
-| **Profile** | Profile → Update position → Verify saved | ☐ |
+| Flow                      | Test Steps                                               | Pass? |
+| ------------------------- | -------------------------------------------------------- | ----- |
+| **Upload Roster (CSV)**   | Dashboard → Upload → Select CSV → Verify duties appear   | ☐     |
+| **Upload Roster (Excel)** | Dashboard → Upload → Select Excel → Verify duties appear | ☐     |
+| **Manual Entry**          | Dashboard → Manual → Enter flight → Save → Verify        | ☐     |
+| **Batch Entry**           | Manual → Add multiple → Save batch → Verify all          | ☐     |
+| **Edit Flight**           | Click duty → Edit → Save → Verify changes                | ☐     |
+| **Delete Flight**         | Click duty → Delete → Confirm → Verify removed           | ☐     |
+| **Bulk Delete**           | Select multiple → Delete → Confirm → Verify              | ☐     |
+| **Month Switch**          | Change month → Verify correct data loads                 | ☐     |
+| **Year Switch**           | Change year → Verify correct data loads                  | ☐     |
+| **Salary Calculation**    | Upload roster → Check salary breakdown                   | ☐     |
+| **Statistics**            | Statistics page → Verify charts render                   | ☐     |
+| **Profile**               | Profile → Update position → Verify saved                 | ☐     |
+
+#### Friends Feature Testing (Phase 5 Critical)
+
+| Flow                              | Test Steps                                                           | Pass? |
+| --------------------------------- | -------------------------------------------------------------------- | ----- |
+| **Roster Compare - Basic**        | Friends → Select friend → Compare rosters side-by-side               | ☐     |
+| **Roster Compare - Month Switch** | Compare view → Change month → Verify both rosters update             | ☐     |
+| **Roster Compare - Duty Tiles**   | Verify tile types display correctly (turnaround, layover, off, etc.) | ☐     |
+| **Roster Compare - Multi-day**    | Verify multi-day duties span correctly                               | ☐     |
+| **Roster Compare - Tab Focus**    | Switch tabs → Return → Verify no unwanted reload                     | ☐     |
 
 ---
 
@@ -457,6 +503,7 @@ Move to `useDashboardState.ts`:
 ### If Issues Are Found
 
 1. **During Development**
+
    - `git stash` current changes
    - `git checkout main`
    - Investigate issue on main
@@ -482,14 +529,14 @@ Move to `useDashboardState.ts`:
 
 ## Timeline Estimate
 
-| Week | Branch | Phases | Deliverable |
-|------|--------|--------|-------------|
-| 1 | `refactor/cleanup-and-hygiene` | 1 + 2 | Clean codebase, no console logs |
-| 2 | `refactor/parsers-consolidation` | 3 | Modular parsing utilities |
-| 3 | `refactor/processors-split` | 4 | Split processor files |
-| 4 | `refactor/components-split` | 5 + 6 | Split UI components |
+| Week | Branch                           | Phases | Deliverable                                  |
+| ---- | -------------------------------- | ------ | -------------------------------------------- |
+| 1    | `refactor/cleanup-and-hygiene`   | 1 + 2  | Clean codebase, no console logs              |
+| 2    | `refactor/parsers-consolidation` | 3      | Modular parsing utilities                    |
+| 3    | `refactor/processors-split`      | 4      | Split processor files                        |
+| 4    | `refactor/components-split`      | 5 + 6  | Split UI components (incl. RosterComparison) |
 
-**Total Effort:** ~15-20 hours  
+**Total Effort:** ~17-22 hours _(updated to include RosterComparison.tsx)_  
 **Calendar Time:** 2-4 weeks (depending on availability)
 
 ---
@@ -507,22 +554,39 @@ After all phases complete:
 
 ---
 
+## Watch List: Files Approaching Threshold
+
+These files are between 300-350 lines and should be monitored during feature development:
+
+| File                      | Lines | Risk                         |
+| ------------------------- | ----- | ---------------------------- |
+| `RegisterForm.tsx`        | 323   | Low - stable auth component  |
+| `AuditTrailDisplay.tsx`   | 319   | Low - read-only display      |
+| `RosterUploadSection.tsx` | 318   | Medium - active feature area |
+| `dutyMapping.ts`          | 314   | Low - mostly static mappings |
+| `useDataRefresh.ts`       | 314   | Medium - complex hook logic  |
+
+**Recommendation:** If any of these files grow beyond 350 lines during feature development, consider splitting them proactively before they become larger problems.
+
+---
+
 ## Appendix: Files by Size (Reference)
 
 <details>
-<summary>Click to expand full file size list</summary>
+<summary>Click to expand full file size list (Updated Nov 29, 2025)</summary>
 
 ```
 upload-processor.ts                1026 lines
 manual-entry-processor.ts           856 lines
+FlightEntryForm.tsx                 836 lines  ⬆️ (+33)
 flydubai-excel-parser.ts            829 lines
-FlightEntryForm.tsx                 803 lines
 csv-parser.ts                       789 lines
 excel-parser.ts                     629 lines
 dashboard/page.tsx                  592 lines
 database/flights.ts                 575 lines
 FlightDutyCard.tsx                  572 lines
 calculation-engine.ts               572 lines
+RosterComparison.tsx                558 lines  ⬆️ (+206) ⚠️
 database/friends.ts                 465 lines
 manual-entry-validation.ts          436 lines
 flight-classifier.ts                435 lines
@@ -531,14 +595,23 @@ database/calculations.ts            382 lines
 card-data-mapper.ts                 373 lines
 supabase.ts                         367 lines
 excel-validator.ts                  353 lines
-RosterComparison.tsx                352 lines
 statistics/calculations.ts          351 lines
 LayoverConnectedCard.tsx            348 lines
 SectorInput.tsx                     340 lines
 EditTimesDialog.tsx                 329 lines
 FlightNumberInput.tsx               328 lines
 auth.ts                             327 lines
+RegisterForm.tsx                    323 lines  🆕
+AuditTrailDisplay.tsx               319 lines  🆕
+RosterUploadSection.tsx             318 lines  🆕
+dutyMapping.ts                      314 lines  🆕
+useDataRefresh.ts                   314 lines  🆕
 ```
 
-</details>
+**Legend:**
 
+- ⬆️ = Increased since initial analysis
+- 🆕 = Newly crossed 300-line threshold
+- ⚠️ = Significant growth requiring attention
+
+</details>

@@ -105,10 +105,7 @@ export class FlydubaiExcelParser {
 
       if (!this.flexibleStructure) {
         // Fall back to hardcoded structure if flexible detection fails
-        console.warn('Flexible structure detection failed, using hardcoded configuration');
         this.flexibleStructure = null;
-      } else {
-        console.log('Flexible structure detected:', this.flexibleStructure);
       }
 
       // Step 6: Initialize parsing context
@@ -276,10 +273,6 @@ export class FlydubaiExcelParser {
     const actualTimesColumn = columnMapping?.actualTimes || 'M';
     const indicatorsColumn = columnMapping?.indicators || 'U';
 
-    console.log(`📊 Column mapping for row ${rowNumber}: actualTimes=${actualTimesColumn}, duties=${dutiesColumn}`);
-
-
-
     // Read row data using dynamic column positions
     const worksheet = this.context.worksheet as XLSX.WorkSheet;
     const dateCell = getCellValue(worksheet, `${dateColumn}${rowNumber}`);
@@ -307,11 +300,6 @@ export class FlydubaiExcelParser {
     const debriefTimeStr = debriefTimeCell.value ? String(debriefTimeCell.value) : '';
 
 
-    if (dutiesStr.includes('SBY') || dutiesStr.includes('XSBY')) {
-      const standbyType = dutiesStr.includes('XSBY') ? 'XSBY' : 'SBY';
-      console.log(`🏠 ${standbyType} ROW ${rowNumber}: duties="${dutiesStr}", actualTimes="${actualTimesCell.value?.toString()}"`);
-    }
-
     // Skip non-duty rows (headers, empty, etc.)
     if (this.shouldSkipRow(dateStr, dutiesStr)) {
       return null;
@@ -329,7 +317,6 @@ export class FlydubaiExcelParser {
     if (reportTimeStr && debriefTimeStr) {
       const timeParseResult = parseTimeStringWithCrossDay(reportTimeStr, debriefTimeStr);
       isCrossDay = timeParseResult.isCrossDay;
-      console.log(`Excel Debug - Cross-day detection for row ${rowNumber}: Report "${reportTimeStr}", Debrief "${debriefTimeStr}" → ${isCrossDay ? 'NEXT DAY' : 'SAME DAY'}`);
     } else {
       // Fallback to explicit symbol detection if times are missing
       isCrossDay = String(debriefTimeStr || '').includes('⁺¹');
@@ -411,8 +398,6 @@ export class FlydubaiExcelParser {
     const dutiesUpper = safeString.toUpperCase();
     const detailsUpper = detailsStr ? String(detailsStr).toUpperCase() : '';
 
-    console.log(`🔍 determineDutyType: duties="${dutiesStr}", details="${detailsStr}"`);
-
     // Check for specific duty codes
     if (dutiesUpper.includes('ASBY')) return 'asby';
     if (dutiesUpper.includes('XSBY') || dutiesUpper.includes('SBY')) return 'sby';
@@ -424,7 +409,6 @@ export class FlydubaiExcelParser {
 
     // Business Promotion detection
     if (dutiesUpper.includes('BP') || detailsUpper.includes('BUSINESS PROMOTION')) {
-      console.log(`✅ Classified as business promotion`);
       return 'business_promotion';
     }
 
@@ -434,7 +418,6 @@ export class FlydubaiExcelParser {
         dutiesUpper.includes('IFX') || dutiesUpper.includes('CSR') ||
         dutiesUpper.includes('RTC') || dutiesUpper.includes('ELD') ||
         dutiesUpper.includes('SEPR') || dutiesUpper.includes('GS')) {
-      console.log(`✅ Classified as recurrent training`);
       return 'recurrent';
     }
 
@@ -567,15 +550,10 @@ export class FlydubaiExcelParser {
     if (excelDuty.dutyType === 'recurrent') {
       // For recurrent training, parse time ranges from actualTimes column
       const actualTimesStr = excelDuty.actualTimes || '';
-      console.log(`🕐 RECURRENT TRAINING TIME DEBUG: Row ${excelDuty.rowNumber}`);
-      console.log(`🕐 actualTimesStr = "${actualTimesStr}"`);
-      console.log(`🕐 actualTimesStr type = ${typeof actualTimesStr}`);
-      console.log(`🕐 actualTimesStr length = ${actualTimesStr.length}`);
 
       if (actualTimesStr && actualTimesStr.trim().length > 0) {
         try {
           const trainingTime = parseTrainingTimeRange(actualTimesStr);
-          console.log(`✅ Parsed training time successfully:`, trainingTime);
 
           // Set report time to start time and debrief time to end time
           const [startHour, startMin] = trainingTime.startTime.split(':').map(Number);
@@ -584,24 +562,17 @@ export class FlydubaiExcelParser {
           reportTime = createTimeValue(startHour, startMin);
           debriefTime = createTimeValue(endHour, endMin);
           actualDutyHours = trainingTime.totalHours;
-
-          console.log(`✅ Set times: report ${startHour}:${startMin}, debrief ${endHour}:${endMin}, hours ${actualDutyHours}`);
-        } catch (error) {
-          console.error(`❌ Failed to parse training time range for row ${excelDuty.rowNumber}:`, error);
-          console.error(`❌ Raw actualTimes data: "${actualTimesStr}"`);
+        } catch {
           // Fallback to default times
           reportTime = createTimeValue(8, 0);  // Default 08:00
           debriefTime = createTimeValue(16, 0); // Default 16:00
           actualDutyHours = 8; // Default 8 hours
-          console.log(`⚠️ Using fallback times: 08:00 - 16:00, 8 hours`);
         }
       } else {
-        console.warn(`⚠️ No actualTimes provided for recurrent training row ${excelDuty.rowNumber}, using defaults`);
         // Default training times if no actual times provided
         reportTime = createTimeValue(8, 0);
         debriefTime = createTimeValue(16, 0);
         actualDutyHours = 8;
-        console.log(`⚠️ Using default times: 08:00 - 16:00, 8 hours`);
       }
     } else if (excelDuty.dutyType === 'business_promotion') {
       // For Business Promotion, use fixed 5-hour calculation (similar to ASBY with fixed 4 hours)
@@ -611,7 +582,6 @@ export class FlydubaiExcelParser {
       debriefTime = excelDuty.debriefTime ?
         this.parseTimeValue(excelDuty.debriefTime) : createTimeValue(13, 0);
       actualDutyHours = 5; // Fixed 5 hours for Business Promotion duties
-      console.log(`💼 Business Promotion duty detected: Using fixed 5 hours for calculation`);
     } else if (excelDuty.dutyType === 'asby') {
       // For ASBY duties, use fixed 4-hour calculation regardless of actual times
       reportTime = excelDuty.reportTime ?
@@ -619,20 +589,13 @@ export class FlydubaiExcelParser {
       debriefTime = excelDuty.debriefTime ?
         this.parseTimeValue(excelDuty.debriefTime) : createTimeValue(10, 0);
       actualDutyHours = 4; // Fixed 4 hours for ASBY duties
-      console.log(`✈️ ASBY duty detected: Using fixed 4 hours for calculation`);
     } else if (excelDuty.dutyType === 'sby') {
       // For Home Standby (SBY) and XSBY (Standby Ex Cancelled Flight), parse time ranges from actualTimes column
       const actualTimesStr = excelDuty.actualTimes || '';
-      const standbyType = excelDuty.duties?.includes('XSBY') ? 'XSBY' : 'SBY';
-      console.log(`🏠 ${standbyType} TIME DEBUG: Row ${excelDuty.rowNumber}`);
-      console.log(`🏠 actualTimesStr = "${actualTimesStr}"`);
-      console.log(`🏠 actualTimesStr type = ${typeof actualTimesStr}`);
-      console.log(`🏠 actualTimesStr length = ${actualTimesStr.length}`);
 
       if (actualTimesStr && actualTimesStr.trim().length > 0) {
         try {
           const standbyTime = parseTrainingTimeRange(actualTimesStr);
-          console.log(`✅ Parsed SBY time successfully:`, standbyTime);
 
           // Set report time to start time and debrief time to end time
           const [startHour, startMin] = standbyTime.startTime.split(':').map(Number);
@@ -641,24 +604,17 @@ export class FlydubaiExcelParser {
           reportTime = createTimeValue(startHour, startMin);
           debriefTime = createTimeValue(endHour, endMin);
           actualDutyHours = standbyTime.totalHours;
-
-          console.log(`✅ Set SBY times: report ${startHour}:${startMin}, debrief ${endHour}:${endMin}, hours ${actualDutyHours}`);
-        } catch (error) {
-          console.error(`❌ Failed to parse SBY time range for row ${excelDuty.rowNumber}:`, error);
-          console.error(`❌ Raw actualTimes data: "${actualTimesStr}"`);
+        } catch {
           // Fallback to default times
           reportTime = createTimeValue(6, 0);  // Default 06:00
           debriefTime = createTimeValue(13, 0); // Default 13:00
           actualDutyHours = 7; // Default 7 hours for SBY
-          console.log(`⚠️ Using fallback SBY times: 06:00 - 13:00, ${actualDutyHours} hours`);
         }
       } else {
-        console.warn(`⚠️ No actualTimes provided for SBY row ${excelDuty.rowNumber}, using defaults`);
         // Default SBY times if no actual times provided
         reportTime = createTimeValue(6, 0);
         debriefTime = createTimeValue(13, 0);
         actualDutyHours = 7;
-        console.log(`⚠️ Using default SBY times: 06:00 - 13:00, 7 hours`);
       }
     } else {
       // Regular flight duties - use report/debrief time columns
@@ -722,29 +678,6 @@ export class FlydubaiExcelParser {
     }
     if (classificationResult.flightPay !== undefined) {
       flightDuty.flightPay = classificationResult.flightPay;
-    }
-
-    // Debug final times for recurrent training, SBY, and Business Promotion duties
-    if (flightDuty.dutyType === 'recurrent') {
-      console.log(`🕐 FINAL RECURRENT TRAINING TIMES for row ${excelDuty.rowNumber}:`);
-      console.log(`  Report Time: ${flightDuty.reportTime.hours}:${flightDuty.reportTime.minutes.toString().padStart(2, '0')}`);
-      console.log(`  Debrief Time: ${flightDuty.debriefTime.hours}:${flightDuty.debriefTime.minutes.toString().padStart(2, '0')}`);
-      console.log(`  Duty Hours: ${flightDuty.dutyHours}`);
-      console.log(`  Flight Pay: ${flightDuty.flightPay}`);
-    }
-    if (flightDuty.dutyType === 'sby') {
-      console.log(`🏠 FINAL SBY TIMES for row ${excelDuty.rowNumber}:`);
-      console.log(`  Report Time: ${flightDuty.reportTime.hours}:${flightDuty.reportTime.minutes.toString().padStart(2, '0')}`);
-      console.log(`  Debrief Time: ${flightDuty.debriefTime.hours}:${flightDuty.debriefTime.minutes.toString().padStart(2, '0')}`);
-      console.log(`  Duty Hours: ${flightDuty.dutyHours}`);
-      console.log(`  Flight Pay: ${flightDuty.flightPay}`);
-    }
-    if (flightDuty.dutyType === 'business_promotion') {
-      console.log(`💼 FINAL BUSINESS PROMOTION TIMES for row ${excelDuty.rowNumber}:`);
-      console.log(`  Report Time: ${flightDuty.reportTime.hours}:${flightDuty.reportTime.minutes.toString().padStart(2, '0')}`);
-      console.log(`  Debrief Time: ${flightDuty.debriefTime.hours}:${flightDuty.debriefTime.minutes.toString().padStart(2, '0')}`);
-      console.log(`  Duty Hours: ${flightDuty.dutyHours}`);
-      console.log(`  Flight Pay: ${flightDuty.flightPay}`);
     }
 
     return flightDuty;

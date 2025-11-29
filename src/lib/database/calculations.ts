@@ -126,13 +126,11 @@ export async function upsertMonthlyCalculation(
       .single();
 
     if (error) {
-      console.error('Error upserting monthly calculation:', error);
       return { data: null, error: error.message };
     }
 
     return { data: rowToMonthlyCalculation(data), error: null };
   } catch (error) {
-    console.error('Error upserting monthly calculation:', error);
     return { data: null, error: (error as Error).message };
   }
 }

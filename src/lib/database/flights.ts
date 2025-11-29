@@ -74,9 +74,8 @@ export function rowToFlightDuty(row: FlightRow): FlightDuty {
   let reportTime = parseTimeString(reportTimeStr);
   let debriefTime = parseTimeString(debriefTimeStr);
 
-  // If parsing fails, try to create a default time value from the string
+  // If parsing fails, create a default time value
   if (!reportTime.success || !reportTime.timeValue) {
-    console.warn(`Invalid report time format in row ${row.id}: "${reportTimeStr}". Using default 00:00`);
     reportTime = {
       success: true,
       timeValue: { hours: 0, minutes: 0, totalMinutes: 0, totalHours: 0 },
@@ -85,7 +84,6 @@ export function rowToFlightDuty(row: FlightRow): FlightDuty {
   }
 
   if (!debriefTime.success || !debriefTime.timeValue) {
-    console.warn(`Invalid debrief time format in row ${row.id}: "${debriefTimeStr}". Using default 00:00`);
     debriefTime = {
       success: true,
       timeValue: { hours: 0, minutes: 0, totalMinutes: 0, totalHours: 0 },
@@ -133,13 +131,11 @@ export async function createFlightDuty(
       .single();
 
     if (error) {
-      console.error('Error creating flight duty:', error);
       return { data: null, error: error.message };
     }
 
     return { data: rowToFlightDuty(data), error: null };
   } catch (error) {
-    console.error('Error creating flight duty:', error);
     return { data: null, error: (error as Error).message };
   }
 }
@@ -159,14 +155,12 @@ export async function createFlightDuties(
       .select();
 
     if (error) {
-      console.error('Database - Supabase insert error:', error);
       return { data: null, error: error.message };
     }
 
     const flightDutiesResult = data.map(rowToFlightDuty);
     return { data: flightDutiesResult, error: null };
   } catch (error) {
-    console.error('Error creating flight duties:', error);
     return { data: null, error: (error as Error).message };
   }
 }
@@ -189,7 +183,6 @@ export async function getFlightDutiesByMonth(
       .order('date', { ascending: true });
 
     if (error) {
-      console.error('Error fetching flight duties:', error);
       return { data: null, error: error.message };
     }
 
@@ -198,15 +191,13 @@ export async function getFlightDutiesByMonth(
     for (const row of data) {
       try {
         flightDuties.push(rowToFlightDuty(row));
-      } catch (conversionError) {
-        console.error(`Failed to convert row ${row.id}:`, conversionError);
+      } catch {
         // Skip this row and continue with others
       }
     }
 
     return { data: flightDuties, error: null };
   } catch (error) {
-    console.error('Error fetching flight duties:', error);
     return { data: null, error: (error as Error).message };
   }
 }
@@ -227,13 +218,11 @@ export async function getFlightDutyById(
       .single();
 
     if (error) {
-      console.error('Error fetching flight duty:', error);
       return { data: null, error: error.message };
     }
 
     return { data: rowToFlightDuty(data), error: null };
   } catch (error) {
-    console.error('Error fetching flight duty:', error);
     return { data: null, error: (error as Error).message };
   }
 }
@@ -306,7 +295,6 @@ export async function updateFlightDuty(
       .single();
 
     if (error) {
-      console.error('Error updating flight duty:', error);
       return { data: null, error: error.message };
     }
 
@@ -322,7 +310,6 @@ export async function updateFlightDuty(
 
     return { data: rowToFlightDuty(data), error: null };
   } catch (error) {
-    console.error('Error updating flight duty:', error);
     return { data: null, error: (error as Error).message };
   }
 }
@@ -388,7 +375,6 @@ export async function revertFlightDuty(
       .single();
 
     if (error) {
-      console.error('Error reverting flight duty:', error);
       return { data: null, error: error.message };
     }
 
@@ -404,7 +390,6 @@ export async function revertFlightDuty(
 
     return { data: rowToFlightDuty(data), error: null };
   } catch (error) {
-    console.error('Error reverting flight duty:', error);
     return { data: null, error: (error as Error).message };
   }
 }
@@ -428,7 +413,6 @@ export async function deleteFlightDuty(
       .eq('user_id', userId);
 
     if (error) {
-      console.error('Error deleting flight duty:', error);
       return { error: error.message };
     }
 
@@ -445,7 +429,6 @@ export async function deleteFlightDuty(
 
     return { error: null };
   } catch (error) {
-    console.error('Error deleting flight duty:', error);
     return { error: (error as Error).message };
   }
 }
@@ -467,7 +450,6 @@ export async function checkExistingFlightData(
       .eq('year', year);
 
     if (error) {
-      console.error('Error checking existing flight data:', error);
       return { exists: false, count: 0, error: error.message };
     }
 
@@ -477,7 +459,6 @@ export async function checkExistingFlightData(
       error: null
     };
   } catch (error) {
-    console.error('Error checking existing flight data:', error);
     return {
       exists: false,
       count: 0,
@@ -514,7 +495,6 @@ export async function deleteFlightDataByMonth(
       .select('id');
 
     if (error) {
-      console.error('Error deleting flight data by month:', error);
       return { deletedCount: 0, error: error.message };
     }
 
@@ -538,7 +518,6 @@ export async function deleteFlightDataByMonth(
       error: null
     };
   } catch (error) {
-    console.error('Error deleting flight data by month:', error);
     return {
       deletedCount: 0,
       error: (error as Error).message
@@ -568,8 +547,7 @@ async function createAuditTrailEntry(entry: {
         new_data: entry.newData,
         change_reason: entry.changeReason
       });
-  } catch (error) {
-    console.error('Error creating audit trail entry:', error);
+  } catch {
     // Don't throw error for audit trail failures
   }
 }
