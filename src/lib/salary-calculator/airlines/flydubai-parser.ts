@@ -188,19 +188,7 @@ export class FlydubaiCSVParser implements CSVParser {
       // Validate duty hours against Flydubai limits (log warnings instead of modifying duty object)
       // Note: duty hours exceeding 14 should be reviewed
 
-      // Validate flight numbers are Flydubai flights
-      if (duty.flightNumbers) {
-        for (const flightNumber of duty.flightNumbers) {
-          // Flight number validation happens silently
-        }
-      }
-
-      // Validate sectors for Flydubai routes
-      if (duty.sectors) {
-        for (const sector of duty.sectors) {
-          // Sector format validation happens silently
-        }
-      }
+      // Flight number and sector validation happens silently
 
       return duty;
     });

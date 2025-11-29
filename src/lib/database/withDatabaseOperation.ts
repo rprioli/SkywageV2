@@ -208,7 +208,8 @@ export function withDatabaseArrayOperation<TRaw, TResult, Args extends unknown[]
  */
 export function withDatabaseVoidOperation<Args extends unknown[]>(
   operation: DatabaseOperation<unknown, Args>,
-  operationName: string
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _operationName: string
 ): (...args: Args) => Promise<DatabaseResult<void>> {
   return async (...args: Args): Promise<DatabaseResult<void>> => {
     try {

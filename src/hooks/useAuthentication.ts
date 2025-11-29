@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { signIn, signUp, signOut, checkConnection } from '@/lib/auth';
+import { signIn, signUp, signOut, checkConnectionHealth } from '@/lib/auth';
 
 // Connection retry configuration
 const RETRY_CONFIG = {
@@ -46,7 +46,8 @@ export function useAuthentication() {
   // Retry wrapper with exponential backoff
   const withRetry = async <T>(
     operation: () => Promise<T>,
-    operationName: string
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _operationName: string
   ): Promise<T> => {
     let lastError: Error;
 
@@ -57,7 +58,7 @@ export function useAuthentication() {
         if (attempt > 1) {
           setIsRetrying(true);
           const delay = calculateDelay(attempt - 1);
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise(res => setTimeout(res, delay));
         }
 
         // Create abort controller for timeout
@@ -101,8 +102,7 @@ export function useAuthentication() {
       setError(null);
 
       // Check connection health before attempting login
-      const healthCheck = await checkConnection();
-      // Proceed with login attempt even if health check fails
+      await checkConnectionHealth();
 
       const result = await withRetry(async () => {
         const { user, error: signInError } = await signIn(email, password);

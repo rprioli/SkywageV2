@@ -124,7 +124,7 @@ export function FlightDutiesTable({
       // Clear bulk selection state since all flights are deleted
       setSelectedFlights(new Set());
       setBulkMode(false);
-    } catch (error) {
+    } catch {
       // Error handling is done in the parent component
     } finally {
       setDeleteAllProcessing(false);

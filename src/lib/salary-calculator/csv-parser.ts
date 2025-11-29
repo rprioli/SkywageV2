@@ -102,7 +102,8 @@ export function extractMonthFromCSV(content: string): { month: number; year: num
       const startYear = parseInt(dateRangeMatch[3]);
       const endDay = parseInt(dateRangeMatch[4]);
       const endMonth = parseInt(dateRangeMatch[5]);
-      const endYear = parseInt(dateRangeMatch[6]);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const _endYear = parseInt(dateRangeMatch[6]);
 
       // For Flydubai (international format), assume DD/MM/YYYY
       // If start day is 01 and end day is 30/31, and start month equals end month,

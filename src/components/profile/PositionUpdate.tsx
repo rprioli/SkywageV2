@@ -68,7 +68,7 @@ export function PositionUpdate() {
         recalculateMonthlyTotals(user.id, calc.month, calc.year, newPosition)
       );
 
-      const results = await Promise.allSettled(recalculationPromises);
+      await Promise.allSettled(recalculationPromises);
 
     } catch {
       // Silently handle bulk recalculation errors
