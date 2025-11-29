@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { signIn, signUp, signOut, checkConnectionHealth } from '@/lib/auth';
+import { signIn, signUp, signOut, checkConnection } from '@/lib/auth';
 
 // Connection retry configuration
 const RETRY_CONFIG = {
@@ -102,7 +102,7 @@ export function useAuthentication() {
       setError(null);
 
       // Check connection health before attempting login
-      await checkConnectionHealth();
+      await checkConnection();
 
       const result = await withRetry(async () => {
         const { user, error: signInError } = await signIn(email, password);

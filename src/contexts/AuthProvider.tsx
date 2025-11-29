@@ -140,7 +140,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
 
-        await updateAuthState(session, 'initialization');
+        await updateAuthState(session);
       } catch (err) {
 
         // Retry on unexpected errors
@@ -161,7 +161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (event, newSession) => {
 
         try {
-          await updateAuthState(newSession, `auth-change-${event}`);
+          await updateAuthState(newSession);
         } catch (err) {
           setError(err as Error);
         }

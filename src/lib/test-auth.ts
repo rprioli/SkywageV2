@@ -48,10 +48,10 @@ export async function signInAsTestUser(): Promise<{
     }
 
     return { success: true };
-  } catch {
+  } catch (err) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown authentication error'
+      error: err instanceof Error ? err.message : 'Unknown authentication error'
     };
   }
 }
