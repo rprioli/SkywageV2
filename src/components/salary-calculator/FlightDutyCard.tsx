@@ -216,8 +216,7 @@ export function FlightDutyCard({
         perDiemPay,
         matchingFlight: matchingInboundFlight
       };
-    } catch (error) {
-      console.warn('Error calculating layover rest period:', error);
+    } catch {
       return null; // Don't show error, just hide the rest period
     }
   };

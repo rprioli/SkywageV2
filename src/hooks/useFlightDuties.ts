@@ -60,7 +60,6 @@ export function useFlightDuties({
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
       setFlightDuties([]);
-      console.error('Error fetching flight duties:', err);
     } finally {
       setLoading(false);
     }

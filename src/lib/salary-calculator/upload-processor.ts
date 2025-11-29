@@ -264,21 +264,6 @@ export async function processCSVUpload(
       if (validRestPeriods.length > 0) {
 
 
-        // Verify flight IDs exist in saved flights
-        const savedFlightIds = savedFlightDuties.map(f => f.id);
-
-        validRestPeriods.forEach((period) => {
-          const outboundExists = savedFlightIds.includes(period.outboundFlightId);
-          const inboundExists = savedFlightIds.includes(period.inboundFlightId);
-
-          if (!outboundExists) {
-            console.error(`Outbound flight ID not found: ${period.outboundFlightId}`);
-          }
-          if (!inboundExists) {
-            console.error(`Inbound flight ID not found: ${period.inboundFlightId}`);
-          }
-        });
-
         const restSaveResult = await createLayoverRestPeriods(validRestPeriods, userId);
         if (restSaveResult.error) {
           warnings.push(`Warning: Failed to save rest periods: ${restSaveResult.error}`);
@@ -819,21 +804,6 @@ export async function processFileUpload(
 
       if (validRestPeriods.length > 0) {
 
-
-        // Verify flight IDs exist in saved flights
-        const savedFlightIds = savedFlightDuties.map(f => f.id);
-
-        validRestPeriods.forEach((period) => {
-          const outboundExists = savedFlightIds.includes(period.outboundFlightId);
-          const inboundExists = savedFlightIds.includes(period.inboundFlightId);
-
-          if (!outboundExists) {
-            console.error(`Outbound flight ID not found: ${period.outboundFlightId}`);
-          }
-          if (!inboundExists) {
-            console.error(`Inbound flight ID not found: ${period.inboundFlightId}`);
-          }
-        });
 
         const restSaveResult = await createLayoverRestPeriods(validRestPeriods, userId);
         if (restSaveResult.error) {

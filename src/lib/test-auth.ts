@@ -34,7 +34,6 @@ export async function signInAsTestUser(): Promise<{
     });
 
     if (error) {
-      console.error('Test user sign in error:', error);
       return { 
         success: false, 
         error: `Failed to sign in as test user: ${error.message}` 
@@ -49,8 +48,7 @@ export async function signInAsTestUser(): Promise<{
     }
 
     return { success: true };
-  } catch (error) {
-    console.error('Test authentication error:', error);
+  } catch {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown authentication error'
@@ -86,8 +84,7 @@ export async function getCurrentUserId(): Promise<string | null> {
   try {
     const { data: session } = await supabase.auth.getSession();
     return session?.session?.user?.id || null;
-  } catch (error) {
-    console.error('Error getting current user ID:', error);
+  } catch {
     return null;
   }
 }

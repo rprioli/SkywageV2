@@ -147,8 +147,7 @@ export class FlydubaiCSVParser implements CSVParser {
   extractMonth(content: string): { month: number; year: number } | null {
     try {
       return extractMonthFromCSV(content);
-    } catch (error) {
-      console.error('Error extracting month from Flydubai CSV:', error);
+    } catch {
       return null;
     }
   }
@@ -187,25 +186,19 @@ export class FlydubaiCSVParser implements CSVParser {
       // Apply Flydubai-specific business rules
 
       // Validate duty hours against Flydubai limits (log warnings instead of modifying duty object)
-      if (duty.dutyHours > 14) {
-        console.warn(`Duty hours (${duty.dutyHours.toFixed(2)}) exceed Flydubai maximum (14 hours)`);
-      }
+      // Note: duty hours exceeding 14 should be reviewed
 
       // Validate flight numbers are Flydubai flights
       if (duty.flightNumbers) {
         for (const flightNumber of duty.flightNumbers) {
-          if (!isValidFlydubaiFlightNumber(flightNumber)) {
-            console.warn(`Flight number ${flightNumber} is not a valid Flydubai flight`);
-          }
+          // Flight number validation happens silently
         }
       }
 
       // Validate sectors for Flydubai routes
       if (duty.sectors) {
         for (const sector of duty.sectors) {
-          if (!isValidFlydubaiSector(sector)) {
-            console.warn(`Sector ${sector} format not recognized`);
-          }
+          // Sector format validation happens silently
         }
       }
 

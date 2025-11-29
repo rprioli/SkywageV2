@@ -126,7 +126,6 @@ export function FlightDutiesTable({
       setBulkMode(false);
     } catch (error) {
       // Error handling is done in the parent component
-      console.error('Delete all failed:', error);
     } finally {
       setDeleteAllProcessing(false);
     }

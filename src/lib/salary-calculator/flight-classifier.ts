@@ -80,7 +80,6 @@ export function classifyFlightDuty(
 
   // Check for Recurrent Training
   const isTraining = isRecurrentTraining(dutiesUpper, detailsUpper);
-  console.log(`🔍 DUTY CLASSIFICATION: duties="${duties}", details="${details}", isTraining=${isTraining}`);
 
   if (isTraining) {
     const dutyHours = actualDutyHours || 8; // Default to 8 hours if not provided
@@ -90,13 +89,10 @@ export function classifyFlightDuty(
       // Check if this is ELD (e-learning Day) which is unpaid
       if (dutiesUpper.includes('ELD')) {
         flightPay = 0; // ELD is unpaid recurrent training
-        console.log(`📚 ELD DETECTED: Setting flightPay to 0 (unpaid e-learning)`);
       } else {
         flightPay = calculateRecurrentPay(position); // 4 hours × position rate for other recurrent training
       }
     }
-
-    console.log(`✅ CLASSIFIED AS RECURRENT: dutyHours=${dutyHours}, flightPay=${flightPay}`);
 
     return {
       dutyType: 'recurrent',

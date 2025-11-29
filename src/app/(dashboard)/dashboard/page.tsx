@@ -72,11 +72,9 @@ export default function DashboardPage() {
           setUserPosition(profile.position as Position);
         } else {
           // Fallback to auth metadata if database fails
-          console.warn('Failed to load position from profile, using auth metadata fallback');
           setUserPosition((user?.user_metadata?.position as Position) || 'CCM');
         }
-      } catch (error) {
-        console.error('Error loading user position:', error);
+      } catch {
         // Fallback to auth metadata
         setUserPosition((user?.user_metadata?.position as Position) || 'CCM');
       } finally {
@@ -178,8 +176,8 @@ export default function DashboardPage() {
         // Refresh all data with new position
         await Promise.all([refetchCalculations(), refetchFlightDuties()]);
       }
-    } catch (error) {
-      console.error('Error refreshing user position:', error);
+    } catch {
+      // Silently handle position refresh errors
     }
   }, [user?.id, refetchCalculations, refetchFlightDuties]);
 

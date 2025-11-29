@@ -57,7 +57,6 @@ export function useAuthentication() {
         if (attempt > 1) {
           setIsRetrying(true);
           const delay = calculateDelay(attempt - 1);
-          console.log(`Retrying ${operationName} (attempt ${attempt}/${RETRY_CONFIG.maxRetries}) in ${delay}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
 
@@ -103,9 +102,7 @@ export function useAuthentication() {
 
       // Check connection health before attempting login
       const healthCheck = await checkConnection();
-      if (!healthCheck.healthy) {
-        console.warn('Connection health check failed, but proceeding with login attempt');
-      }
+      // Proceed with login attempt even if health check fails
 
       const result = await withRetry(async () => {
         const { user, error: signInError } = await signIn(email, password);

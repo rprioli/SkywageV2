@@ -88,7 +88,6 @@ export function useFriends(): UseFriendsReturn {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
-      console.error('Error fetching friends:', err);
     } finally {
       setLoading(false);
     }

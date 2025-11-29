@@ -6,7 +6,6 @@ export async function createClient() {
   const cookieStore = await cookies();
 
   const allCookies = cookieStore.getAll();
-  console.log('[Supabase Server] Cookies:', allCookies.map(c => c.name));
 
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

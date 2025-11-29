@@ -22,8 +22,7 @@ export async function updateUserAvatar(avatarUrl: string): Promise<{ success: bo
     }
 
     return { success: true, error: null };
-  } catch (error) {
-    console.error('Error updating user avatar:', error);
+  } catch {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unknown error occurred while updating profile'

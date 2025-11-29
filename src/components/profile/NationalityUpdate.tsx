@@ -25,8 +25,7 @@ export function NationalityUpdate() {
           if (profile && !error) {
             setNationality(profile.nationality || '');
           }
-        } catch (err) {
-          console.warn('Failed to load nationality from profile:', err);
+        } catch {
           // Fallback to auth metadata if database fails
           setNationality(user?.user_metadata?.nationality || '');
         }
@@ -73,7 +72,6 @@ export function NationalityUpdate() {
       }, 3000);
 
     } catch (err) {
-      console.error('Error updating nationality:', err);
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
       setIsUpdating(false);
