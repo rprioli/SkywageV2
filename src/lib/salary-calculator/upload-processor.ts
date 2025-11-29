@@ -152,14 +152,11 @@ export async function processCSVUpload(
         return calculationResult.flightDuty;
       } else {
         // Calculation failed, add errors to warnings and return original
-        console.warn('Failed to calculate flight duty:', calculationResult.errors);
         warnings.push(...calculationResult.errors);
         warnings.push(...calculationResult.warnings);
         return duty; // Return original if calculation fails
       }
     });
-
-
 
     // Step 4: Calculate layover rest periods
     onProgress?.({
@@ -174,7 +171,6 @@ export async function processCSVUpload(
     // Extract month and year from first flight duty for later use
     const firstFlight = flightDuties[0];
     if (!firstFlight) {
-      console.log('Upload Processor - Error: No flight duties found');
       return {
         success: false,
         errors: ['No flight duties found in CSV'],
@@ -601,7 +597,6 @@ export async function processCSVUploadWithReplacement(
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    console.error('Roster replacement failed with exception:', error);
     return {
       success: false,
       errors: [`Roster replacement failed with exception: ${errorMessage}`],
@@ -705,7 +700,6 @@ export async function processFileUpload(
         return calculationResult.flightDuty;
       } else {
         // Calculation failed, add errors to warnings and return original
-        console.warn('Failed to calculate flight duty:', calculationResult.errors);
         warnings.push(...calculationResult.errors);
         warnings.push(...calculationResult.warnings);
         return duty; // Return original if calculation fails
@@ -1015,7 +1009,6 @@ export async function processFileUploadWithReplacement(
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    console.error('Roster replacement failed with exception:', error);
     return {
       success: false,
       errors: [`Roster replacement failed with exception: ${errorMessage}`],

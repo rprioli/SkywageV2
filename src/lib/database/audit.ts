@@ -57,14 +57,12 @@ export async function createAuditTrailEntry(
       .single();
 
     if (error) {
-      console.error('Error creating audit trail entry:', error);
       return { data: null, error: error.message };
     }
 
     return { data: rowToAuditTrailEntry(data), error: null };
-  } catch (error) {
-    console.error('Error creating audit trail entry:', error);
-    return { data: null, error: (error as Error).message };
+  } catch {
+    return { data: null, error: 'Error creating audit trail entry' };
   }
 }
 
@@ -84,15 +82,13 @@ export async function getFlightAuditTrail(
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching flight audit trail:', error);
       return { data: null, error: error.message };
     }
 
     const auditEntries = data.map(rowToAuditTrailEntry);
     return { data: auditEntries, error: null };
-  } catch (error) {
-    console.error('Error fetching flight audit trail:', error);
-    return { data: null, error: (error as Error).message };
+  } catch {
+    return { data: null, error: 'Error fetching flight audit trail' };
   }
 }
 
@@ -124,15 +120,13 @@ export async function getUserAuditTrail(
       .limit(limit);
 
     if (error) {
-      console.error('Error fetching user audit trail:', error);
       return { data: null, error: error.message };
     }
 
     const auditEntries = data.map(rowToAuditTrailEntry);
     return { data: auditEntries, error: null };
-  } catch (error) {
-    console.error('Error fetching user audit trail:', error);
-    return { data: null, error: (error as Error).message };
+  } catch {
+    return { data: null, error: 'Error fetching user audit trail' };
   }
 }
 
@@ -150,9 +144,8 @@ export async function getMonthlyAuditTrail(
     const endDate = new Date(year, month, 0, 23, 59, 59);
 
     return await getUserAuditTrail(userId, startDate, endDate);
-  } catch (error) {
-    console.error('Error fetching monthly audit trail:', error);
-    return { data: null, error: (error as Error).message };
+  } catch {
+    return { data: null, error: 'Error fetching monthly audit trail' };
   }
 }
 
@@ -191,7 +184,6 @@ export async function getAuditTrailStats(
     const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching audit trail stats:', error);
       return { data: null, error: error.message };
     }
 
@@ -203,9 +195,8 @@ export async function getAuditTrailStats(
     };
 
     return { data: stats, error: null };
-  } catch (error) {
-    console.error('Error fetching audit trail stats:', error);
-    return { data: null, error: (error as Error).message };
+  } catch {
+    return { data: null, error: 'Error fetching audit trail stats' };
   }
 }
 
@@ -228,14 +219,12 @@ export async function cleanupAuditTrail(
       .select('id');
 
     if (error) {
-      console.error('Error cleaning up audit trail:', error);
       return { deletedCount: 0, error: error.message };
     }
 
     return { deletedCount: data.length, error: null };
-  } catch (error) {
-    console.error('Error cleaning up audit trail:', error);
-    return { deletedCount: 0, error: (error as Error).message };
+  } catch {
+    return { deletedCount: 0, error: 'Error cleaning up audit trail' };
   }
 }
 
@@ -265,7 +254,6 @@ export async function getRecentActivity(
       .limit(limit);
 
     if (error) {
-      console.error('Error fetching recent activity:', error);
       return { data: null, error: error.message };
     }
 
@@ -294,8 +282,7 @@ export async function getRecentActivity(
     });
 
     return { data: activities, error: null };
-  } catch (error) {
-    console.error('Error fetching recent activity:', error);
-    return { data: null, error: (error as Error).message };
+  } catch {
+    return { data: null, error: 'Error fetching recent activity' };
   }
 }
