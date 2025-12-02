@@ -18,6 +18,7 @@ import {
   FlexibleExcelStructure
 } from '@/types/excel-config';
 import { Position } from '@/types/salary-calculator';
+import { parseExcelDate } from './date-utilities';
 
 // Re-export types for convenience
 export type { FlexibleExcelStructure };
@@ -280,6 +281,7 @@ export function parseTrainingTimeRange(timeRangeString: string): {
 
 /**
  * Extracts date range from G4 cell
+ * Uses shared date utilities for parsing
  */
 export function parseExcelDateRange(dateRangeString: string): ExcelDateRangeResult {
   if (!dateRangeString || typeof dateRangeString !== 'string') {
@@ -296,14 +298,9 @@ export function parseExcelDateRange(dateRangeString: string): ExcelDateRangeResu
   
   const [, startDateStr, endDateStr] = match;
   
-  // Parse dates (DD/MM/YYYY format)
-  const parseDate = (dateStr: string): Date => {
-    const [day, month, year] = dateStr.split('/').map(Number);
-    return new Date(year, month - 1, day); // month is 0-based in Date constructor
-  };
-  
-  const startDate = parseDate(startDateStr);
-  const endDate = parseDate(endDateStr);
+  // Use shared date utility
+  const startDate = parseExcelDate(startDateStr);
+  const endDate = parseExcelDate(endDateStr);
   
   return {
     startDate,

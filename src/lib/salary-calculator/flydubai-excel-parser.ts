@@ -34,7 +34,7 @@ import {
   detectExcelStructureFlexible,
   FlexibleExcelStructure
 } from './excel-parser';
-import { classifyFlightDuty } from './flight-classifier';
+import { classifyFlightDuty, detectNonWorkingDay } from './flight-classifier';
 import { createTimeValue, parseTimeStringWithCrossDay } from './time-calculator';
 
 /**
@@ -491,30 +491,15 @@ export class FlydubaiExcelParser {
     year: number,
     position?: Position
   ): FlightDuty | null {
-    // Check for rest days and off days - now we CREATE entries instead of filtering
-    const dutiesUpper = String(excelDuty.duties || '').toUpperCase().trim();
-    const detailsUpper = String(excelDuty.details || '').toUpperCase().trim();
-
-    // Detect specific non-working day types
-    const isRestDay = dutiesUpper.includes('REST DAY') || detailsUpper.includes('REST DAY');
-    const isAnnualLeave = dutiesUpper.includes('ANNUAL LEAVE') || detailsUpper.includes('ANNUAL LEAVE');
-    const isOffDay = dutiesUpper.includes('DAY OFF') ||
-                     detailsUpper.includes('DAY OFF') ||
-                     dutiesUpper.includes('ADDITIONAL DAY OFF') ||
-                     detailsUpper.includes('ADDITIONAL DAY OFF') ||
-                     dutiesUpper === 'OFF' ||
-                     dutiesUpper === '*OFF' ||
-                     dutiesUpper === 'X' ||
-                     excelDuty.dutyType === 'off';
-
-    // Determine the correct duty type for non-working days
-    const nonWorkingDutyType: DutyType | null = isRestDay ? 'rest' 
-      : isAnnualLeave ? 'annual_leave' 
-      : isOffDay ? 'off' 
-      : null;
+    // Use shared utility to detect non-working days
+    const nonWorkingResult = detectNonWorkingDay(
+      excelDuty.duties,
+      excelDuty.details,
+      excelDuty.dutyType
+    );
 
     // If it's a non-working day, create a minimal FlightDuty entry
-    if (nonWorkingDutyType) {
+    if (nonWorkingResult.isNonWorking && nonWorkingResult.dutyType) {
       const date = this.parseExcelDate(excelDuty.date, month, year);
 
       return {
@@ -522,7 +507,7 @@ export class FlydubaiExcelParser {
         date,
         flightNumbers: [],
         sectors: [],
-        dutyType: nonWorkingDutyType,
+        dutyType: nonWorkingResult.dutyType,
         reportTime: createTimeValue(0, 0),
         debriefTime: createTimeValue(0, 0),
         dutyHours: 0,

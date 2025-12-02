@@ -4,9 +4,62 @@
  * Following existing utility patterns in the codebase
  */
 
-import { FlightClassificationResult, Position, TimeValue } from '@/types/salary-calculator';
+import { FlightClassificationResult, Position, TimeValue, DutyType } from '@/types/salary-calculator';
 import { calculateRecurrentPay, calculateAsbyPay, calculateBusinessPromotionPay, FLYDUBAI_RATES } from './calculation-engine';
 import { calculateDuration } from './time-calculator';
+
+/**
+ * Result of non-working day detection
+ */
+export interface NonWorkingDayResult {
+  isNonWorking: boolean;
+  dutyType: DutyType | null;
+  reason?: string;
+}
+
+/**
+ * Detects if a duty is a non-working day (REST, LEAVE, OFF, etc.)
+ * Shared between CSV and Excel parsers
+ * 
+ * @param duties - The duties column text
+ * @param details - The details column text (optional)
+ * @param existingDutyType - Pre-classified duty type from other logic (optional)
+ * @returns NonWorkingDayResult indicating if this is a non-working day
+ */
+export function detectNonWorkingDay(
+  duties: string,
+  details?: string,
+  existingDutyType?: DutyType
+): NonWorkingDayResult {
+  const dutiesUpper = String(duties || '').toUpperCase().trim();
+  const detailsUpper = String(details || '').toUpperCase().trim();
+
+  // Check for REST DAY
+  if (dutiesUpper.includes('REST DAY') || detailsUpper.includes('REST DAY')) {
+    return { isNonWorking: true, dutyType: 'rest', reason: 'REST DAY detected' };
+  }
+
+  // Check for ANNUAL LEAVE
+  if (dutiesUpper.includes('ANNUAL LEAVE') || detailsUpper.includes('ANNUAL LEAVE')) {
+    return { isNonWorking: true, dutyType: 'annual_leave', reason: 'ANNUAL LEAVE detected' };
+  }
+
+  // Check for various OFF day patterns
+  if (
+    dutiesUpper.includes('DAY OFF') ||
+    detailsUpper.includes('DAY OFF') ||
+    dutiesUpper.includes('ADDITIONAL DAY OFF') ||
+    detailsUpper.includes('ADDITIONAL DAY OFF') ||
+    dutiesUpper === 'OFF' ||
+    dutiesUpper === '*OFF' ||
+    dutiesUpper === 'X' ||
+    existingDutyType === 'off'
+  ) {
+    return { isNonWorking: true, dutyType: 'off', reason: 'OFF day detected' };
+  }
+
+  return { isNonWorking: false, dutyType: null };
+}
 
 /**
  * Classifies flight duty type based on flight data
