@@ -39,6 +39,7 @@ export {
 // Flight classification utilities
 export {
   classifyFlightDuty,
+  detectNonWorkingDay,
   extractFlightNumbers,
   extractSectors,
   validateFlightNumber,
@@ -46,7 +47,8 @@ export {
   isTurnaroundSequence,
   extractBaseAirport,
   hasInternationalSectors,
-  calculateDutyComplexity
+  calculateDutyComplexity,
+  type NonWorkingDayResult
 } from './flight-classifier';
 
 // CSV validation utilities

@@ -4,9 +4,9 @@
  * Following existing utility patterns in the codebase
  */
 
-import { CSVParseResult, FlightDuty, DutyType } from '@/types/salary-calculator';
+import { CSVParseResult, FlightDuty } from '@/types/salary-calculator';
 import { parseTimeString, parseTimeStringWithCrossDay, createTimeValue } from './time-calculator';
-import { classifyFlightDuty, extractFlightNumbers, extractSectors } from './flight-classifier';
+import { classifyFlightDuty, extractFlightNumbers, extractSectors, detectNonWorkingDay } from './flight-classifier';
 import { validateFlightNumbers, validateSectors } from './csv-validator';
 import { parseDate, extractMonthYearFromText } from './date-utilities';
 import Papa from 'papaparse';
@@ -301,33 +301,17 @@ export function parseFlightDutyRow(
   // First classify the duty to determine if it's a non-duty entry
   const classification = classifyFlightDuty(duties, details, reportTimeStr, debriefTimeStr);
 
-  // Check if this is an off/rest/leave day - now we CREATE entries instead of skipping
-  const dutiesUpper = duties.toUpperCase().trim();
-  const detailsUpper = details ? details.toUpperCase().trim() : '';
-  
-  // Detect specific non-working day types
-  const isRestDay = dutiesUpper.includes('REST DAY') || detailsUpper.includes('REST DAY');
-  const isAnnualLeave = dutiesUpper.includes('ANNUAL LEAVE') || detailsUpper.includes('ANNUAL LEAVE');
-  const isOffDay = dutiesUpper.includes('DAY OFF') ||
-    dutiesUpper.includes('ADDITIONAL DAY OFF') ||
-    dutiesUpper.includes('OFF') ||
-    dutiesUpper === 'X' ||
-    classification.dutyType === 'off';
-
-  // Determine the correct duty type for non-working days
-  const nonWorkingDutyType: DutyType | null = isRestDay ? 'rest' 
-    : isAnnualLeave ? 'annual_leave' 
-    : isOffDay ? 'off' 
-    : null;
+  // Use shared utility to detect non-working days
+  const nonWorkingResult = detectNonWorkingDay(duties, details, classification.dutyType);
 
   // If it's a non-working day, create a minimal FlightDuty entry
-  if (nonWorkingDutyType) {
+  if (nonWorkingResult.isNonWorking && nonWorkingResult.dutyType) {
     const flightDuty: FlightDuty = {
       userId,
       date,
       flightNumbers: [],
       sectors: [],
-      dutyType: nonWorkingDutyType,
+      dutyType: nonWorkingResult.dutyType,
       reportTime: createTimeValue(0, 0),
       debriefTime: createTimeValue(0, 0),
       dutyHours: 0,
