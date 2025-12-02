@@ -4,4 +4,6 @@
  */
 
 export { FormActions } from './FormActions';
+export { FlightNumberInput } from './FlightNumberInput';
+export { SectorInputs } from './SectorInputs';
 
