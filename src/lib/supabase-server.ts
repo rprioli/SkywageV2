@@ -5,8 +5,8 @@ import type { Database } from './supabase';
 export async function createClient() {
   const cookieStore = await cookies();
 
-  const allCookies = cookieStore.getAll();
-  console.log('[Supabase Server] Cookies:', allCookies.map(c => c.name));
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _allCookies = cookieStore.getAll();
 
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

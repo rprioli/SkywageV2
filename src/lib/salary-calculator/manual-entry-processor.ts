@@ -66,7 +66,6 @@ function convertToFlightDutyLegacy(
   try {
     // Handle layover duties - create 2 separate duties (LEGACY FORMAT)
     if (data.dutyType === 'layover') {
-      console.log('🔧 LEGACY: Creating layover duties with legacy format');
 
       // Validate layover data
       if (!data.inboundDate || !data.reportTimeInbound || !data.debriefTimeOutbound) {
@@ -149,9 +148,6 @@ function convertToFlightDutyLegacy(
         updatedAt: new Date()
       };
 
-      console.log('🔧 LEGACY: Created outbound duty:', outboundDuty);
-      console.log('🔧 LEGACY: Created inbound duty:', inboundDuty);
-
       return [outboundDuty, inboundDuty];
     }
 
@@ -218,8 +214,7 @@ function convertToFlightDutyLegacy(
     }
 
     return [flightDuty];
-  } catch (error) {
-    console.error('🔧 LEGACY: Error converting manual entry to flight duty:', error);
+  } catch {
     return null;
   }
 }
@@ -235,21 +230,11 @@ export function convertToFlightDuty(
   try {
     // Feature flag check - use legacy function if flag is disabled
     if (!FEATURE_FLAGS.LAYOVER_PAIRING_FIX) {
-      console.log('🔧 FEATURE FLAG: Using legacy layover conversion');
       return convertToFlightDutyLegacy(data, userId, position);
     }
 
     // Handle layover duties - create 2 separate duties (NEW FORMAT)
     if (data.dutyType === 'layover') {
-      console.log('🔧 LAYOVER DEBUG: Processing layover with data:', {
-        dutyType: data.dutyType,
-        flightNumbers: data.flightNumbers,
-        sectors: data.sectors,
-        hasInboundDate: !!data.inboundDate,
-        hasReportTimeInbound: !!data.reportTimeInbound,
-        hasDebriefTimeOutbound: !!data.debriefTimeOutbound
-      });
-      console.log('=== CREATING LAYOVER DUTIES (NEW FORMAT) ===');
 
       // Validate layover data
       if (!data.inboundDate || !data.reportTimeInbound || !data.debriefTimeOutbound) {
@@ -276,8 +261,6 @@ export function convertToFlightDuty(
       if (data.sectors[3] !== 'DXB') {
         throw new Error('Layover inbound flight must return to DXB');
       }
-
-      console.log('✅ LAYOVER VALIDATION: Route validation passed - DXB → ' + data.sectors[1] + ' → DXB');
 
       // Create outbound duty
       const outboundDate = new Date(data.date);
@@ -348,20 +331,6 @@ export function convertToFlightDuty(
         createdAt: new Date(),
         updatedAt: new Date()
       };
-
-      console.log('✅ NEW FORMAT: Created outbound duty:', {
-        id: outboundDuty.id,
-        flightNumbers: outboundDuty.flightNumbers,
-        sectors: outboundDuty.sectors,
-        date: outboundDuty.date.toDateString()
-      });
-      console.log('✅ NEW FORMAT: Created inbound duty:', {
-        id: inboundDuty.id,
-        flightNumbers: inboundDuty.flightNumbers,
-        sectors: inboundDuty.sectors,
-        date: inboundDuty.date.toDateString()
-      });
-      console.log('=== END LAYOVER CREATION (NEW FORMAT) ===');
 
       return [outboundDuty, inboundDuty];
     }
@@ -450,16 +419,13 @@ export function convertToFlightDuty(
     }
 
     return [flightDuty];
-  } catch (error) {
-    console.error('🚨 NEW FORMAT ERROR: Error converting manual entry to flight duty:', error);
-
+  } catch {
     // Fallback to legacy function if new format fails
     if (FEATURE_FLAGS.LAYOVER_PAIRING_FIX) {
-      console.log('🔄 FALLBACK: Attempting legacy conversion due to error');
       try {
         return convertToFlightDutyLegacy(data, userId, position);
-      } catch (legacyError) {
-        console.error('🚨 LEGACY FALLBACK FAILED:', legacyError);
+      } catch {
+        // Legacy fallback also failed
       }
     }
 

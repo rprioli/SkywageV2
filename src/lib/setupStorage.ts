@@ -18,8 +18,6 @@ export async function setupAvatarsBucket(): Promise<{ success: boolean; error: s
       .list('', { limit: 1 }); // Just try to list one object to check access
 
     if (listObjectsError) {
-      console.error('Error accessing avatars bucket:', listObjectsError);
-
       // Check if the error is because the bucket doesn't exist
       if (listObjectsError.message.includes('not found') || listObjectsError.message.includes('does not exist')) {
         return {
@@ -44,10 +42,8 @@ export async function setupAvatarsBucket(): Promise<{ success: boolean; error: s
     }
 
     // If we get here, the bucket exists and we have permission to access it
-    console.log('Avatars bucket is accessible');
     return { success: true, error: null };
   } catch (error) {
-    console.error('Error setting up avatars bucket:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unknown error occurred while setting up storage'

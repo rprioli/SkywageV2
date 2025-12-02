@@ -18,10 +18,7 @@ export async function GET() {
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    console.log('[Friends API] Auth check:', { user: user?.id, error: authError?.message });
-
     if (authError || !user) {
-      console.log('[Friends API] Unauthorized - no user or auth error');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -64,8 +61,7 @@ export async function GET() {
       },
       { status: 200 }
     );
-  } catch (error) {
-    console.error('Error in list API:', error);
+  } catch {
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

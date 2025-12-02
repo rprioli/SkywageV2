@@ -203,8 +203,7 @@ export function EditTimesDialog({
       );
       setShowConfirmation(false);
       onClose();
-    } catch (error) {
-      console.error('Error saving times:', error);
+    } catch {
       // Error handling will be done by parent component
     } finally {
       setLoading(false);

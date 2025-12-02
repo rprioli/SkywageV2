@@ -242,8 +242,7 @@ export function identifyLayoverPairs(flightDuties: FlightDuty[]): LayoverPair[] 
           // Must be after the outbound flight (within reasonable timeframe)
           const daysDiff = (flight.date.getTime() - outboundFlight.date.getTime()) / (1000 * 60 * 60 * 24);
           return daysDiff > 0 && daysDiff <= 5;
-        } catch (error) {
-          console.warn('Error matching inbound flight:', error);
+        } catch {
           return false;
         }
       });
@@ -269,8 +268,7 @@ export function identifyLayoverPairs(flightDuties: FlightDuty[]): LayoverPair[] 
           perDiemPay
         });
       }
-    } catch (error) {
-      console.warn('Error processing layover pair for flight:', outboundFlight.id, error);
+    } catch {
       continue;
     }
   }
@@ -298,8 +296,7 @@ export function findLayoverPair(
     // Fallback: Try to find a layover pair using more lenient criteria
     // This helps during edits when data might be temporarily inconsistent
     return findLayoverPairFallback(flightDuty, allFlightDuties);
-  } catch (error) {
-    console.warn('Error in findLayoverPair, trying fallback:', error);
+  } catch {
     return findLayoverPairFallback(flightDuty, allFlightDuties);
   }
 }

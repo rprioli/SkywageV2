@@ -295,8 +295,8 @@ export function FlightEntryForm({
       await onSubmit(submissionData);
       // Reset submit attempted state on successful submission
       setSubmitAttempted(false);
-    } catch (error) {
-      console.error('Form submission error:', error);
+    } catch {
+      // Form submission error handled by parent
     }
   };
 

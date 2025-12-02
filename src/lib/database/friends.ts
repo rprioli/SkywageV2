@@ -55,14 +55,12 @@ export async function findUserByEmail(
       .maybeSingle();
 
     if (error) {
-      console.error('Error finding user by email:', error);
       return { data: null, error: error.message };
     }
 
     // `maybeSingle` returns `data: null, error: null` when no rows are found
     return { data: data ?? null, error: null };
   } catch (error) {
-    console.error('Error finding user by email:', error);
     return { data: null, error: (error as Error).message };
   }
 }
@@ -88,7 +86,6 @@ export async function getFriendsForUser(
       .or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
 
     if (error) {
-      console.error('Error fetching friends:', error);
       return { data: null, error: error.message };
     }
 
@@ -110,7 +107,6 @@ export async function getFriendsForUser(
       .in('id', friendUserIds);
 
     if (profilesError) {
-      console.error('Error fetching friend profiles:', profilesError);
       return { data: null, error: profilesError.message };
     }
 
@@ -140,7 +136,6 @@ export async function getFriendsForUser(
 
     return { data: friends, error: null };
   } catch (error) {
-    console.error('Error fetching friends:', error);
     return { data: null, error: (error as Error).message };
   }
 }
@@ -165,7 +160,6 @@ export async function getPendingFriendRequests(
       .or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
 
     if (error) {
-      console.error('Error fetching pending requests:', error);
       return { data: null, error: error.message };
     }
 
@@ -190,7 +184,6 @@ export async function getPendingFriendRequests(
       .in('id', userIds);
 
     if (profilesError) {
-      console.error('Error fetching profiles for pending requests:', profilesError);
       return { data: null, error: profilesError.message };
     }
 
@@ -232,7 +225,6 @@ export async function getPendingFriendRequests(
 
     return { data: { sent, received }, error: null };
   } catch (error) {
-    console.error('Error fetching pending requests:', error);
     return { data: null, error: (error as Error).message };
   }
 }
@@ -269,7 +261,6 @@ export async function sendFriendRequest(
       .maybeSingle();
 
     if (existingError) {
-      console.error('Error checking existing friendship:', existingError);
       return { data: null, error: existingError.message };
     }
 
@@ -288,7 +279,6 @@ export async function sendFriendRequest(
           .single();
 
         if (updateError) {
-          console.error('Error updating friendship:', updateError);
           return { data: null, error: updateError.message };
         }
 
@@ -308,13 +298,11 @@ export async function sendFriendRequest(
       .single();
 
     if (insertError) {
-      console.error('Error creating friendship:', insertError);
       return { data: null, error: insertError.message };
     }
 
     return { data: newFriendship, error: null };
   } catch (error) {
-    console.error('Error sending friend request:', error);
     return { data: null, error: (error as Error).message };
   }
 }
@@ -341,7 +329,6 @@ export async function respondToFriendRequest(
       if (fetchError.code === 'PGRST116') {
         return { data: null, error: 'Friend request not found or already responded to' };
       }
-      console.error('Error fetching friendship:', fetchError);
       return { data: null, error: fetchError.message };
     }
 
@@ -354,13 +341,11 @@ export async function respondToFriendRequest(
       .single();
 
     if (updateError) {
-      console.error('Error updating friendship:', updateError);
       return { data: null, error: updateError.message };
     }
 
     return { data: updated, error: null };
   } catch (error) {
-    console.error('Error responding to friend request:', error);
     return { data: null, error: (error as Error).message };
   }
 }
@@ -385,7 +370,6 @@ export async function unfriend(
       if (fetchError.code === 'PGRST116') {
         return { error: 'Friendship not found' };
       }
-      console.error('Error fetching friendship:', fetchError);
       return { error: fetchError.message };
     }
 
@@ -396,13 +380,11 @@ export async function unfriend(
       .eq('id', friendshipId);
 
     if (deleteError) {
-      console.error('Error deleting friendship:', deleteError);
       return { error: deleteError.message };
     }
 
     return { error: null };
   } catch (error) {
-    console.error('Error unfriending:', error);
     return { error: (error as Error).message };
   }
 }
@@ -421,13 +403,11 @@ export async function getPendingRequestsCount(
       .eq('status', 'pending');
 
     if (error) {
-      console.error('Error fetching pending requests count:', error);
       return { data: null, error: error.message };
     }
 
     return { data: count || 0, error: null };
   } catch (error) {
-    console.error('Error fetching pending requests count:', error);
     return { data: null, error: (error as Error).message };
   }
 }

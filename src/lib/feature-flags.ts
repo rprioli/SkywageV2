@@ -43,8 +43,6 @@ export function overrideFeatureFlag(
   if (process.env.NODE_ENV === 'development') {
     // @ts-expect-error - Intentionally modifying readonly object in development
     FEATURE_FLAGS[flag] = enabled;
-    console.log(`Feature flag ${flag} overridden to ${enabled}`);
-  } else {
-    console.warn('Feature flag overrides are only available in development mode');
   }
+  // Feature flag overrides are only available in development mode
 }

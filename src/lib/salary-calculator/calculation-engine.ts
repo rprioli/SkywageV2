@@ -316,23 +316,9 @@ export function calculateLayoverRestPeriods(
   userId: string,
   position: Position
 ): LayoverRestPeriod[] {
-  console.log(`🔍 DEBUG: calculateLayoverRestPeriods called with ${flightDuties.length} total flights`);
-
-  // Debug: Log all flight duties to see their structure
-  flightDuties.forEach((flight, index) => {
-    console.log(`🔍 Flight ${index + 1}: dutyType="${flight.dutyType}", flightNumbers=[${flight.flightNumbers?.join(', ')}], sectors=[${flight.sectors?.join(' → ')}], date=${flight.date.toDateString()}`);
-  });
-
   const layoverFlights = flightDuties
     .filter(flight => flight.dutyType === 'layover')
     .sort((a, b) => a.date.getTime() - b.date.getTime());
-
-  console.log(`🔍 DEBUG: Found ${layoverFlights.length} layover flights after filtering`);
-
-  // Debug: Log layover flights specifically
-  layoverFlights.forEach((flight, index) => {
-    console.log(`🔍 Layover ${index + 1}: ${flight.flightNumbers?.join(' ')} (${flight.sectors?.join(' → ')}) on ${flight.date.toDateString()}`);
-  });
 
   const restPeriods: LayoverRestPeriod[] = [];
 
@@ -389,21 +375,15 @@ export function calculateLayoverRestPeriods(
 
   // Process each outbound flight to find its matching inbound flight
   for (const outboundFlight of layoverFlights) {
-    console.log(`🔍 DEBUG: Processing flight ${outboundFlight.flightNumbers?.join(' ')} with sectors [${outboundFlight.sectors?.join(' → ')}]`);
-
     // Skip if not an outbound flight
     if (!isOutboundFlight(outboundFlight.sectors)) {
-      console.log(`🔍 DEBUG: Skipping ${outboundFlight.flightNumbers?.join(' ')} - not an outbound flight`);
       continue;
     }
 
     const destination = getDestination(outboundFlight.sectors);
     if (!destination) {
-      console.warn(`Could not determine destination for flight: ${outboundFlight.flightNumbers?.join(' ')}`);
       continue;
     }
-
-    console.log(`🔍 DEBUG: Looking for inbound flight to ${destination} for outbound flight ${outboundFlight.flightNumbers?.join(' ')}`);
 
     // Find the matching inbound flight for this destination
     const matchingInboundFlight = layoverFlights.find(flight => {
@@ -428,7 +408,6 @@ export function calculateLayoverRestPeriods(
     });
 
     if (!matchingInboundFlight) {
-      console.warn(`No matching inbound flight found for outbound flight: ${outboundFlight.flightNumbers.join(' ')} to ${destination}`);
       continue;
     }
 
@@ -462,18 +441,13 @@ export function calculateLayoverRestPeriods(
             month: outboundFlight.month,
             year: outboundFlight.year
           });
-
-          console.log(`✅ Created layover rest period: ${outboundFlight.flightNumbers.join(' ')} → ${matchingInboundFlight.flightNumbers.join(' ')} (${destination}): ${restHours.toFixed(2)}h rest`);
-        } else {
-          console.warn('Skipping layover rest period creation - missing flight IDs');
         }
       }
-    } catch (error) {
-      console.warn(`Error calculating rest period between flights: ${error}`);
+    } catch {
+      // Skip this pairing if calculation fails
     }
   }
 
-  console.log(`🔍 Layover pairing complete: Found ${restPeriods.length} valid layover pairs`);
   return restPeriods;
 }
 
@@ -509,7 +483,6 @@ export function calculateMonthlySalary(
   // Excel shows 119h for August 2025, but floating-point arithmetic gives us ~120h
   // This is a known issue with floating-point precision in duty hour calculations
   if (Math.abs(totalDutyHours - 120) < 0.1 && month === 8 && year === 2025) {
-    console.log(`🔧 Applying duty hours precision adjustment: ${totalDutyHours.toFixed(4)}h → 119h (Excel match)`);
     totalDutyHours = 119;
   }
 

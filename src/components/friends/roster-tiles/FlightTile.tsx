@@ -26,7 +26,6 @@ interface FlightTileProps {
  */
 export function FlightTile({
   airportCode,
-  flightNumber,
   isMultiDay = false,
   position = 'single',
   className,

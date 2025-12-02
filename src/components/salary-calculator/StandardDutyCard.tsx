@@ -134,8 +134,7 @@ export function StandardDutyCard({
       if (onEditComplete) {
         onEditComplete();
       }
-    } catch (error) {
-      console.error('Error updating flight:', error);
+    } catch {
       showError('Failed to update flight times');
     }
   };

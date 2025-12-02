@@ -26,11 +26,9 @@ export default function ProfilePage() {
         const { success, error } = await setupAvatarsBucket();
 
         if (!success && error) {
-          console.error('Failed to set up avatars bucket:', error);
           setBucketError(error);
         }
-      } catch (err) {
-        console.error('Unexpected error checking avatars bucket:', err);
+      } catch {
         setBucketError('An unexpected error occurred while checking storage configuration');
       }
     };

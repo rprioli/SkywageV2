@@ -59,7 +59,6 @@ export function useMonthlyCalculations({
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
       setCurrentCalculation(null);
-      console.error('Error fetching current calculation:', err);
     }
   }, [userId, monthOneBased, year, enabled]);
 
@@ -81,7 +80,6 @@ export function useMonthlyCalculations({
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
       setAllCalculations([]);
-      console.error('Error fetching all calculations:', err);
     }
   }, [userId, enabled]);
 
@@ -122,7 +120,6 @@ export function useMonthlyCalculations({
       setError(errorMessage);
       setCurrentCalculation(null);
       setAllCalculations([]);
-      console.error('Error fetching monthly calculations:', err);
     } finally {
       setLoading(false);
     }

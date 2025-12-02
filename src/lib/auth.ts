@@ -57,7 +57,6 @@ async function withRetry<T>(
         break;
       }
 
-      console.log(`Auth operation failed (attempt ${attempt}/${maxRetries}), retrying in ${delay}ms...`);
       await new Promise(resolve => setTimeout(resolve, delay * attempt));
     }
   }
@@ -96,7 +95,6 @@ export async function signUp(
       error
     };
   } catch (error) {
-    console.error('Error signing up:', error);
     return {
       user: null,
       session: null,
@@ -118,7 +116,6 @@ export async function signIn(
     // Check connection health first
     const healthCheck = await checkConnection();
     if (!healthCheck.healthy) {
-      console.warn('Connection health check failed:', healthCheck.error);
     }
 
     const result = await withRetry(async () => {
@@ -140,7 +137,6 @@ export async function signIn(
 
     return result;
   } catch (error) {
-    console.error('Error signing in:', error);
     return {
       user: null,
       session: null,
@@ -155,7 +151,6 @@ export async function signOut(): Promise<{ error: AuthError | null }> {
     const { error } = await supabase.auth.signOut();
     return { error };
   } catch (error) {
-    console.error('Error signing out:', error);
     return { error: error as AuthError };
   }
 }
@@ -178,7 +173,6 @@ export async function getSession(): Promise<{
     if (session) {
       const isValid = await validateSession(session);
       if (!isValid) {
-        console.log('Session invalid, attempting refresh...');
         const refreshResult = await refreshSession();
         return refreshResult;
       }
@@ -189,7 +183,6 @@ export async function getSession(): Promise<{
       error: null
     };
   } catch (error) {
-    console.error('Error getting session:', error);
     return {
       session: null,
       error: error as AuthError
@@ -209,7 +202,6 @@ export async function getUser(): Promise<{
       error
     };
   } catch (error) {
-    console.error('Error getting user:', error);
     return {
       user: null,
       error: error as AuthError
@@ -225,7 +217,6 @@ export async function resetPassword(
     const { error } = await supabase.auth.resetPasswordForEmail(email);
     return { error };
   } catch (error) {
-    console.error('Error resetting password:', error);
     return { error: error as AuthError };
   }
 }
@@ -240,7 +231,6 @@ export async function updatePassword(
     });
     return { error };
   } catch (error) {
-    console.error('Error updating password:', error);
     return { error: error as AuthError };
   }
 }
@@ -253,7 +243,6 @@ export async function validateSession(session: Session): Promise<boolean> {
     const expiresAt = session.expires_at;
 
     if (!expiresAt || now >= expiresAt) {
-      console.log('Session expired');
       return false;
     }
 
@@ -261,20 +250,17 @@ export async function validateSession(session: Session): Promise<boolean> {
     // This allows for proactive refresh
     const refreshThreshold = 300;
     if (now >= (expiresAt - refreshThreshold)) {
-      console.log('Session expires soon, should refresh');
       return false;
     }
 
     // Validate session integrity by checking if user still exists
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) {
-      console.log('Session user validation failed:', error?.message);
       return false;
     }
 
     return true;
-  } catch (error) {
-    console.error('Error validating session:', error);
+  } catch {
     return false;
   }
 }
@@ -285,17 +271,14 @@ export async function refreshSession(): Promise<{
   error: AuthError | null;
 }> {
   try {
-    console.log('Attempting to refresh session...');
     const { data, error } = await supabase.auth.refreshSession();
 
     if (error) {
-      console.error('Session refresh failed:', error);
       return { session: null, error };
     }
 
     const session = data?.session;
     if (session) {
-      console.log('Session refreshed successfully');
     }
 
     return {
@@ -303,7 +286,6 @@ export async function refreshSession(): Promise<{
       error: null
     };
   } catch (error) {
-    console.error('Error refreshing session:', error);
     return {
       session: null,
       error: error as AuthError
@@ -321,7 +303,6 @@ export async function updateUserMetadata(
     });
     return { error };
   } catch (error) {
-    console.error('Error updating user metadata:', error);
     return { error: error as AuthError };
   }
 }

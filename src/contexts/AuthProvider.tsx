@@ -70,17 +70,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const setLoadingTimeout = () => {
       clearLoadingTimeout();
       loadingTimeoutRef.current = setTimeout(() => {
-        console.warn('Loading timeout - forcing loading to false');
         setLoading(false);
         setError(new Error('Authentication timeout - please try refreshing the page'));
       }, 15000); // 15 second loading timeout
     };
 
     // Atomic auth state update function with timeout protection
-    const updateAuthState = async (newSession: Session | null, source: string = 'unknown') => {
+    const updateAuthState = async (newSession: Session | null) => {
       // Prevent concurrent updates
       if (isUpdatingAuth.current) {
-        console.log(`Auth update skipped (${source}): already updating`);
         return;
       }
 
@@ -89,7 +87,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Set timeout to prevent hanging auth updates
       authTimeoutRef.current = setTimeout(() => {
-        console.warn('Auth update timeout - forcing completion');
         setLoading(false);
         isUpdatingAuth.current = false;
       }, 10000); // 10 second timeout
@@ -100,17 +97,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (newSession) {
           // Session exists, extract user from session
           const user = newSession.user;
-          console.log(`Auth state updated (${source}): user ${user.id}`);
           setSession(newSession);
           setUser(user);
         } else {
           // No session, clear everything
-          console.log(`Auth state cleared (${source}): no session`);
           setSession(null);
           setUser(null);
         }
       } catch (err) {
-        console.error(`Error updating auth state (${source}):`, err);
         setError(err as Error);
         // On error, clear auth state
         setSession(null);
@@ -130,16 +124,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         setLoading(true);
         setLoadingTimeout(); // Set loading timeout
-        console.log(`Initializing auth (attempt ${retryCount + 1}/${maxRetries + 1})`);
 
         const { data: { session }, error } = await supabase.auth.getSession();
 
         if (error) {
-          console.error('Error getting initial session:', error);
 
           // Retry on network errors
           if (retryCount < maxRetries && (error.message.includes('network') || error.message.includes('timeout'))) {
-            console.log(`Retrying auth initialization in ${(retryCount + 1) * 1000}ms...`);
             setTimeout(() => initializeAuth(retryCount + 1), (retryCount + 1) * 1000);
             return;
           }
@@ -149,13 +140,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
 
-        await updateAuthState(session, 'initialization');
+        await updateAuthState(session);
       } catch (err) {
-        console.error('Error initializing auth:', err);
 
         // Retry on unexpected errors
         if (retryCount < maxRetries) {
-          console.log(`Retrying auth initialization in ${(retryCount + 1) * 1000}ms...`);
           setTimeout(() => initializeAuth(retryCount + 1), (retryCount + 1) * 1000);
           return;
         }
@@ -170,12 +159,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Subscribe to auth changes with proper error handling
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
-        console.log('Auth state change:', event, newSession ? 'session exists' : 'no session');
 
         try {
-          await updateAuthState(newSession, `auth-change-${event}`);
+          await updateAuthState(newSession);
         } catch (err) {
-          console.error('Error handling auth state change:', err);
           setError(err as Error);
         }
       }
@@ -186,7 +173,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Cleanup function with proper resource cleanup
     return () => {
-      console.log('Cleaning up AuthProvider');
       clearAuthTimeout();
       clearLoadingTimeout();
 

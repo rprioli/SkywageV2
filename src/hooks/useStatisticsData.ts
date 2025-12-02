@@ -54,7 +54,6 @@ export function useStatisticsData(): UseStatisticsDataReturn {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load statistics data';
       setError(errorMessage);
-      console.error('Statistics data fetch error:', err);
     } finally {
       setLoading(false);
     }

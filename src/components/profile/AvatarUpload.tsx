@@ -73,41 +73,30 @@ export function AvatarUpload({ onUploadComplete, size = 150 }: AvatarUploadProps
     setError(null);
 
     try {
-      console.log('Starting avatar upload process');
-
       // Check if avatars bucket is set up
       const { success: bucketReady, error: bucketError } = await setupAvatarsBucket();
 
       if (!bucketReady) {
-        console.error('Avatars bucket setup failed:', bucketError);
         throw new Error(bucketError || 'Storage is not properly configured');
       }
 
       // Upload the file
-      console.log('Uploading file:', selectedFile.name);
       const { url, error: uploadError } = await uploadAvatar(selectedFile);
 
       if (uploadError) {
-        console.error('Upload error:', uploadError);
         throw new Error(uploadError);
       }
 
       if (!url) {
-        console.error('No URL returned from upload');
         throw new Error('Failed to get URL for uploaded image');
       }
-
-      console.log('File uploaded successfully, updating user profile');
 
       // Update user metadata
       const { success, error: updateError } = await updateUserAvatar(url);
 
       if (!success || updateError) {
-        console.error('Profile update error:', updateError);
         throw new Error(updateError || 'Failed to update profile');
       }
-
-      console.log('Profile updated successfully with new avatar URL');
 
       // Update local state
       setAvatarUrl(url);
@@ -119,7 +108,6 @@ export function AvatarUpload({ onUploadComplete, size = 150 }: AvatarUploadProps
         onUploadComplete(url);
       }
     } catch (err) {
-      console.error('Avatar upload failed:', err);
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
       setUploading(false);

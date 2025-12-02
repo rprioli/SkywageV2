@@ -11,8 +11,7 @@ export async function GET(request: Request) {
     try {
       // Exchange the code for a session
       await supabase.auth.exchangeCodeForSession(code);
-    } catch (error) {
-      console.error('Error exchanging code for session:', error);
+    } catch {
       // Redirect to error page if code exchange fails
       return NextResponse.redirect(new URL('/auth/error', requestUrl.origin));
     }

@@ -22,11 +22,10 @@ export async function updateUserAvatar(avatarUrl: string): Promise<{ success: bo
     }
 
     return { success: true, error: null };
-  } catch (error) {
-    console.error('Error updating user avatar:', error);
+  } catch (err) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'An unknown error occurred while updating profile'
+      error: err instanceof Error ? err.message : 'An unknown error occurred while updating profile'
     };
   }
 }

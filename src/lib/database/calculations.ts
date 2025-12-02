@@ -126,13 +126,11 @@ export async function upsertMonthlyCalculation(
       .single();
 
     if (error) {
-      console.error('Error upserting monthly calculation:', error);
       return { data: null, error: error.message };
     }
 
     return { data: rowToMonthlyCalculation(data), error: null };
   } catch (error) {
-    console.error('Error upserting monthly calculation:', error);
     return { data: null, error: (error as Error).message };
   }
 }
@@ -159,14 +157,12 @@ export async function getMonthlyCalculation(
         // No data found
         return { data: null, error: null };
       }
-      console.error('Error fetching monthly calculation:', error);
       return { data: null, error: error.message };
     }
 
     return { data: rowToMonthlyCalculation(data), error: null };
-  } catch (error) {
-    console.error('Error fetching monthly calculation:', error);
-    return { data: null, error: (error as Error).message };
+  } catch {
+    return { data: null, error: 'Error fetching monthly calculation' };
   }
 }
 
@@ -185,15 +181,13 @@ export async function getAllMonthlyCalculations(
       .order('month', { ascending: false });
 
     if (error) {
-      console.error('Error fetching monthly calculations:', error);
       return { data: null, error: error.message };
     }
 
     const calculations = data.map(rowToMonthlyCalculation);
     return { data: calculations, error: null };
-  } catch (error) {
-    console.error('Error fetching monthly calculations:', error);
-    return { data: null, error: (error as Error).message };
+  } catch {
+    return { data: null, error: 'Error fetching monthly calculations' };
   }
 }
 
@@ -211,7 +205,6 @@ export async function createLayoverRestPeriods(
     );
 
     if (invalidPeriods.length > 0) {
-      console.error('Invalid layover rest periods found:', invalidPeriods.length, 'periods');
       return {
         data: null,
         error: `${invalidPeriods.length} layover rest periods have missing flight IDs`
@@ -228,10 +221,6 @@ export async function createLayoverRestPeriods(
       .select();
 
     if (error) {
-      console.error('Error creating layover rest periods:', error);
-
-
-
       // Provide more specific error information
       if (error.code === '23503') {
         return { data: null, error: 'Foreign key constraint violation: Referenced flight IDs do not exist in the flights table' };
@@ -242,9 +231,8 @@ export async function createLayoverRestPeriods(
 
     const restPeriodsResult = data.map(rowToLayoverRestPeriod);
     return { data: restPeriodsResult, error: null };
-  } catch (error) {
-    console.error('Error creating layover rest periods:', error);
-    return { data: null, error: (error as Error).message };
+  } catch {
+    return { data: null, error: 'Error creating layover rest periods' };
   }
 }
 
@@ -266,15 +254,13 @@ export async function getLayoverRestPeriods(
       .order('rest_start_time', { ascending: true });
 
     if (error) {
-      console.error('Error fetching layover rest periods:', error);
       return { data: null, error: error.message };
     }
 
     const restPeriods = data.map(rowToLayoverRestPeriod);
     return { data: restPeriods, error: null };
-  } catch (error) {
-    console.error('Error fetching layover rest periods:', error);
-    return { data: null, error: (error as Error).message };
+  } catch {
+    return { data: null, error: 'Error fetching layover rest periods' };
   }
 }
 
@@ -295,14 +281,12 @@ export async function deleteLayoverRestPeriods(
       .eq('year', year);
 
     if (error) {
-      console.error('Error deleting layover rest periods:', error);
       return { error: error.message };
     }
 
     return { error: null };
-  } catch (error) {
-    console.error('Error deleting layover rest periods:', error);
-    return { error: (error as Error).message };
+  } catch {
+    return { error: 'Error deleting layover rest periods' };
   }
 }
 
@@ -323,14 +307,12 @@ export async function deleteMonthlyCalculation(
       .eq('year', year);
 
     if (error) {
-      console.error('Error deleting monthly calculation:', error);
       return { deleted: false, error: error.message };
     }
 
     return { deleted: true, error: null };
-  } catch (error) {
-    console.error('Error deleting monthly calculation:', error);
-    return { deleted: false, error: (error as Error).message };
+  } catch {
+    return { deleted: false, error: 'Error deleting monthly calculation' };
   }
 }
 
@@ -355,7 +337,6 @@ export async function getCalculationSummary(
       .order('month', { ascending: true });
 
     if (error) {
-      console.error('Error fetching calculation summary:', error);
       return { data: null, error: error.message };
     }
 
@@ -375,8 +356,7 @@ export async function getCalculationSummary(
 
     const calculations = filteredData.map(rowToMonthlyCalculation);
     return { data: calculations, error: null };
-  } catch (error) {
-    console.error('Error fetching calculation summary:', error);
-    return { data: null, error: (error as Error).message };
+  } catch {
+    return { data: null, error: 'Error fetching calculation summary' };
   }
 }

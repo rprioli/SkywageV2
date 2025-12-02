@@ -37,15 +37,6 @@ export function UploadResults({
   onDownloadReport,
   className
 }: UploadResultsProps) {
-  // Debug logging to see what we're getting
-  console.log('UploadResults - Processing result:', result);
-  console.log('UploadResults - Errors array:', result.errors);
-  console.log('UploadResults - Warnings array:', result.warnings);
-  if (result.errors) {
-    result.errors.forEach((error, index) => {
-      console.log(`UploadResults - Error ${index}:`, error);
-    });
-  }
 
   if (!result.success) {
     return (
