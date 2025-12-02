@@ -18,16 +18,22 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   MoreVertical,
-  RotateCcw,
   Hotel,
-  Timer,
   Clock,
-  Calendar,
-  BookOpen,
-  Trash2,
-  ArrowRight
+  Trash2
 } from 'lucide-react';
 import { calculateRestPeriod } from '@/lib/salary-calculator/time-calculator';
+import {
+  formatCurrency,
+  formatTime,
+  formatDecimalHoursToHHMM,
+  formatHoursMinutes,
+  getDestination,
+  isOutboundFlight,
+  isInboundFlight,
+  getDutyTypeConfig,
+  SectorDisplay
+} from './flight-duty-card';
 
 interface FlightDutyCardProps {
   flightDuty: FlightDuty;
@@ -48,157 +54,38 @@ export function FlightDutyCard({
   isSelected = false,
   onToggleSelection
 }: FlightDutyCardProps) {
-
-
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-AE', {
-      style: 'currency',
-      currency: 'AED',
-      minimumFractionDigits: 2
-    }).format(amount);
-  };
-
-  const formatTime = (timeValue: { hours: number; minutes: number }) => {
-    return `${timeValue.hours.toString().padStart(2, '0')}:${timeValue.minutes.toString().padStart(2, '0')}`;
-  };
-
-  const formatDecimalHoursToHHMM = (decimalHours: number) => {
-    const hours = Math.floor(decimalHours);
-    const minutes = Math.round((decimalHours - hours) * 60);
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-  };
-
+  // Helper to format time with date
   const formatTimeWithDate = (timeValue: { hours: number; minutes: number }, date: Date, isDebriefing = false) => {
     const timeStr = formatTime(timeValue);
-
-    // For cross-day flights, debriefing time should show the next day's date
     const displayDate = (isDebriefing && flightDuty.isCrossDay)
-      ? new Date(date.getTime() + 24 * 60 * 60 * 1000) // Add one day
+      ? new Date(date.getTime() + 24 * 60 * 60 * 1000)
       : date;
-
-    const dateStr = displayDate.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: '2-digit'
-    });
+    const dateStr = displayDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
     return `${timeStr} ${dateStr}`;
   };
 
-  // Helper function to format hours and minutes
-  const formatHoursMinutes = (decimalHours: number) => {
-    const hours = Math.floor(decimalHours);
-    const minutes = Math.round((decimalHours - hours) * 60);
-    return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
-  };
-
-  // Helper function to get layover rest period using the same logic as calculation engine
+  // Get layover rest period using extracted utilities
   const getLayoverRestPeriod = () => {
-    // Only show for layover duties
-    if (flightDuty.dutyType !== 'layover') {
-      return null;
-    }
-
-    // Helper function to parse sector string into array
-    const parseSectors = (sectorString: string): string[] => {
-      // Handle both single sector strings like "DXB  - ZAG" and multi-sector strings
-      if (sectorString.includes(' → ')) {
-        // Multi-sector format: "DXB  - EBL → EBL  - DXB"
-        return sectorString.split(' → ').map(s => s.trim());
-      } else {
-        // Single sector format: Handle both "DXB - ZAG" and "DXB-ZAG" formats
-        let parts: string[];
-        if (sectorString.includes(' - ')) {
-          // Format with spaces: "DXB - ZAG"
-          parts = sectorString.split(' - ').map(s => s.trim());
-        } else if (sectorString.includes('-')) {
-          // Format without spaces: "DXB-ZAG" (manual entry format)
-          parts = sectorString.split('-').map(s => s.trim());
-        } else {
-          // Fallback for other formats
-          parts = [sectorString.trim()];
-        }
-        return parts.length >= 2 ? parts : [sectorString.trim()];
-      }
-    };
-
-    // Helper function to extract destination from sectors
-    const getDestination = (sectors: string[]): string => {
-      // Parse the first sector string to get airports
-      const firstSector = sectors[0] || '';
-      const airports = parseSectors(firstSector);
-
-      // For outbound flights: DXB → destination, return destination
-      // For inbound flights: destination → DXB, return destination (first airport)
-      if (airports.length >= 2) {
-        return airports[0] === 'DXB' ? airports[1] : airports[0];
-      }
-      return '';
-    };
-
-    // Helper function to check if flight is outbound (DXB → destination)
-    const isOutboundFlight = (sectors: string[]): boolean => {
-      const firstSector = sectors[0] || '';
-      const airports = parseSectors(firstSector);
-      return airports.length >= 2 && airports[0] === 'DXB';
-    };
-
-    // Helper function to check if flight is inbound (destination → DXB)
-    const isInboundFlight = (sectors: string[]): boolean => {
-      const firstSector = sectors[0] || '';
-      const airports = parseSectors(firstSector);
-      return airports.length >= 2 && airports[airports.length - 1] === 'DXB';
-    };
-
-    // Only show rest period on outbound flights (DXB → destination)
-    if (!isOutboundFlight(flightDuty.sectors)) {
-      return null;
-    }
-
-    if (!allFlightDuties.length) {
-      return null;
-    }
+    if (flightDuty.dutyType !== 'layover') return null;
+    if (!isOutboundFlight(flightDuty.sectors)) return null;
+    if (!allFlightDuties.length) return null;
 
     const destination = getDestination(flightDuty.sectors);
-    if (!destination) {
-      return null;
-    }
+    if (!destination) return null;
 
-    // Find the matching inbound flight for this destination using the same logic as calculation engine
     const matchingInboundFlight = allFlightDuties.find(flight => {
-      // Must be a layover duty
-      if (flight.dutyType !== 'layover') {
-        return false;
-      }
-
-      // Must be an inbound flight
-      if (!isInboundFlight(flight.sectors)) {
-        return false;
-      }
-
-      // Must be the same destination
-      if (getDestination(flight.sectors) !== destination) {
-        return false;
-      }
-
-      // Must be after the outbound flight
-      if (flight.date.getTime() <= flightDuty.date.getTime()) {
-        return false;
-      }
-
-      // Must be within reasonable timeframe (within 5 days for layovers)
+      if (flight.dutyType !== 'layover') return false;
+      if (!isInboundFlight(flight.sectors)) return false;
+      if (getDestination(flight.sectors) !== destination) return false;
+      if (flight.date.getTime() <= flightDuty.date.getTime()) return false;
       const daysDiff = (flight.date.getTime() - flightDuty.date.getTime()) / (1000 * 60 * 60 * 24);
       return daysDiff <= 5;
     });
 
-    if (!matchingInboundFlight) {
-      return null;
-    }
+    if (!matchingInboundFlight) return null;
 
     try {
-      // Calculate days between flights
       const daysBetween = Math.floor((matchingInboundFlight.date.getTime() - flightDuty.date.getTime()) / (24 * 60 * 60 * 1000));
-
-      // Use the existing calculateRestPeriod utility function for accurate calculation
       const restHours = calculateRestPeriod(
         flightDuty.debriefTime,
         flightDuty.isCrossDay,
@@ -206,175 +93,11 @@ export function FlightDutyCard({
         matchingInboundFlight.isCrossDay,
         daysBetween
       );
-
-      // Calculate per diem using the correct rate (8.82 AED per hour for both positions)
-      const perDiemRate = 8.82; // AED per hour
+      const perDiemRate = 8.82;
       const perDiemPay = restHours * perDiemRate;
-
-      return {
-        restHours,
-        perDiemPay,
-        matchingFlight: matchingInboundFlight
-      };
+      return { restHours, perDiemPay, matchingFlight: matchingInboundFlight };
     } catch {
-      return null; // Don't show error, just hide the rest period
-    }
-  };
-
-  const renderSectorsWithIcons = (sectors: string[], dutyType: string) => {
-    if (sectors.length === 0) return null;
-
-    // Special handling for home standby - just show base location without arrows
-    if (dutyType === 'sby' || dutyType === 'asby') {
-      // For standby duties, extract just the base airport (usually DXB)
-      const baseAirport = sectors[0]?.split('-')[0]?.trim() || 'DXB';
-      return <span style={{ color: 'rgb(58, 55, 128)' }}>{baseAirport}</span>;
-    }
-
-    // Check if this looks like a turnaround pattern regardless of duty type
-    const isTurnaroundPattern = (sectors: string[]) => {
-      if (sectors.length >= 2) {
-        const airports = sectors.flatMap(sector => sector.split('-').map(airport => airport.trim()));
-        // Check if it starts and ends with the same airport (typically DXB)
-        return airports.length >= 3 && airports[0] === airports[airports.length - 1];
-      }
-      return false;
-    };
-
-    // Handle turnaround patterns (either classified as turnaround or looks like one)
-    if (dutyType === 'turnaround' || isTurnaroundPattern(sectors)) {
-      const airports = sectors.flatMap(sector => sector.split('-').map(airport => airport.trim()));
-      if (airports.length >= 3) {
-        // For turnaround, show origin → destination → origin
-        const origin = airports[0];
-        const destination = airports[1];
-        const returnToOrigin = airports[airports.length - 1];
-
-        // Create clean turnaround display: DXB → KTM → DXB
-        const turnaroundRoute = [origin, destination, returnToOrigin];
-
-        return (
-          <span className="flex items-center justify-center gap-1.5">
-            {turnaroundRoute.map((airport, index) => (
-              <span key={index} className="flex items-center gap-1.5">
-                <span style={{ color: 'rgb(58, 55, 128)' }}>{airport}</span>
-                {index < turnaroundRoute.length - 1 && (
-                  <ArrowRight className="h-3 w-3 text-[#4C49ED]" />
-                )}
-              </span>
-            ))}
-          </span>
-        );
-      }
-    }
-
-    if (dutyType === 'layover') {
-      // For layovers, show each sector separately
-      return (
-        <div className="flex flex-col gap-1">
-          {sectors.map((sector, index) => {
-            const airports = sector.split('-').map(airport => airport.trim());
-            if (airports.length === 2) {
-              return (
-                <span key={index} className="flex items-center justify-center gap-1.5">
-                  <span style={{ color: 'rgb(58, 55, 128)' }}>{airports[0]}</span>
-                  <ArrowRight className="h-3 w-3 text-[#4C49ED]" />
-                  <span style={{ color: 'rgb(58, 55, 128)' }}>{airports[1]}</span>
-                </span>
-              );
-            }
-            return <span key={index} style={{ color: 'rgb(58, 55, 128)' }}>{sector}</span>;
-          })}
-        </div>
-      );
-    }
-
-    // For single sectors (any duty type), show with arrow
-    if (sectors.length === 1) {
-      const airports = sectors[0].split('-').map(airport => airport.trim());
-      if (airports.length === 2) {
-        return (
-          <span className="flex items-center justify-center gap-1.5">
-            <span style={{ color: 'rgb(58, 55, 128)' }}>{airports[0]}</span>
-            <ArrowRight className="h-3 w-3 text-[#4C49ED]" />
-            <span style={{ color: 'rgb(58, 55, 128)' }}>{airports[1]}</span>
-          </span>
-        );
-      }
-    }
-
-    // Final fallback: show sectors as-is
-    return <span style={{ color: 'rgb(58, 55, 128)' }}>{sectors.join(', ')}</span>;
-  };
-
-  const getDutyTypeConfig = (dutyType: string) => {
-    // All icons use primary purple background with white icons
-    const baseConfig = {
-      bgColor: 'bg-[#4C49ED]', // Skywage primary purple for ALL icons
-      textColor: 'text-white'
-    };
-
-    switch (dutyType) {
-      case 'turnaround':
-        return {
-          ...baseConfig,
-          icon: RotateCcw,
-          label: 'Turnaround'
-        };
-      case 'layover':
-        return {
-          ...baseConfig,
-          icon: Hotel,
-          label: 'Layover'
-        };
-      case 'asby':
-        return {
-          ...baseConfig,
-          icon: Timer,
-          label: 'Airport Standby'
-        };
-      case 'recurrent':
-        return {
-          ...baseConfig,
-          icon: BookOpen,
-          label: 'Ground Duty'
-        };
-      case 'sby':
-        return {
-          ...baseConfig,
-          icon: Clock,
-          label: 'Home Standby'
-        };
-      case 'business_promotion':
-        return {
-          ...baseConfig,
-          icon: BookOpen,
-          label: 'Business Promotion'
-        };
-      case 'off':
-        return {
-          ...baseConfig,
-          icon: Calendar,
-          label: 'Off'
-        };
-      case 'rest':
-        return {
-          ...baseConfig,
-          icon: Calendar,
-          label: 'Rest'
-        };
-      case 'annual_leave':
-        return {
-          ...baseConfig,
-          icon: Calendar,
-          label: 'Annual Leave'
-        };
-      default:
-        return {
-          ...baseConfig,
-          icon: Timer,
-          label: dutyType.toUpperCase()
-        };
+      return null;
     }
   };
 
@@ -474,7 +197,7 @@ export function FlightDutyCard({
             {/* Only show sectors for non-recurrent and non-sby duties to avoid verbose descriptions */}
             {flightDuty.dutyType !== 'recurrent' && flightDuty.dutyType !== 'sby' && flightDuty.sectors.length > 0 && (
               <div className="text-sm text-gray-500">
-                {renderSectorsWithIcons(flightDuty.sectors, flightDuty.dutyType)}
+                <SectorDisplay sectors={flightDuty.sectors} dutyType={flightDuty.dutyType} />
               </div>
             )}
           </div>
