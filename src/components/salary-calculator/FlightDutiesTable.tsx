@@ -10,10 +10,11 @@ import { useState } from 'react';
 import { FlightDuty, Position } from '@/types/salary-calculator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Trash2, Plane, CheckSquare, X, MoreHorizontal } from 'lucide-react';
+import { Trash2, CheckSquare, X, MoreHorizontal } from 'lucide-react';
+import { LoadingSkeleton, EmptyState } from './flight-duties-table';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -160,59 +161,11 @@ export function FlightDutiesTable({
 
 
   if (loading) {
-    return (
-      <Card className="border-0 shadow-none bg-transparent">
-        <CardHeader className="pb-4 px-2 md:px-4">
-          <h2 className="text-responsive-2xl font-bold" style={{ color: '#3A3780' }}>Flight Duties</h2>
-        </CardHeader>
-        <CardContent className="px-2 md:px-4">
-          <div className="space-y-6">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="p-6 bg-gray-50/50 rounded-xl border border-gray-100">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-3 flex-1">
-                    <div className="flex items-center space-x-4">
-                      <div className="h-5 w-20 bg-gray-200 animate-pulse rounded-md"></div>
-                      <div className="h-6 w-24 bg-gray-200 animate-pulse rounded-full"></div>
-                    </div>
-                    <div className="flex items-center space-x-6">
-                      <div className="h-4 w-32 bg-gray-200 animate-pulse rounded"></div>
-                      <div className="h-4 w-28 bg-gray-200 animate-pulse rounded"></div>
-                      <div className="h-4 w-24 bg-gray-200 animate-pulse rounded"></div>
-                    </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    <div className="h-9 w-9 bg-gray-200 animate-pulse rounded-lg"></div>
-                    <div className="h-9 w-9 bg-gray-200 animate-pulse rounded-lg"></div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <LoadingSkeleton />;
   }
 
   if (filteredFlightDuties.length === 0) {
-    return (
-      <Card className="border-0 shadow-none bg-transparent">
-        <CardHeader className="pb-4 px-2 md:px-4">
-          <CardTitle className="text-responsive-xl font-semibold">Flight Duties</CardTitle>
-        </CardHeader>
-        <CardContent className="px-2 md:px-4">
-          <div className="text-center py-16">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Plane className="h-8 w-8 text-gray-400" />
-            </div>
-            <h3 className="text-responsive-lg font-medium text-gray-900 space-responsive-sm">No flight duties found</h3>
-            <p className="text-responsive-sm text-gray-500 max-w-sm mx-auto">
-              Upload a roster CSV file or add flights manually to get started with your salary calculations.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <EmptyState />;
   }
 
 

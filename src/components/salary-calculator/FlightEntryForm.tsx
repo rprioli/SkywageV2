@@ -7,19 +7,16 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
-  Save,
   AlertCircle,
-  Loader2,
   Plane,
   MapPin,
-  Plus,
   Sunrise
 } from 'lucide-react';
+import { FormActions, FlightNumberInput, SectorInputs } from './flight-entry-form';
 
 import { FlightTypeSelector } from './FlightTypeSelector';
 import { TimeInput } from './TimeInput';
@@ -434,60 +431,28 @@ export function FlightEntryForm({
           {/* Flight Details - Different layouts for different duty types */}
           {showFlightFields && formData.dutyType === 'layover' && (
             <div className="space-y-6">
-              {/* Outbound Flight Details - No header since it's above */}
+              {/* Outbound Flight Details */}
               <div className="space-y-4">
-                {/* Outbound Flight Number */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium">Flight Number</label>
-                  <div className="relative">
-                    <div className="input-icon-left">
-                      <Plane className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <Input
-                      type="text"
-                      value={formData.flightNumbers[0] || ''}
-                      onChange={e => {
-                        const newNumbers = [...formData.flightNumbers];
-                        newNumbers[0] = e.target.value.replace(/[^0-9]/g, '');
-                        handleFieldChange('flightNumbers', newNumbers);
-                      }}
-                      placeholder="123"
-                      disabled={isFormDisabled}
-                      className="input-with-left-icon"
-                      maxLength={4}
-                    />
-                  </div>
-                </div>
+                <FlightNumberInput
+                  value={formData.flightNumbers[0] || ''}
+                  onChange={value => {
+                    const newNumbers = [...formData.flightNumbers];
+                    newNumbers[0] = value;
+                    handleFieldChange('flightNumbers', newNumbers);
+                  }}
+                  placeholder="123"
+                  disabled={isFormDisabled}
+                  label="Flight Number"
+                />
 
-                {/* Outbound Sector */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium">Sector</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {[0, 1].map((index) => (
-                      <div key={index} className="relative">
-                        <div className="input-icon-left">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                        <Input
-                          type="text"
-                          value={formData.sectors[index] || ''}
-                          onChange={e => {
-                            const newSectors = [...formData.sectors];
-                            while (newSectors.length <= index) {
-                              newSectors.push('');
-                            }
-                            newSectors[index] = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 3);
-                            handleFieldChange('sectors', newSectors);
-                          }}
-                          placeholder={index === 0 ? 'DXB' : 'KHI'}
-                          disabled={isFormDisabled}
-                          className="input-with-left-icon"
-                          maxLength={3}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <SectorInputs
+                  sectors={formData.sectors}
+                  indices={[0, 1]}
+                  placeholders={['DXB', 'KHI']}
+                  onChange={newSectors => handleFieldChange('sectors', newSectors)}
+                  disabled={isFormDisabled}
+                  label="Sector"
+                />
 
                 {/* Outbound Times */}
                 <div className="grid grid-cols-2 gap-4">
@@ -543,61 +508,29 @@ export function FlightEntryForm({
                   )}
                 </div>
 
-                {/* Inbound Flight Number */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium">Flight Number</label>
-                  <div className="relative">
-                    <div className="input-icon-left">
-                      <Plane className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <Input
-                      type="text"
-                      value={formData.flightNumbers[1] || ''}
-                      onChange={e => {
-                        const newNumbers = [...formData.flightNumbers];
-                        while (newNumbers.length <= 1) {
-                          newNumbers.push('');
-                        }
-                        newNumbers[1] = e.target.value.replace(/[^0-9]/g, '');
-                        handleFieldChange('flightNumbers', newNumbers);
-                      }}
-                      placeholder="124"
-                      disabled={isFormDisabled}
-                      className="input-with-left-icon"
-                      maxLength={4}
-                    />
-                  </div>
-                </div>
+                <FlightNumberInput
+                  value={formData.flightNumbers[1] || ''}
+                  onChange={value => {
+                    const newNumbers = [...formData.flightNumbers];
+                    while (newNumbers.length <= 1) {
+                      newNumbers.push('');
+                    }
+                    newNumbers[1] = value;
+                    handleFieldChange('flightNumbers', newNumbers);
+                  }}
+                  placeholder="124"
+                  disabled={isFormDisabled}
+                  label="Flight Number"
+                />
 
-                {/* Inbound Sector */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium">Sector</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {[2, 3].map((index) => (
-                      <div key={index} className="relative">
-                        <div className="input-icon-left">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                        <Input
-                          type="text"
-                          value={formData.sectors[index] || ''}
-                          onChange={e => {
-                            const newSectors = [...formData.sectors];
-                            while (newSectors.length <= index) {
-                              newSectors.push('');
-                            }
-                            newSectors[index] = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 3);
-                            handleFieldChange('sectors', newSectors);
-                          }}
-                          placeholder={index === 2 ? 'KHI' : 'DXB'}
-                          disabled={isFormDisabled}
-                          className="input-with-left-icon"
-                          maxLength={3}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <SectorInputs
+                  sectors={formData.sectors}
+                  indices={[2, 3]}
+                  placeholders={['KHI', 'DXB']}
+                  onChange={newSectors => handleFieldChange('sectors', newSectors)}
+                  disabled={isFormDisabled}
+                  label="Sector"
+                />
 
                 {/* Inbound Times */}
                 <div className="grid grid-cols-2 gap-4">
@@ -750,85 +683,14 @@ export function FlightEntryForm({
             </div>
           )}
 
-          {/* Batch Counter */}
-          {batchCount > 0 && (
-            <div className="p-3 bg-primary/10 border border-primary/20 rounded-md">
-              <p className="text-primary text-sm font-medium">
-                {batchCount} flight {batchCount === 1 ? 'duty' : 'duties'} added to batch
-              </p>
-            </div>
-          )}
-
-
-
-          {/* Buttons Container */}
-          <div className="space-y-3">
-            {/* Save Batch Only Button - only show when there are items in batch */}
-            {batchCount > 0 && onSaveBatchOnly && (
-              <Button
-                type="button"
-                variant="secondary"
-                size="touch"
-                onClick={onSaveBatchOnly}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 cursor-pointer hover:opacity-90"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Saving Batch...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    <span>Save {batchCount} Flight {batchCount === 1 ? 'Duty' : 'Duties'} Only</span>
-                  </>
-                )}
-              </Button>
-            )}
-
-            {/* Main Action Buttons - Side by Side */}
-            <div className="flex gap-3">
-              {/* Submit Button - Primary action comes first */}
-              <Button
-                type="submit"
-                size="touch"
-                disabled={isFormDisabled}
-                className="flex-1 flex items-center justify-center gap-2 cursor-pointer hover:opacity-90"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Saving Flight...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    <span>
-                      {batchCount > 0 ? `Save ${batchCount + 1} Flight Duties` : 'Save Flight Duty'}
-                    </span>
-                  </>
-                )}
-              </Button>
-
-              {/* Add Another Duty Button */}
-              {onAddToBatch && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="touch"
-                  onClick={handleAddToBatch}
-                  disabled={isFormDisabled}
-                  className="flex-1 flex items-center justify-center gap-2 cursor-pointer hover:bg-transparent hover:opacity-80"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Add Another Duty</span>
-                </Button>
-              )}
-
-
-            </div>
-          </div>
+          {/* Form Actions */}
+          <FormActions
+            loading={loading}
+            disabled={disabled}
+            batchCount={batchCount}
+            onAddToBatch={onAddToBatch ? handleAddToBatch : undefined}
+            onSaveBatchOnly={onSaveBatchOnly}
+          />
 
 
     </form>
