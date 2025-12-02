@@ -60,11 +60,25 @@ export {
   validateCompleteCSV
 } from './csv-validator';
 
+// Date utilities (shared between CSV and Excel parsers)
+export {
+  parseDate,
+  parseExcelDate,
+  parseDateRange,
+  extractMonthFromText,
+  extractYearFromText,
+  extractMonthYearFromText,
+  isValidFlightDate,
+  getDaysInMonth,
+  formatDateDDMMYYYY,
+  type DateParseResult,
+  type MonthYearResult
+} from './date-utilities';
+
 // CSV parsing utilities
 export {
   parseCSVContent,
   extractMonthFromCSV,
-  parseDate,
   parseFlightDutyRow,
   parseFlightDutiesFromCSV
 } from './csv-parser';

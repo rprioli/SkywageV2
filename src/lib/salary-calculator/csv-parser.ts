@@ -8,7 +8,11 @@ import { CSVParseResult, FlightDuty, DutyType } from '@/types/salary-calculator'
 import { parseTimeString, parseTimeStringWithCrossDay, createTimeValue } from './time-calculator';
 import { classifyFlightDuty, extractFlightNumbers, extractSectors } from './flight-classifier';
 import { validateFlightNumbers, validateSectors } from './csv-validator';
+import { parseDate, extractMonthYearFromText } from './date-utilities';
 import Papa from 'papaparse';
+
+// Re-export parseDate for backwards compatibility
+export { parseDate } from './date-utilities';
 
 /**
  * Parses CSV content into structured data using PapaParse for proper handling of quoted multi-line cells
@@ -42,6 +46,7 @@ export function parseCSVContent(content: string): string[][] {
 
 /**
  * Extracts month and year from CSV content
+ * Uses shared date utilities for parsing
  */
 export function extractMonthFromCSV(content: string): { month: number; year: number } | null {
   const rows = parseCSVContent(content);
@@ -56,152 +61,8 @@ export function extractMonthFromCSV(content: string): { month: number; year: num
     return null;
   }
 
-  // Try to extract month and year from various formats
-  // Examples: "May 2024", "05/2024", "May-24", etc.
-  const monthNames = [
-    'january', 'february', 'march', 'april', 'may', 'june',
-    'july', 'august', 'september', 'october', 'november', 'december'
-  ];
-
-  const text = c2Cell.toLowerCase();
-  let month: number | null = null;
-  let year: number | null = null;
-
-  // Try to find month name
-  for (let i = 0; i < monthNames.length; i++) {
-    if (text.includes(monthNames[i])) {
-      month = i + 1;
-      break;
-    }
-  }
-
-  // Try to extract year (4 digits or 2 digits)
-  const yearMatch = text.match(/\b(20\d{2}|\d{2})\b/);
-  if (yearMatch) {
-    year = parseInt(yearMatch[1]);
-    if (year < 100) {
-      year += 2000; // Convert 2-digit year to 4-digit
-    }
-
-    // Handle common year parsing issues
-    if (year < 2020) {
-      // If year is like 2004, it might be a parsing error for 2025
-      if (year >= 2000 && year <= 2010) {
-        year = year + 21; // Convert 2004 -> 2025
-      }
-    }
-  }
-
-  // Try numeric month format - handle both DD/MM/YYYY and MM/DD/YYYY patterns
-  if (!month) {
-    // Look for date range patterns like "01/04/2025 - 30/04/2025"
-    const dateRangeMatch = text.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s*-\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-    if (dateRangeMatch) {
-      const startDay = parseInt(dateRangeMatch[1]);
-      const startMonth = parseInt(dateRangeMatch[2]);
-      const startYear = parseInt(dateRangeMatch[3]);
-      const endDay = parseInt(dateRangeMatch[4]);
-      const endMonth = parseInt(dateRangeMatch[5]);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const _endYear = parseInt(dateRangeMatch[6]);
-
-      // For Flydubai (international format), assume DD/MM/YYYY
-      // If start day is 01 and end day is 30/31, and start month equals end month,
-      // then it's likely DD/MM format showing a full month
-      if (startDay === 1 && endDay >= 28 && startMonth === endMonth) {
-        month = startMonth;
-        year = startYear < 100 ? startYear + 2000 : startYear;
-      }
-    }
-
-    // Fallback to simple MM/YYYY or MM-YYYY pattern
-    if (!month) {
-      const monthMatch = text.match(/\b(\d{1,2})[\/\-](\d{2,4})\b/);
-      if (monthMatch) {
-        month = parseInt(monthMatch[1]);
-        year = parseInt(monthMatch[2]);
-        if (year < 100) {
-          year += 2000;
-        }
-
-        // Handle year parsing issues for numeric format too
-        if (year < 2020) {
-          if (year >= 2000 && year <= 2010) {
-            year = year + 21; // Convert 2004 -> 2025
-          }
-        }
-      }
-    }
-  }
-
-  if (month && year && month >= 1 && month <= 12) {
-    return { month, year };
-  }
-
-  return null;
-}
-
-/**
- * Parses date string into Date object
- */
-export function parseDate(dateStr: string, year?: number): Date | null {
-  if (!dateStr || dateStr.trim() === '') {
-    return null;
-  }
-
-  let cleaned = dateStr.trim();
-
-  // Remove day names (Mon, Tue, Wed, Thu, Fri, Sat, Sun) from date strings
-  // Handle formats like "03/04/2025 Thu" or "03/04/2025 Thursday"
-  cleaned = cleaned.replace(/\s+(Mon|Tue|Wed|Thu|Fri|Sat|Sun|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)$/i, '');
-
-  // Try various date formats
-  const formats = [
-    /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/, // MM/DD/YYYY or DD/MM/YYYY
-    /^(\d{1,2})-(\d{1,2})-(\d{2,4})$/, // MM-DD-YYYY or DD-MM-YYYY
-    /^(\d{1,2})\.(\d{1,2})\.(\d{2,4})$/, // MM.DD.YYYY or DD.MM.YYYY
-    /^(\d{1,2})\/(\d{1,2})$/, // MM/DD (year from context)
-    /^(\d{1,2})-(\d{1,2})$/, // MM-DD (year from context)
-    /^(\d{1,2})\.(\d{1,2})$/, // MM.DD (year from context)
-  ];
-
-  for (const format of formats) {
-    const match = cleaned.match(format);
-    if (match) {
-      let day = parseInt(match[1]);
-      let month = parseInt(match[2]);
-      let yearValue = match[3] ? parseInt(match[3]) : year || new Date().getFullYear();
-
-      // Handle 2-digit years
-      if (yearValue < 100) {
-        yearValue += 2000;
-      }
-
-      // Handle DD/MM vs MM/DD format detection
-      if (day <= 12 && month > 12) {
-        // If month > 12, then it must be MM/DD format, so swap
-        [day, month] = [month, day];
-      }
-      // If day > 12 and month <= 12, then it's definitely DD/MM format, no swap needed
-      // If both are <= 12, assume DD/MM format for Flydubai (international format)
-
-      // Validate date components
-      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-        // Create date in UTC to avoid timezone shifting issues (consistent with Excel parser)
-        const date = new Date(Date.UTC(yearValue, month - 1, day));
-
-        // Verify the date is valid (handles invalid dates like Feb 30)
-        // Note: Using UTC methods for consistency
-        if (date.getUTCFullYear() === yearValue &&
-            date.getUTCMonth() === month - 1 &&
-            date.getUTCDate() === day) {
-          return date;
-        }
-      }
-    }
-  }
-
-  return null;
+  // Use shared utility for month/year extraction
+  return extractMonthYearFromText(c2Cell);
 }
 
 /**
