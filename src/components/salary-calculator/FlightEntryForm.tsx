@@ -7,19 +7,16 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
-  Save,
   AlertCircle,
-  Loader2,
   Plane,
   MapPin,
-  Plus,
   Sunrise
 } from 'lucide-react';
+import { FormActions } from './flight-entry-form';
 
 import { FlightTypeSelector } from './FlightTypeSelector';
 import { TimeInput } from './TimeInput';
@@ -750,85 +747,14 @@ export function FlightEntryForm({
             </div>
           )}
 
-          {/* Batch Counter */}
-          {batchCount > 0 && (
-            <div className="p-3 bg-primary/10 border border-primary/20 rounded-md">
-              <p className="text-primary text-sm font-medium">
-                {batchCount} flight {batchCount === 1 ? 'duty' : 'duties'} added to batch
-              </p>
-            </div>
-          )}
-
-
-
-          {/* Buttons Container */}
-          <div className="space-y-3">
-            {/* Save Batch Only Button - only show when there are items in batch */}
-            {batchCount > 0 && onSaveBatchOnly && (
-              <Button
-                type="button"
-                variant="secondary"
-                size="touch"
-                onClick={onSaveBatchOnly}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 cursor-pointer hover:opacity-90"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Saving Batch...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    <span>Save {batchCount} Flight {batchCount === 1 ? 'Duty' : 'Duties'} Only</span>
-                  </>
-                )}
-              </Button>
-            )}
-
-            {/* Main Action Buttons - Side by Side */}
-            <div className="flex gap-3">
-              {/* Submit Button - Primary action comes first */}
-              <Button
-                type="submit"
-                size="touch"
-                disabled={isFormDisabled}
-                className="flex-1 flex items-center justify-center gap-2 cursor-pointer hover:opacity-90"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Saving Flight...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    <span>
-                      {batchCount > 0 ? `Save ${batchCount + 1} Flight Duties` : 'Save Flight Duty'}
-                    </span>
-                  </>
-                )}
-              </Button>
-
-              {/* Add Another Duty Button */}
-              {onAddToBatch && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="touch"
-                  onClick={handleAddToBatch}
-                  disabled={isFormDisabled}
-                  className="flex-1 flex items-center justify-center gap-2 cursor-pointer hover:bg-transparent hover:opacity-80"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Add Another Duty</span>
-                </Button>
-              )}
-
-
-            </div>
-          </div>
+          {/* Form Actions */}
+          <FormActions
+            loading={loading}
+            disabled={disabled}
+            batchCount={batchCount}
+            onAddToBatch={onAddToBatch ? handleAddToBatch : undefined}
+            onSaveBatchOnly={onSaveBatchOnly}
+          />
 
 
     </form>
