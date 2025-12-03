@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Trash2, CheckSquare, X, MoreHorizontal } from 'lucide-react';
 import { LoadingSkeleton, EmptyState } from './flight-duties-table';
 import {
@@ -27,6 +29,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { FlightDutyCard } from './FlightDutyCard';
 import { NewFlightDutyCard } from './NewFlightDutyCard';
+import { OffDayCard } from './OffDayCard';
 import { FEATURE_FLAGS } from '@/lib/feature-flags';
 import { identifyLayoverPairs } from '@/lib/salary-calculator/card-data-mapper';
 
@@ -66,6 +69,9 @@ export function FlightDutiesTable({
   // Delete All dialog state
   const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
   const [deleteAllProcessing, setDeleteAllProcessing] = useState(false);
+
+  // Toggle state for showing off days (off, rest, annual_leave)
+  const [showOffDays, setShowOffDays] = useState(true);
 
 
 
@@ -132,7 +138,12 @@ export function FlightDutiesTable({
     }
   };
 
-  // Filter out inbound layover flights that are already part of connected pairs
+  // Helper to check if duty type is an off day type
+  const isOffDayType = (dutyType: string) => {
+    return dutyType === 'off' || dutyType === 'rest' || dutyType === 'annual_leave';
+  };
+
+  // Filter flight duties based on toggle state and layover pairing
   const getFilteredFlightDuties = () => {
     if (!useNewCardDesign) {
       return flightDuties;
@@ -142,8 +153,10 @@ export function FlightDutiesTable({
     const inboundLayoverIds = new Set(layoverPairs.map(pair => pair.inbound.id));
 
     return flightDuties.filter(duty => {
-      // Skip off days (already handled in render)
-      if (duty.dutyType === 'off') return true;
+      // Filter off days based on toggle state
+      if (isOffDayType(duty.dutyType) && !showOffDays) {
+        return false;
+      }
 
       // Skip inbound layover flights that are part of connected pairs
       if (duty.dutyType === 'layover' && inboundLayoverIds.has(duty.id)) {
@@ -185,6 +198,22 @@ export function FlightDutiesTable({
               )}
             </div>
             <div className="flex items-center space-x-3">
+              {/* Toggle for showing off days */}
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="show-off-days"
+                  checked={showOffDays}
+                  onCheckedChange={setShowOffDays}
+                  aria-label="Show off days"
+                />
+                <Label 
+                  htmlFor="show-off-days" 
+                  className="text-sm text-gray-600 cursor-pointer hidden sm:inline"
+                >
+                  Off Days
+                </Label>
+              </div>
+
               {/* Three-dot menu for actions */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -287,45 +316,41 @@ export function FlightDutiesTable({
       </CardHeader>
       <CardContent className="pt-2 pb-8 px-2 md:px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-4 md:gap-x-6">
-          {filteredFlightDuties.map((duty, index) => {
-            // Skip rendering off/rest/annual leave days when using new card design
-            if (useNewCardDesign && (duty.dutyType === 'off' || duty.dutyType === 'rest' || duty.dutyType === 'annual_leave')) {
-              return null;
-            }
-
-            return (
-              <div
-                key={duty.id}
-                style={{ animationDelay: `${index * 50}ms` }}
-                className="animate-fade-in"
-              >
-                {useNewCardDesign ? (
-                  <NewFlightDutyCard
-                    flightDuty={duty}
-                    allFlightDuties={flightDuties} // Use original array for layover pairing
-                    onDelete={onDelete}
-                    showActions={showActions}
-                    bulkMode={bulkMode}
-                    isSelected={duty.id ? selectedFlights.has(duty.id) : false}
-                    onToggleSelection={toggleFlightSelection}
-                    userId={userId}
-                    position={position}
-                    onEditComplete={onEditComplete}
-                  />
-                ) : (
-                  <FlightDutyCard
-                    flightDuty={duty}
-                    allFlightDuties={flightDuties}
-                    onDelete={onDelete}
-                    showActions={showActions}
-                    bulkMode={bulkMode}
-                    isSelected={duty.id ? selectedFlights.has(duty.id) : false}
-                    onToggleSelection={toggleFlightSelection}
-                  />
-                )}
-              </div>
-            );
-          })}
+          {filteredFlightDuties.map((duty, index) => (
+            <div
+              key={duty.id}
+              style={{ animationDelay: `${index * 50}ms` }}
+              className="animate-fade-in"
+            >
+              {isOffDayType(duty.dutyType) ? (
+                // Render simplified off day card for off/rest/annual_leave
+                <OffDayCard flightDuty={duty} />
+              ) : useNewCardDesign ? (
+                <NewFlightDutyCard
+                  flightDuty={duty}
+                  allFlightDuties={flightDuties} // Use original array for layover pairing
+                  onDelete={onDelete}
+                  showActions={showActions}
+                  bulkMode={bulkMode}
+                  isSelected={duty.id ? selectedFlights.has(duty.id) : false}
+                  onToggleSelection={toggleFlightSelection}
+                  userId={userId}
+                  position={position}
+                  onEditComplete={onEditComplete}
+                />
+              ) : (
+                <FlightDutyCard
+                  flightDuty={duty}
+                  allFlightDuties={flightDuties}
+                  onDelete={onDelete}
+                  showActions={showActions}
+                  bulkMode={bulkMode}
+                  isSelected={duty.id ? selectedFlights.has(duty.id) : false}
+                  onToggleSelection={toggleFlightSelection}
+                />
+              )}
+            </div>
+          ))}
         </div>
       </CardContent>
 

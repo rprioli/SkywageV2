@@ -2,17 +2,26 @@
 
 /**
  * Off Day Card Component
- * Displays off/rest/leave days in roster comparison view
- * Simple, minimal design to indicate non-working days
+ * Displays off/rest/leave days in the flight duties table
+ * Color-coded design with uniform height to match flight cards
  */
 
 import React from 'react';
 import { FlightDuty } from '@/types/salary-calculator';
 import { Card } from '@/components/ui/card';
-import { Calendar } from 'lucide-react';
+import { Calendar, Coffee, Palmtree, Moon } from 'lucide-react';
 
 interface OffDayCardProps {
   flightDuty: FlightDuty;
+}
+
+interface OffDayConfig {
+  label: string;
+  icon: typeof Calendar;
+  bgColor: string;
+  iconBg: string;
+  iconColor: string;
+  textColor: string;
 }
 
 export function OffDayCard({ flightDuty }: OffDayCardProps) {
@@ -25,44 +34,76 @@ export function OffDayCard({ flightDuty }: OffDayCardProps) {
     });
   };
 
-  // Determine label based on duty type
-  const getOffDayLabel = () => {
-    // Use the duty type directly for the primary classification
+  // Get icon and styling based on duty type
+  const getOffDayConfig = (): OffDayConfig => {
+    const originalData = flightDuty.originalData as { duties?: string; details?: string } | undefined;
+    const duties = originalData?.duties?.toUpperCase() || '';
+    const details = originalData?.details?.toUpperCase() || '';
+
     switch (flightDuty.dutyType) {
       case 'rest':
-        return 'Rest';
+        return {
+          label: 'Rest Day',
+          icon: Moon,
+          bgColor: 'bg-blue-50',
+          iconBg: 'bg-blue-100',
+          iconColor: 'text-blue-500',
+          textColor: 'text-blue-700'
+        };
       case 'annual_leave':
-        return 'Annual Leave';
+        return {
+          label: 'Annual Leave',
+          icon: Palmtree,
+          bgColor: 'bg-green-50',
+          iconBg: 'bg-green-100',
+          iconColor: 'text-green-500',
+          textColor: 'text-green-700'
+        };
       case 'off':
       default:
-        // For 'off' type, check original data for more specific label
-        const originalData = flightDuty.originalData as { duties?: string; details?: string } | undefined;
-        const duties = originalData?.duties?.toUpperCase() || '';
-        const details = originalData?.details?.toUpperCase() || '';
-        
+        // Check for Additional Day Off
         if (duties.includes('ADDITIONAL DAY OFF') || details.includes('ADDITIONAL DAY OFF')) {
-          return 'Additional Day Off';
+          return {
+            label: 'Additional Day Off',
+            icon: Coffee,
+            bgColor: 'bg-amber-50',
+            iconBg: 'bg-amber-100',
+            iconColor: 'text-amber-500',
+            textColor: 'text-amber-700'
+          };
         }
-        return 'Off';
+        return {
+          label: 'Day Off',
+          icon: Calendar,
+          bgColor: 'bg-gray-50',
+          iconBg: 'bg-gray-100',
+          iconColor: 'text-gray-500',
+          textColor: 'text-gray-700'
+        };
     }
   };
 
+  const config = getOffDayConfig();
+  const Icon = config.icon;
+
   return (
-    <Card className="border border-gray-200 bg-gray-50">
-      <div className="flex items-center gap-3 p-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200">
-          <Calendar className="h-5 w-5 text-gray-500" />
+    <Card className={`rounded-2xl border-0 shadow-none hover:shadow-lg transition-all duration-300 flight-card-uniform-height ${config.bgColor}`}>
+      <div className="card-mobile-optimized h-full flex flex-col items-center justify-center text-center">
+        {/* Icon */}
+        <div className={`w-12 h-12 rounded-full ${config.iconBg} flex items-center justify-center mb-3`}>
+          <Icon className={`h-6 w-6 ${config.iconColor}`} />
         </div>
-        <div className="flex-1">
-          <div className="text-sm font-medium text-gray-700">
-            {formatDate(flightDuty.date)}
-          </div>
-          <div className="text-xs text-gray-500">
-            {getOffDayLabel()}
-          </div>
+        
+        {/* Date */}
+        <div className={`text-lg font-bold ${config.textColor} mb-1`}>
+          {formatDate(flightDuty.date)}
+        </div>
+        
+        {/* Label */}
+        <div className={`text-sm font-medium ${config.iconColor}`}>
+          {config.label}
         </div>
       </div>
     </Card>
   );
 }
-
