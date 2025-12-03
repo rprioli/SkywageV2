@@ -3,7 +3,8 @@
 /**
  * Off Day Card Component
  * Displays off/rest/leave days in the flight duties table
- * Styled to match flight duty cards with color-coded labels
+ * Day Off and Additional Day Off match flight card styling
+ * Rest Day and Annual Leave have distinct colored styling
  */
 
 import React from 'react';
@@ -15,20 +16,12 @@ interface OffDayCardProps {
   flightDuty: FlightDuty;
 }
 
-interface OffDayConfig {
-  label: string;
-  icon: typeof Home;
-  bgColor: string;
-  iconBg: string;
-  iconColor: string;
-  labelColor: string;
-}
-
-// Brand color matching flight duty cards
+// Brand colors matching flight duty cards
+const BRAND = { primary: "#4C49ED", accent: "#6DDC91" };
 const BRAND_PURPLE = '#3A3780';
 
 export function OffDayCard({ flightDuty }: OffDayCardProps) {
-  // Format date for display
+  // Format date for display (e.g., "Wed, Dec 3")
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
       weekday: 'short',
@@ -37,74 +30,107 @@ export function OffDayCard({ flightDuty }: OffDayCardProps) {
     });
   };
 
-  // Get icon and styling based on duty type
-  const getOffDayConfig = (): OffDayConfig => {
-    const originalData = flightDuty.originalData as { duties?: string; details?: string } | undefined;
-    const duties = originalData?.duties?.toUpperCase() || '';
-    const details = originalData?.details?.toUpperCase() || '';
+  // Check for specific duty types
+  const originalData = flightDuty.originalData as { duties?: string; details?: string } | undefined;
+  const duties = originalData?.duties?.toUpperCase() || '';
+  const details = originalData?.details?.toUpperCase() || '';
+  const isAdditionalDayOff = duties.includes('ADDITIONAL DAY OFF') || details.includes('ADDITIONAL DAY OFF');
 
-    switch (flightDuty.dutyType) {
-      case 'rest':
-        return {
-          label: 'Rest Day',
-          icon: Moon,
-          bgColor: 'bg-blue-50',
-          iconBg: 'bg-blue-100',
-          iconColor: 'text-blue-500',
-          labelColor: 'text-blue-500'
-        };
-      case 'annual_leave':
-        return {
-          label: 'Annual Leave',
-          icon: Palmtree,
-          bgColor: 'bg-green-50',
-          iconBg: 'bg-green-100',
-          iconColor: 'text-green-500',
-          labelColor: 'text-green-500'
-        };
-      case 'off':
-      default:
-        // Check for Additional Day Off
-        if (duties.includes('ADDITIONAL DAY OFF') || details.includes('ADDITIONAL DAY OFF')) {
-          return {
-            label: 'Additional Day Off',
-            icon: Home,
-            bgColor: 'bg-white',
-            iconBg: 'bg-amber-100',
-            iconColor: 'text-amber-500',
-            labelColor: 'text-amber-500'
-          };
-        }
-        return {
-          label: 'Day Off',
-          icon: Home,
-          bgColor: 'bg-white',
-          iconBg: 'bg-gray-100',
-          iconColor: 'text-gray-500',
-          labelColor: 'text-gray-500'
-        };
-    }
-  };
+  // Day Off and Additional Day Off use flight card styling
+  if (flightDuty.dutyType === 'off') {
+    return (
+      <Card className="rounded-2xl border-0 bg-white shadow-none hover:shadow-lg transition-all duration-300 border-gray-100 hover:border-gray-200 flight-card-uniform-height">
+        <div className="card-mobile-optimized h-full flex flex-col">
+          {/* Date badge - matches duty badge position */}
+          <div className="flex justify-center mb-1 pt-2">
+            <span
+              className="inline-block text-white text-xs font-bold px-2 py-0.5 rounded-full"
+              style={{ backgroundColor: isAdditionalDayOff ? '#F59E0B' : '#9CA3AF' }}
+            >
+              {formatDate(flightDuty.date)}
+            </span>
+          </div>
 
-  const config = getOffDayConfig();
-  const Icon = config.icon;
+          {/* Main content - flex-based alignment like flight cards */}
+          <div className="flight-card-main-content">
+            <div className="flex flex-col items-center justify-center">
+              {/* Line with house icon in middle - matches airplane styling */}
+              <div className="flex items-center gap-1 mb-1">
+                <div className="h-px w-6" style={{ backgroundColor: BRAND.primary }}></div>
+                <Home className="h-4 w-4" style={{ color: BRAND.primary }} />
+                <div className="h-px w-6" style={{ backgroundColor: BRAND.primary }}></div>
+              </div>
+              {/* Label - matches "Turnaround" styling */}
+              <div className="text-xs font-semibold text-gray-700">
+                {isAdditionalDayOff ? 'Additional Day Off' : 'Day Off'}
+              </div>
+            </div>
+          </div>
 
-  return (
-    <Card className={`rounded-2xl border-0 shadow-none hover:shadow-lg transition-all duration-300 flight-card-uniform-height ${config.bgColor}`}>
-      <div className="card-mobile-optimized h-full flex flex-col items-center justify-center text-center">
-        {/* Icon - smaller size */}
-        <div className={`w-10 h-10 rounded-full ${config.iconBg} flex items-center justify-center mb-3`}>
-          <Icon className={`h-4 w-4 ${config.iconColor}`} />
+          {/* Bottom spacer for consistent layout */}
+          <div className="flex-1"></div>
         </div>
-        
-        {/* Date - using brand purple to match flight cards */}
+      </Card>
+    );
+  }
+
+  // Rest Day - distinct blue styling
+  if (flightDuty.dutyType === 'rest') {
+    return (
+      <Card className="rounded-2xl border-0 shadow-none hover:shadow-lg transition-all duration-300 flight-card-uniform-height bg-blue-50">
+        <div className="card-mobile-optimized h-full flex flex-col items-center justify-center text-center">
+          {/* Icon */}
+          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mb-3">
+            <Moon className="h-4 w-4 text-blue-500" />
+          </div>
+          
+          {/* Date */}
+          <div className="text-lg font-bold tracking-wide mb-1" style={{ color: BRAND_PURPLE }}>
+            {formatDate(flightDuty.date)}
+          </div>
+          
+          {/* Label */}
+          <div className="text-sm font-medium text-blue-500">
+            Rest Day
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  // Annual Leave - distinct green styling
+  if (flightDuty.dutyType === 'annual_leave') {
+    return (
+      <Card className="rounded-2xl border-0 shadow-none hover:shadow-lg transition-all duration-300 flight-card-uniform-height bg-green-50">
+        <div className="card-mobile-optimized h-full flex flex-col items-center justify-center text-center">
+          {/* Icon */}
+          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mb-3">
+            <Palmtree className="h-4 w-4 text-green-500" />
+          </div>
+          
+          {/* Date */}
+          <div className="text-lg font-bold tracking-wide mb-1" style={{ color: BRAND_PURPLE }}>
+            {formatDate(flightDuty.date)}
+          </div>
+          
+          {/* Label */}
+          <div className="text-sm font-medium text-green-500">
+            Annual Leave
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  // Fallback for any other type
+  return (
+    <Card className="rounded-2xl border-0 bg-white shadow-none hover:shadow-lg transition-all duration-300 flight-card-uniform-height">
+      <div className="card-mobile-optimized h-full flex flex-col items-center justify-center text-center">
         <div className="text-lg font-bold tracking-wide mb-1" style={{ color: BRAND_PURPLE }}>
           {formatDate(flightDuty.date)}
         </div>
-        
-        {/* Label */}
-        <div className={`text-sm font-medium ${config.labelColor}`}>
-          {config.label}
+        <div className="text-sm font-medium text-gray-500">
+          {flightDuty.dutyType}
         </div>
       </div>
     </Card>
