@@ -53,10 +53,21 @@ export function OffDayCard({ flightDuty }: OffDayCardProps) {
   const config = getConfig();
   const Icon = config.icon;
 
-  // Unified card layout matching TurnaroundCard structure
+  // Unified card layout matching TurnaroundCard structure exactly
   return (
     <Card className="rounded-2xl border-0 bg-white shadow-none hover:shadow-lg transition-all duration-300 border-gray-100 hover:border-gray-200 flight-card-uniform-height">
       <div className="card-mobile-optimized h-full flex flex-col">
+        {/* 
+          Placeholder for Top Row (Flight Number / Pay Badge) 
+          This is crucial for vertical alignment matching TurnaroundCard 
+          TurnaroundCard has: <div className="flex items-center justify-between mb-1">...</div>
+          We use an invisible div of the same height/margin to push content down.
+        */}
+        <div className="flex items-center justify-between mb-1 opacity-0 pointer-events-none">
+            <span className="text-xs font-bold">placeholder</span>
+            <div className="text-xs font-semibold px-2 py-0.5">placeholder</div>
+        </div>
+
         {/* Date badge - matches duty badge row position */}
         <div className="flex justify-center mb-1">
           <span
