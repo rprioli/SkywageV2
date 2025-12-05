@@ -639,8 +639,8 @@ export function FlightEntryForm({
             </div>
           )}
 
-          {/* Times for Non-Layover duties */}
-          {formData.dutyType !== 'layover' && (
+          {/* Times for Non-Layover duties (not shown for Day Off) */}
+          {formData.dutyType !== 'layover' && formData.dutyType !== 'off' && (
             // Turnaround/ASBY: 2 time fields (report/debrief)
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -673,8 +673,8 @@ export function FlightEntryForm({
             </div>
           )}
 
-          {/* Time sequence error */}
-          {validation.fieldErrors.timeSequence && submitAttempted && (
+          {/* Time sequence error (not shown for Day Off) */}
+          {formData.dutyType !== 'off' && validation.fieldErrors.timeSequence && submitAttempted && (
             <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
               <p className="text-destructive text-sm flex items-center gap-2">
                 <AlertCircle className="h-4 w-4" />

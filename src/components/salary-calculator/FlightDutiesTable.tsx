@@ -16,7 +16,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Trash2, CheckSquare, X, MoreHorizontal } from 'lucide-react';
-import { LoadingSkeleton, EmptyState } from './flight-duties-table';
+import { LoadingSkeleton } from './flight-duties-table';
+import { EmptyState } from './flight-duties-table/EmptyState';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -70,8 +71,8 @@ export function FlightDutiesTable({
   const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
   const [deleteAllProcessing, setDeleteAllProcessing] = useState(false);
 
-  // Toggle state for showing off days (off, rest, annual_leave)
-  const [showOffDays, setShowOffDays] = useState(true);
+  // Toggle state for showing off days (off, rest, annual_leave) - default to Off
+  const [showOffDays, setShowOffDays] = useState(false);
 
 
 
@@ -177,9 +178,22 @@ export function FlightDutiesTable({
     return <LoadingSkeleton />;
   }
 
-  if (filteredFlightDuties.length === 0) {
-    return <EmptyState />;
+  // Show full empty state only when there are no flight duties at all
+  if (flightDuties.length === 0) {
+    return (
+      <Card className="border-0 shadow-none bg-transparent">
+        <CardHeader className="pb-2 px-2 md:px-4">
+          <h2 className="text-responsive-2xl font-bold" style={{ color: '#3A3780' }}>Flight Duties</h2>
+        </CardHeader>
+        <CardContent className="pt-2 pb-8 px-2 md:px-4">
+          <EmptyState />
+        </CardContent>
+      </Card>
+    );
   }
+
+  // Check if we have duties but they're all filtered out
+  const isFilteredEmpty = filteredFlightDuties.length === 0 && flightDuties.length > 0;
 
 
 
@@ -315,43 +329,47 @@ export function FlightDutiesTable({
         </div>
       </CardHeader>
       <CardContent className="pt-2 pb-8 px-2 md:px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-4 md:gap-x-6">
-          {filteredFlightDuties.map((duty, index) => (
-            <div
-              key={duty.id}
-              style={{ animationDelay: `${index * 50}ms` }}
-              className="animate-fade-in"
-            >
-              {isOffDayType(duty.dutyType) ? (
-                // Render simplified off day card for off/rest/annual_leave
-                <OffDayCard flightDuty={duty} />
-              ) : useNewCardDesign ? (
-                <NewFlightDutyCard
-                  flightDuty={duty}
-                  allFlightDuties={flightDuties} // Use original array for layover pairing
-                  onDelete={onDelete}
-                  showActions={showActions}
-                  bulkMode={bulkMode}
-                  isSelected={duty.id ? selectedFlights.has(duty.id) : false}
-                  onToggleSelection={toggleFlightSelection}
-                  userId={userId}
-                  position={position}
-                  onEditComplete={onEditComplete}
-                />
-              ) : (
-                <FlightDutyCard
-                  flightDuty={duty}
-                  allFlightDuties={flightDuties}
-                  onDelete={onDelete}
-                  showActions={showActions}
-                  bulkMode={bulkMode}
-                  isSelected={duty.id ? selectedFlights.has(duty.id) : false}
-                  onToggleSelection={toggleFlightSelection}
-                />
-              )}
-            </div>
-          ))}
-        </div>
+        {isFilteredEmpty ? (
+          <EmptyState isFilteredEmpty />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-4 md:gap-x-6">
+            {filteredFlightDuties.map((duty, index) => (
+              <div
+                key={duty.id}
+                style={{ animationDelay: `${index * 50}ms` }}
+                className="animate-fade-in"
+              >
+                {isOffDayType(duty.dutyType) ? (
+                  // Render simplified off day card for off/rest/annual_leave
+                  <OffDayCard flightDuty={duty} />
+                ) : useNewCardDesign ? (
+                  <NewFlightDutyCard
+                    flightDuty={duty}
+                    allFlightDuties={flightDuties} // Use original array for layover pairing
+                    onDelete={onDelete}
+                    showActions={showActions}
+                    bulkMode={bulkMode}
+                    isSelected={duty.id ? selectedFlights.has(duty.id) : false}
+                    onToggleSelection={toggleFlightSelection}
+                    userId={userId}
+                    position={position}
+                    onEditComplete={onEditComplete}
+                  />
+                ) : (
+                  <FlightDutyCard
+                    flightDuty={duty}
+                    allFlightDuties={flightDuties}
+                    onDelete={onDelete}
+                    showActions={showActions}
+                    bulkMode={bulkMode}
+                    isSelected={duty.id ? selectedFlights.has(duty.id) : false}
+                    onToggleSelection={toggleFlightSelection}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
 
       {/* Delete All Confirmation Dialog */}
