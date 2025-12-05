@@ -189,17 +189,25 @@ export function calculateFlightDuty(
   const warnings: string[] = [];
 
   try {
-    // Skip calculation for off days, rest days, annual leave, and home standby - they have no duty hours or pay
+    // Skip calculation for off days, rest days, annual leave, and home standby - they have no pay
     if (flightDuty.dutyType === 'off' || flightDuty.dutyType === 'sby' || 
         flightDuty.dutyType === 'rest' || flightDuty.dutyType === 'annual_leave') {
+      
+      // For SBY (Home Standby), preserve the already-calculated duty hours for display purposes
+      // while keeping flightPay at 0 (SBY is unpaid)
+      // Note: SBY duty hours are already excluded from total flight hours in calculateMonthlySalary
+      const displayDutyHours = flightDuty.dutyType === 'sby' 
+        ? (flightDuty.dutyHours > 0 ? flightDuty.dutyHours : calculateDutyHours(flightDuty))
+        : 0;
+      
       return {
         flightDuty: {
           ...flightDuty,
-          dutyHours: 0,
+          dutyHours: displayDutyHours,
           flightPay: 0
         },
         calculationDetails: {
-          dutyHours: 0,
+          dutyHours: displayDutyHours,
           flightPay: 0
         },
         errors: [],
