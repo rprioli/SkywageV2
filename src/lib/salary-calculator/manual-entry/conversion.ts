@@ -129,6 +129,32 @@ function convertToFlightDutyLegacy(
     const month = flightDate.getMonth() + 1;
     const year = flightDate.getFullYear();
 
+    // Handle Day Off duty type - no times required (legacy)
+    if (data.dutyType === 'off') {
+      const emptyTimeValue = { hours: 0, minutes: 0, totalMinutes: 0, totalHours: 0 };
+      
+      const flightDuty: FlightDuty = {
+        id: `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        userId,
+        date: flightDate,
+        month,
+        year,
+        flightNumbers: [],
+        sectors: [],
+        dutyType: 'off',
+        reportTime: emptyTimeValue,
+        debriefTime: emptyTimeValue,
+        dutyHours: 0,
+        flightPay: 0,
+        isCrossDay: false,
+        dataSource: 'manual',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      return [flightDuty];
+    }
+
     const reportTimeResult = parseTimeString(data.reportTime);
     const debriefTimeResult = parseTimeString(data.debriefTime);
 
@@ -152,7 +178,7 @@ function convertToFlightDutyLegacy(
       flightPay = isELD ? 0 : calculateFlightPay(4, position);
     } else if (data.dutyType === 'business_promotion') {
       flightPay = calculateFlightPay(5, position);
-    } else if (data.dutyType !== 'sby' && data.dutyType !== 'off') {
+    } else if (data.dutyType !== 'sby') {
       flightPay = calculateFlightPay(dutyHours, position);
     }
 
@@ -318,6 +344,32 @@ export function convertToFlightDuty(
     const flightDate = new Date(data.date);
     const month = flightDate.getMonth() + 1;
     const year = flightDate.getFullYear();
+
+    // Handle Day Off duty type - no times required
+    if (data.dutyType === 'off') {
+      const emptyTimeValue = { hours: 0, minutes: 0, totalMinutes: 0, totalHours: 0 };
+      
+      const flightDuty: FlightDuty = {
+        id: `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        userId,
+        date: flightDate,
+        month,
+        year,
+        flightNumbers: [],
+        sectors: [],
+        dutyType: 'off',
+        reportTime: emptyTimeValue,
+        debriefTime: emptyTimeValue,
+        dutyHours: 0,
+        flightPay: 0,
+        isCrossDay: false,
+        dataSource: 'manual',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      return [flightDuty];
+    }
 
     const reportTimeResult = parseTimeString(data.reportTime);
     const debriefTimeResult = parseTimeString(data.debriefTime);

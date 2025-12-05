@@ -387,17 +387,19 @@ export function validateManualEntry(
     errors.push(sectorsValidation.error!);
   }
 
-  // Validate time sequence
-  const timeValidation = validateTimeSequence(
-    data.reportTime,
-    data.debriefTime,
-    data.isCrossDay
-  );
-  if (!timeValidation.valid) {
-    fieldErrors.timeSequence = timeValidation.error!;
-    errors.push(timeValidation.error!);
-  } else if (timeValidation.warning) {
-    warnings.push(timeValidation.warning);
+  // Validate time sequence (skip for Day Off - no times required)
+  if (data.dutyType !== 'off') {
+    const timeValidation = validateTimeSequence(
+      data.reportTime,
+      data.debriefTime,
+      data.isCrossDay
+    );
+    if (!timeValidation.valid) {
+      fieldErrors.timeSequence = timeValidation.error!;
+      errors.push(timeValidation.error!);
+    } else if (timeValidation.warning) {
+      warnings.push(timeValidation.warning);
+    }
   }
 
   // Calculate duty hours and estimated pay if validation passes
@@ -405,23 +407,29 @@ export function validateManualEntry(
   let estimatedPay: number | undefined;
 
   if (errors.length === 0) {
-    try {
-      const reportTimeObj = parseTimeString(data.reportTime);
-      const debriefTimeObj = parseTimeString(data.debriefTime);
+    // Day Off has no duty hours or pay
+    if (data.dutyType === 'off') {
+      calculatedDutyHours = 0;
+      estimatedPay = 0;
+    } else {
+      try {
+        const reportTimeObj = parseTimeString(data.reportTime);
+        const debriefTimeObj = parseTimeString(data.debriefTime);
 
-      if (reportTimeObj.success && debriefTimeObj.success && reportTimeObj.timeValue && debriefTimeObj.timeValue) {
-        calculatedDutyHours = calculateDuration(reportTimeObj.timeValue, debriefTimeObj.timeValue, data.isCrossDay);
+        if (reportTimeObj.success && debriefTimeObj.success && reportTimeObj.timeValue && debriefTimeObj.timeValue) {
+          calculatedDutyHours = calculateDuration(reportTimeObj.timeValue, debriefTimeObj.timeValue, data.isCrossDay);
 
-        // Calculate estimated pay based on position and duty type
-        const rates = FLYDUBAI_CONFIG.salaryRates[position];
-        if (data.dutyType === 'asby') {
-          estimatedPay = rates.asbyHours * rates.hourlyRate;
-        } else {
-          estimatedPay = calculatedDutyHours * rates.hourlyRate;
+          // Calculate estimated pay based on position and duty type
+          const rates = FLYDUBAI_CONFIG.salaryRates[position];
+          if (data.dutyType === 'asby') {
+            estimatedPay = rates.asbyHours * rates.hourlyRate;
+          } else {
+            estimatedPay = calculatedDutyHours * rates.hourlyRate;
+          }
         }
+      } catch {
+        warnings.push('Could not calculate estimated pay');
       }
-    } catch {
-      warnings.push('Could not calculate estimated pay');
     }
   }
 

@@ -14,7 +14,8 @@ import {
   MapPin,
   Clock,
   BookOpen,
-  Camera
+  Camera,
+  Home
 } from 'lucide-react';
 
 interface FlightTypeOption {
@@ -58,6 +59,11 @@ const flightTypeOptions: FlightTypeOption[] = [
     value: 'business_promotion',
     label: 'Business Promotion',
     icon: <Camera className="h-4 w-4" />
+  },
+  {
+    value: 'off',
+    label: 'Day Off',
+    icon: <Home className="h-4 w-4" />
   }
 ];
 
