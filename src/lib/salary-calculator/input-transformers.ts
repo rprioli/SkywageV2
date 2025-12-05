@@ -91,6 +91,68 @@ export function extractAirportCodes(sectors: string[]): string[] {
 }
 
 /**
+ * Converts a single destination airport code to turnaround airport codes
+ * Base airport is always DXB for flyDubai
+ * Returns airport codes array (not pre-formatted sectors) for validation compatibility
+ * @param destination 3-letter destination airport code (e.g., 'KHI')
+ * @returns Array of airport codes (e.g., ['DXB', 'KHI', 'DXB'])
+ */
+export function destinationToSectors(destination: string): string[] {
+  const dest = destination.trim().toUpperCase();
+  if (!dest || dest.length !== 3) return [];
+  
+  // Return airport codes array: DXB -> destination -> DXB
+  // The transformSectors function will convert this to ['DXB-KHI', 'KHI-DXB']
+  return ['DXB', dest, 'DXB'];
+}
+
+/**
+ * Extracts the destination airport from turnaround sectors or airport codes
+ * Used for populating destination field when editing existing entries
+ * Handles both formats:
+ *   - Airport codes: ['DXB', 'KHI', 'DXB']
+ *   - Sector strings: ['DXB-KHI', 'KHI-DXB']
+ * @param sectors Array of sector strings or airport codes
+ * @returns Destination airport code (e.g., 'KHI') or empty string
+ */
+export function extractDestination(sectors: string[]): string {
+  if (!sectors || sectors.length === 0) return '';
+  
+  const firstItem = sectors[0];
+  if (!firstItem) return '';
+  
+  // Check if it's airport codes format (3 letters, no dash)
+  if (/^[A-Z]{3}$/.test(firstItem.trim().toUpperCase())) {
+    // Airport codes format: ['DXB', 'KHI', 'DXB']
+    // Return the second item (destination)
+    if (sectors.length >= 2 && sectors[1]) {
+      return sectors[1].trim().toUpperCase();
+    }
+    return '';
+  }
+  
+  // Sector string format: 'DXB-KHI'
+  const parts = firstItem.split('-').map(part => part.trim());
+  
+  // For turnaround format 'DXB-KHI', return 'KHI'
+  if (parts.length >= 2 && parts[0] === 'DXB') {
+    return parts[1];
+  }
+  
+  // Fallback: try to find non-DXB airport in sectors
+  for (const sector of sectors) {
+    const sectorParts = sector.split('-').map(part => part.trim());
+    for (const part of sectorParts) {
+      if (part && part !== 'DXB' && part.length === 3) {
+        return part;
+      }
+    }
+  }
+  
+  return '';
+}
+
+/**
  * Validates if simplified input can be transformed to valid format
  * @param flightNumbers Number-only flight numbers
  * @param airportCodes Individual airport codes

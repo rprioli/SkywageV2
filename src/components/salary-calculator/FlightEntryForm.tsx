@@ -14,7 +14,8 @@ import {
   AlertCircle,
   Plane,
   MapPin,
-  Sunrise
+  Sunrise,
+  ArrowRight
 } from 'lucide-react';
 import { FormActions, FlightNumberInput, SectorInputs } from './flight-entry-form';
 
@@ -24,9 +25,11 @@ import { TimeInput } from './TimeInput';
 import { DutyType, Position } from '@/types/salary-calculator';
 import {
   ManualFlightEntryData,
-  FormValidationResult
+  FormValidationResult,
+  validateDestination
 } from '@/lib/salary-calculator/manual-entry-validation';
 import { validateManualEntryRealTime } from '@/lib/salary-calculator/manual-entry-processor';
+import { destinationToSectors, extractDestination } from '@/lib/salary-calculator/input-transformers';
 
 interface FlightEntryFormProps {
   onSubmit: (data: ManualFlightEntryData) => Promise<void>;
@@ -74,6 +77,15 @@ export function FlightEntryForm({
   // Track whether form submission has been attempted
   const [submitAttempted, setSubmitAttempted] = useState(false);
 
+  // Destination state for simplified turnaround entry
+  const [destination, setDestination] = useState(() => {
+    // Initialize from existing sectors if editing
+    if (initialData?.sectors && initialData.sectors.length > 0) {
+      return extractDestination(initialData.sectors);
+    }
+    return '';
+  });
+
 
 
   // Validation state
@@ -100,6 +112,11 @@ export function FlightEntryForm({
         reportTimeInbound: initialData.reportTimeInbound || '',
         debriefTimeOutbound: initialData.debriefTimeOutbound || ''
       });
+      
+      // Extract destination from sectors for turnaround edit mode
+      if (initialData.dutyType === 'turnaround' && initialData.sectors && initialData.sectors.length > 0) {
+        setDestination(extractDestination(initialData.sectors));
+      }
     }
   }, [initialData]);
 
@@ -111,11 +128,18 @@ export function FlightEntryForm({
 
   // Initialize form fields based on default duty type on mount
   useEffect(() => {
-    if ((formData.dutyType === 'turnaround' || formData.dutyType === 'layover') && formData.flightNumbers.length < 2) {
+    if (formData.dutyType === 'layover' && formData.flightNumbers.length < 2) {
+      // Layover needs 4 sectors
       setFormData(prev => ({
         ...prev,
         flightNumbers: ['', ''],
-        sectors: formData.dutyType === 'layover' ? ['', '', '', ''] : ['', '', '']
+        sectors: ['', '', '', '']
+      }));
+    } else if (formData.dutyType === 'turnaround' && formData.flightNumbers.length < 2) {
+      // Turnaround: just initialize flight numbers, sectors derived from destination
+      setFormData(prev => ({
+        ...prev,
+        flightNumbers: ['', '']
       }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- Only run on mount to initialize form
@@ -186,12 +210,15 @@ export function FlightEntryForm({
           newData.inboundDate = newData.date;
         }
       } else if (dutyType === 'turnaround') {
-        // Ensure at least two flight numbers and three sectors for turnaround
+        // Turnaround: initialize flight numbers, sectors derived from destination
         if (prev.flightNumbers.length < 2) {
           newData.flightNumbers = [prev.flightNumbers[0] || '', ''];
         }
-        if (prev.sectors.length < 3) {
-          newData.sectors = [prev.sectors[0] || '', prev.sectors[1] || '', prev.sectors[2] || ''];
+        // Generate sectors from destination if set
+        if (destination) {
+          newData.sectors = destinationToSectors(destination);
+        } else {
+          newData.sectors = [];
         }
       }
 
@@ -206,7 +233,7 @@ export function FlightEntryForm({
       date: '',
       dutyType: currentDutyType,
       flightNumbers: currentDutyType === 'turnaround' || currentDutyType === 'layover' ? ['', ''] : [''],
-      sectors: currentDutyType === 'turnaround' || currentDutyType === 'layover' ? ['', '', '', ''] : [''],
+      sectors: currentDutyType === 'layover' ? ['', '', '', ''] : [], // Turnaround sectors derived from destination
       reportTime: '',
       debriefTime: '',
       isCrossDay: false,
@@ -214,6 +241,7 @@ export function FlightEntryForm({
       reportTimeInbound: '',
       debriefTimeOutbound: ''
     });
+    setDestination(''); // Clear destination for turnaround
     setSubmitAttempted(false);
   };
 
@@ -562,78 +590,121 @@ export function FlightEntryForm({
             </div>
           )}
 
-          {/* Flight Details for Non-Layover duties */}
-          {showFlightFields && formData.dutyType !== 'layover' && (
+          {/* Flight Details for Turnaround - Simplified with single destination */}
+          {showFlightFields && formData.dutyType === 'turnaround' && (
             <div className="space-y-4">
-              {/* Flight Numbers */}
-              <div className="space-y-3">
-                <label className="block text-sm font-medium">
-                  Flight Numbers
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  {formData.flightNumbers.slice(0, 4).map((flightNumber, index) => (
-                    <div key={index} className="relative">
-                      <div className="input-icon-left">
-                        <Plane className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <Input
-                        type="text"
-                        value={flightNumber}
-                        onChange={e => {
-                          const newNumbers = [...formData.flightNumbers];
-                          newNumbers[index] = e.target.value.replace(/[^0-9]/g, '');
-                          handleFieldChange('flightNumbers', newNumbers);
-                        }}
-                        placeholder={index === 0 ? '123' : '124'}
-                        disabled={isFormDisabled}
-                        className="input-with-left-icon"
-                        maxLength={4}
-                      />
+              {/* Destination Input with inline route preview or error */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium">Destination</label>
+                <div className="relative">
+                  <div className="input-icon-left">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <Input
+                    type="text"
+                    value={destination}
+                    onChange={e => {
+                      const val = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 3);
+                      setDestination(val);
+                      // Auto-generate sectors from destination (only if valid, not DXB)
+                      if (val.length === 3 && val !== 'DXB') {
+                        handleFieldChange('sectors', destinationToSectors(val));
+                      } else {
+                        handleFieldChange('sectors', []);
+                      }
+                    }}
+                    placeholder="KHI"
+                    disabled={isFormDisabled}
+                    className={cn(
+                      'input-with-left-icon pr-36',
+                      (destination === 'DXB' || (submitAttempted && destination && validateDestination(destination).error)) && 'border-destructive'
+                    )}
+                    maxLength={3}
+                  />
+                  {/* DXB error - inside input on the right */}
+                  {destination === 'DXB' && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <span className="text-xs text-destructive font-medium">Not the base airport</span>
                     </div>
-                  ))}
+                  )}
+                  {/* Visual route preview - inside input on the right (only when valid) */}
+                  {destination && destination.length === 3 && destination !== 'DXB' && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
+                      <span className="text-xs font-semibold" style={{ color: '#4C49ED' }}>DXB</span>
+                      <ArrowRight className="h-3 w-3" style={{ color: '#4C49ED' }} />
+                      <span className="text-xs font-semibold" style={{ color: '#4C49ED' }}>{destination}</span>
+                      <ArrowRight className="h-3 w-3" style={{ color: '#4C49ED' }} />
+                      <span className="text-xs font-semibold" style={{ color: '#4C49ED' }}>DXB</span>
+                    </div>
+                  )}
                 </div>
-                {validation.fieldErrors.flightNumbers && submitAttempted && (
-                  <p className="text-destructive text-sm">{validation.fieldErrors.flightNumbers}</p>
+                {/* Other validation errors on submit (shown below input) */}
+                {submitAttempted && destination && destination !== 'DXB' && validateDestination(destination).error && (
+                  <p className="text-destructive text-sm">{validateDestination(destination).error}</p>
+                )}
+                {submitAttempted && !destination && (
+                  <p className="text-destructive text-sm">Destination is required</p>
                 )}
               </div>
 
-              {/* Sectors */}
+              {/* Flight Numbers with auto-suggest */}
               <div className="space-y-3">
-                <label className="block text-sm font-medium">
-                  Sectors
-                </label>
-                <div className="grid grid-cols-3 gap-3">
-                  {Array.from({ length: 3 }, (_, index) => {
-                    const sector = formData.sectors[index] || '';
-                    const placeholders = ['DXB', 'BOM', 'DXB'];
-
-                    return (
-                      <div key={index} className="relative">
-                        <div className="input-icon-left">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                        <Input
-                          type="text"
-                          value={sector}
-                          onChange={e => {
-                            const newSectors = [...formData.sectors];
-                            while (newSectors.length <= index) {
-                              newSectors.push('');
-                            }
-                            newSectors[index] = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 3);
-                            handleFieldChange('sectors', newSectors);
-                          }}
-                          placeholder={placeholders[index]}
-                          disabled={isFormDisabled}
-                          className="input-with-left-icon"
-                          maxLength={3}
-                        />
-                      </div>
-                    );
-                  })}
+                <label className="block text-sm font-medium">Flight Numbers</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Outbound flight number */}
+                  <div className="relative">
+                    <div className="input-icon-left">
+                      <Plane className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <Input
+                      type="text"
+                      value={formData.flightNumbers[0] || ''}
+                      onChange={e => {
+                        const newValue = e.target.value.replace(/[^0-9]/g, '');
+                        const newNumbers = [...formData.flightNumbers];
+                        newNumbers[0] = newValue;
+                        
+                        // Auto-suggest return flight as +1 whenever outbound is complete (3-4 digits)
+                        // Always update inbound when outbound changes (user can still manually override after)
+                        const isComplete = newValue.length >= 3 && newValue.length <= 4;
+                        
+                        if (isComplete) {
+                          const numValue = parseInt(newValue, 10);
+                          if (!isNaN(numValue)) {
+                            newNumbers[1] = (numValue + 1).toString();
+                          }
+                        }
+                        
+                        handleFieldChange('flightNumbers', newNumbers);
+                      }}
+                      placeholder="123"
+                      disabled={isFormDisabled}
+                      className="input-with-left-icon"
+                      maxLength={4}
+                    />
+                  </div>
+                  {/* Return flight number */}
+                  <div className="relative">
+                    <div className="input-icon-left">
+                      <Plane className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <Input
+                      type="text"
+                      value={formData.flightNumbers[1] || ''}
+                      onChange={e => {
+                        const newNumbers = [...formData.flightNumbers];
+                        newNumbers[1] = e.target.value.replace(/[^0-9]/g, '');
+                        handleFieldChange('flightNumbers', newNumbers);
+                      }}
+                      placeholder="124"
+                      disabled={isFormDisabled}
+                      className="input-with-left-icon"
+                      maxLength={4}
+                    />
+                  </div>
                 </div>
-                {validation.fieldErrors.sectors && submitAttempted && (
-                  <p className="text-destructive text-sm">{validation.fieldErrors.sectors}</p>
+                {validation.fieldErrors.flightNumbers && submitAttempted && (
+                  <p className="text-destructive text-sm">{validation.fieldErrors.flightNumbers}</p>
                 )}
               </div>
             </div>

@@ -95,6 +95,36 @@ export function validateDate(date: string, selectedYear: number, isInbound = fal
 }
 
 /**
+ * Validates destination airport code for simplified turnaround entry
+ * @param destination - 3-letter destination airport code
+ */
+export function validateDestination(destination: string): FieldValidationResult {
+  if (!destination || destination.trim() === '') {
+    return { valid: false, error: 'Destination is required' };
+  }
+
+  const code = destination.trim().toUpperCase();
+  
+  if (!/^[A-Z]{3}$/.test(code)) {
+    return {
+      valid: false,
+      error: 'Invalid airport code',
+      suggestion: 'Enter 3-letter airport code (e.g., KHI, BOM)'
+    };
+  }
+
+  if (code === 'DXB') {
+    return {
+      valid: false,
+      error: 'Destination cannot be DXB',
+      suggestion: 'Enter the destination airport, not the base'
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
  * Validates flight numbers based on duty type
  */
 export function validateFlightNumbers(
