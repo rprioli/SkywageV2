@@ -74,21 +74,12 @@ export function validateDate(date: string, selectedYear: number, isInbound = fal
   const dateYear = dateObj.getFullYear();
 
   // For outbound dates: must be within selected year
-  if (!isInbound) {
-    if (dateYear !== selectedYear) {
-      return {
-        valid: false,
-        error: `Date must be within ${selectedYear}`
-      };
-    }
-  } else {
-    // For inbound dates: can be in selected year or next year (for cross-year layovers)
-    if (dateYear !== selectedYear && dateYear !== selectedYear + 1) {
-      return {
-        valid: false,
-        error: `Date must be within ${selectedYear} or ${selectedYear + 1}`
-      };
-    }
+  // For inbound dates: keep year fixed to selected year for UX simplicity
+  if (dateYear !== selectedYear) {
+    return {
+      valid: false,
+      error: `Date must be within ${selectedYear}`
+    };
   }
 
   return { valid: true };

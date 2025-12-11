@@ -623,8 +623,8 @@ export function FlightEntryForm({
                     className={cn(
                       validation.fieldErrors.inboundDate && submitAttempted && 'border-destructive focus-visible:border-destructive'
                     )}
-                    min={formData.date || getStartOfSelectedYear()}
-                    max={getInboundMaxDate(formData.date)}
+                    min={getStartOfSelectedYear()}
+                    max={getEndOfSelectedYear()}
                   />
                   {validation.fieldErrors.inboundDate && submitAttempted && (
                     <p className="text-destructive text-sm">{validation.fieldErrors.inboundDate}</p>
