@@ -107,6 +107,21 @@ export function destinationToSectors(destination: string): string[] {
 }
 
 /**
+ * Converts a single destination airport code to layover airport codes
+ * Base airport is always DXB for flyDubai
+ * Returns airport codes array for validation compatibility
+ * @param destination 3-letter destination airport code (e.g., 'KHI')
+ * @returns Array of airport codes (e.g., ['DXB', 'KHI', 'KHI', 'DXB'])
+ */
+export function destinationToLayoverSectors(destination: string): string[] {
+  const dest = destination.trim().toUpperCase();
+  if (!dest || dest.length !== 3) return [];
+
+  // Layover needs four airports: outbound DXB->dest and inbound dest->DXB
+  return ['DXB', dest, dest, 'DXB'];
+}
+
+/**
  * Extracts the destination airport from turnaround sectors or airport codes
  * Used for populating destination field when editing existing entries
  * Handles both formats:
