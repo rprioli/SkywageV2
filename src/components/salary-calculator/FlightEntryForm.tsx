@@ -29,7 +29,7 @@ import {
   validateDestination
 } from '@/lib/salary-calculator/manual-entry-validation';
 import { validateManualEntryRealTime } from '@/lib/salary-calculator/manual-entry-processor';
-import { destinationToSectors, extractDestination } from '@/lib/salary-calculator/input-transformers';
+import { destinationToSectors, destinationToLayoverSectors, extractDestination } from '@/lib/salary-calculator/input-transformers';
 
 interface FlightEntryFormProps {
   onSubmit: (data: ManualFlightEntryData) => Promise<void>;
@@ -113,8 +113,8 @@ export function FlightEntryForm({
         debriefTimeOutbound: initialData.debriefTimeOutbound || ''
       });
       
-      // Extract destination from sectors for turnaround edit mode
-      if (initialData.dutyType === 'turnaround' && initialData.sectors && initialData.sectors.length > 0) {
+      // Extract destination from sectors for turnaround/layover edit mode
+      if ((initialData.dutyType === 'turnaround' || initialData.dutyType === 'layover') && initialData.sectors && initialData.sectors.length > 0) {
         setDestination(extractDestination(initialData.sectors));
       }
     }
@@ -125,6 +125,32 @@ export function FlightEntryForm({
     const validationResult = validateManualEntryRealTime(formData, position, selectedYear);
     setValidation(validationResult);
   }, [formData, position, selectedYear]);
+
+  // Sync sectors when destination changes for layover
+  useEffect(() => {
+    if (formData.dutyType !== 'layover') {
+      return;
+    }
+
+    if (destination.length === 3 && destination !== 'DXB') {
+      const layoverSectors = destinationToLayoverSectors(destination);
+      const current = formData.sectors.join(',');
+      const next = layoverSectors.join(',');
+      if (current !== next) {
+        setFormData(prev => ({
+          ...prev,
+          sectors: layoverSectors
+        }));
+      }
+    } else if (formData.sectors.length > 0) {
+      // Clear sectors if destination is incomplete/invalid
+      setFormData(prev => ({
+        ...prev,
+        sectors: []
+      }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- depend on destination & dutyType
+  }, [destination, formData.dutyType]);
 
   // Initialize form fields based on default duty type on mount
   useEffect(() => {
@@ -202,9 +228,13 @@ export function FlightEntryForm({
         newData.flightNumbers = [];
         newData.sectors = [];
       } else if (dutyType === 'layover') {
-        // Ensure two flights and four sectors for layover
+        // Ensure two flights; sectors derived from destination
         newData.flightNumbers = [prev.flightNumbers[0] || '', prev.flightNumbers[1] || ''];
-        newData.sectors = [prev.sectors[0] || '', prev.sectors[1] || '', prev.sectors[2] || '', prev.sectors[3] || ''];
+        if (destination.length === 3 && destination !== 'DXB') {
+          newData.sectors = destinationToLayoverSectors(destination);
+        } else {
+          newData.sectors = [];
+        }
         // Set default inbound date to same as outbound date if not already set
         if (!newData.inboundDate && newData.date) {
           newData.inboundDate = newData.date;
@@ -224,6 +254,11 @@ export function FlightEntryForm({
 
       return newData;
     });
+
+    // Clear destination when switching to non-flight duties
+    if (dutyType !== 'layover' && dutyType !== 'turnaround') {
+      setDestination('');
+    }
   };
 
   // Clear form while keeping duty type
@@ -233,7 +268,7 @@ export function FlightEntryForm({
       date: '',
       dutyType: currentDutyType,
       flightNumbers: currentDutyType === 'turnaround' || currentDutyType === 'layover' ? ['', ''] : [''],
-      sectors: currentDutyType === 'layover' ? ['', '', '', ''] : [], // Turnaround sectors derived from destination
+      sectors: [], // Sectors derived from destination for turnaround/layover
       reportTime: '',
       debriefTime: '',
       isCrossDay: false,
@@ -241,7 +276,7 @@ export function FlightEntryForm({
       reportTimeInbound: '',
       debriefTimeOutbound: ''
     });
-    setDestination(''); // Clear destination for turnaround
+    setDestination(''); // Clear destination
     setSubmitAttempted(false);
   };
 
@@ -459,6 +494,67 @@ export function FlightEntryForm({
           {/* Flight Details - Different layouts for different duty types */}
           {showFlightFields && formData.dutyType === 'layover' && (
             <div className="space-y-6">
+              {/* Destination for Layover */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium">Destination</label>
+                <div className="relative">
+                  <div className="input-icon-left">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <Input
+                    type="text"
+                    value={destination}
+                    onChange={e => {
+                      const val = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 3);
+                      setDestination(val);
+                      if (val.length === 3 && val !== 'DXB') {
+                        handleFieldChange('sectors', destinationToLayoverSectors(val));
+                      } else {
+                        handleFieldChange('sectors', []);
+                      }
+                    }}
+                    placeholder="KHI"
+                    disabled={isFormDisabled}
+                    className={cn(
+                      'input-with-left-icon pr-40',
+                      (destination === 'DXB' || (submitAttempted && destination && validateDestination(destination).error)) && 'border-destructive'
+                    )}
+                    maxLength={3}
+                  />
+                  {/* DXB error inside input */}
+                  {destination === 'DXB' && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <span className="text-xs text-destructive font-medium">Not the base</span>
+                    </div>
+                  )}
+                  {/* Route preview inside input when valid */}
+                  {destination && destination.length === 3 && destination !== 'DXB' && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none text-xs font-semibold" style={{ color: '#4C49ED' }}>
+                      <div className="flex items-center gap-1">
+                        <span>DXB</span>
+                        <ArrowRight className="h-3 w-3" />
+                        <span>{destination}</span>
+                      </div>
+                      <span className="text-muted-foreground">|</span>
+                      <div className="flex items-center gap-1">
+                        <span>{destination}</span>
+                        <ArrowRight className="h-3 w-3" />
+                        <span>DXB</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {submitAttempted && destination && destination !== 'DXB' && validateDestination(destination).error && (
+                  <p className="text-destructive text-sm">{validateDestination(destination).error}</p>
+                )}
+                {submitAttempted && !destination && (
+                  <p className="text-destructive text-sm">Destination is required</p>
+                )}
+                {submitAttempted && validation.fieldErrors.sectors && (
+                  <p className="text-destructive text-sm">{validation.fieldErrors.sectors}</p>
+                )}
+              </div>
+
               {/* Outbound Flight Details */}
               <div className="space-y-4">
                 <FlightNumberInput
@@ -466,20 +562,19 @@ export function FlightEntryForm({
                   onChange={value => {
                     const newNumbers = [...formData.flightNumbers];
                     newNumbers[0] = value;
+                    // Auto-suggest inbound flight number (+1) when outbound is complete (3-4 digits)
+                    const isComplete = value.length >= 3 && value.length <= 4;
+                    if (isComplete) {
+                      const numValue = parseInt(value, 10);
+                      if (!isNaN(numValue)) {
+                        newNumbers[1] = (numValue + 1).toString();
+                      }
+                    }
                     handleFieldChange('flightNumbers', newNumbers);
                   }}
                   placeholder="123"
                   disabled={isFormDisabled}
                   label="Flight Number"
-                />
-
-                <SectorInputs
-                  sectors={formData.sectors}
-                  indices={[0, 1]}
-                  placeholders={['DXB', 'KHI']}
-                  onChange={newSectors => handleFieldChange('sectors', newSectors)}
-                  disabled={isFormDisabled}
-                  label="Sector"
                 />
 
                 {/* Outbound Times */}
@@ -549,15 +644,6 @@ export function FlightEntryForm({
                   placeholder="124"
                   disabled={isFormDisabled}
                   label="Flight Number"
-                />
-
-                <SectorInputs
-                  sectors={formData.sectors}
-                  indices={[2, 3]}
-                  placeholders={['KHI', 'DXB']}
-                  onChange={newSectors => handleFieldChange('sectors', newSectors)}
-                  disabled={isFormDisabled}
-                  label="Sector"
                 />
 
                 {/* Inbound Times */}
