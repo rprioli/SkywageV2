@@ -18,6 +18,7 @@ import { MoreVertical, Trash2, Edit } from 'lucide-react';
 import { FlightDuty, TimeValue, Position } from '@/types/salary-calculator';
 import { mapFlightDutyToCardData } from '@/lib/salary-calculator/card-data-mapper';
 import { EditTimesDialog } from './EditTimesDialog';
+import { parseSectors } from './flight-duty-card/utils';
 import { updateFlightDuty } from '@/lib/database/flights';
 import { recalculateMonthlyTotals } from '@/lib/salary-calculator/recalculation-engine';
 import { useToast } from '@/hooks/use-toast';
@@ -54,6 +55,13 @@ export function TurnaroundCard({
 
   const cardData = mapFlightDutyToCardData(flightDuty, allFlightDuties);
 
+  const getArrivalAirport = (sector?: string): string => {
+    if (!sector) return '';
+    const airports = parseSectors(sector);
+    if (airports.length === 0) return sector;
+    return airports[airports.length - 1] || sector;
+  };
+
   // Parse turnaround routing correctly
   // Expected format: "DXB-KHI → KHI-DXB" should display as "DXB-KHI / KHI-DXB"
   const routingParts = cardData.routing.split(' → ');
@@ -68,6 +76,11 @@ export function TurnaroundCard({
     from = routingParts[0] || '';
     to = routingParts[1] || '';
   }
+
+  const outboundDestination = getArrivalAirport(flightDuty.sectors?.[0]);
+  const inboundDestination = getArrivalAirport(flightDuty.sectors?.[flightDuty.sectors.length - 1]);
+  const leftLabel = outboundDestination || from;
+  const rightLabel = inboundDestination || to;
 
   const handleDelete = () => {
     if (onDelete) onDelete(flightDuty);
@@ -203,7 +216,7 @@ export function TurnaroundCard({
           <div className="flight-card-main-content">
             <div className="grid grid-cols-3 items-center gap-2">
             <div className="text-center">
-              <div className="text-lg font-bold tracking-wide" style={{ color: 'rgb(58, 55, 128)' }}>{from}</div>
+              <div className="text-lg font-bold tracking-wide" style={{ color: 'rgb(58, 55, 128)' }}>{leftLabel}</div>
               <div className="text-xs text-gray-500 mt-0.5">{cardData.reporting}</div>
             </div>
 
@@ -219,7 +232,7 @@ export function TurnaroundCard({
             </div>
 
             <div className="text-center">
-              <div className="text-lg font-bold tracking-wide" style={{ color: 'rgb(58, 55, 128)' }}>{to}</div>
+              <div className="text-lg font-bold tracking-wide" style={{ color: 'rgb(58, 55, 128)' }}>{rightLabel}</div>
               <div className="text-xs text-gray-500 mt-0.5">{cardData.debriefing}</div>
             </div>
             </div>
