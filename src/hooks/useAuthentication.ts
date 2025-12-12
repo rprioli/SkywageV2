@@ -119,22 +119,6 @@ export function useAuthentication() {
         const redirectPath = sessionStorage.getItem('redirectAfterLogin');
         const targetPath = redirectPath || '/dashboard';
 
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/ce01aa14-ec59-43dd-9417-a71f721f979b', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId: 'debug-session',
-            runId: 'pre-fix',
-            hypothesisId: 'H6',
-            location: 'src/hooks/useAuthentication.ts:handleLogin',
-            message: 'Login successful, redirecting user',
-            data: { redirectPath, targetPath },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-        // #endregion
-
         if (redirectPath) {
           sessionStorage.removeItem('redirectAfterLogin');
         }
