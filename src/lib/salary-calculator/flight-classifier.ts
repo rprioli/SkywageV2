@@ -323,8 +323,9 @@ export function extractFlightNumbers(duties: string): string[] {
     return [];
   }
 
-  // Common flight number patterns: FZ123, FZ1234, etc.
-  const flightPattern = /\b[A-Z]{2}\d{3,4}\b/g;
+  // Common flight number patterns: FZ43, FZ123, FZ1234, etc.
+  // Supports 1-4 digit flight numbers to handle short Flydubai flights
+  const flightPattern = /\b[A-Z]{2}\d{1,4}\b/g;
   const matches = duties.match(flightPattern);
 
   return matches ? [...new Set(matches)] : []; // Remove duplicates
@@ -353,8 +354,9 @@ export function validateFlightNumber(flightNumber: string): boolean {
     return false;
   }
 
-  // Flydubai pattern: FZ followed by 3-4 digits
-  const flydubaiPattern = /^FZ\d{3,4}$/;
+  // Flydubai pattern: FZ followed by 1-4 digits
+  // Supports short flight numbers like FZ43, FZ59
+  const flydubaiPattern = /^FZ\d{1,4}$/;
   return flydubaiPattern.test(flightNumber.toUpperCase());
 }
 

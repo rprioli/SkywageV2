@@ -29,8 +29,9 @@ export const FLYDUBAI_CSV_VALIDATION: CSVValidationRules = {
   skipRows: [3, 4] // Skip rows 3 and 4 (0-indexed: rows 2 and 3)
 };
 
-// Flydubai flight number pattern (FZ followed by 3-4 digits)
-export const FLYDUBAI_FLIGHT_PATTERN = /^FZ\d{3,4}$/;
+// Flydubai flight number pattern (FZ followed by 1-4 digits)
+// Supports short flight numbers like FZ43, FZ59
+export const FLYDUBAI_FLIGHT_PATTERN = /^FZ\d{1,4}$/;
 
 // Flydubai sector pattern (IATA codes with dash)
 export const FLYDUBAI_SECTOR_PATTERN = /^[A-Z]{3}\s*-\s*[A-Z]{3}$/;

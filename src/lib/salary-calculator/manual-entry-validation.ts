@@ -147,12 +147,13 @@ export function validateFlightNumbers(
       const originalNumber = validNumbers[i];
       const transformedNumber = transformedNumbers[i];
 
-      // Check if original is valid number format (3-4 digits)
-      if (!/^\d{3,4}$/.test(originalNumber.trim())) {
+      // Check if original is valid number format (1-4 digits)
+      // Supports short flight numbers like 43, 59 for Flydubai
+      if (!/^\d{1,4}$/.test(originalNumber.trim())) {
         return {
           valid: false,
           error: `Invalid flight number: ${originalNumber}`,
-          suggestion: 'Flight numbers should be 3-4 digits (e.g., 123, 1234)'
+          suggestion: 'Flight numbers should be 1-4 digits (e.g., 43, 123, 1234)'
         };
       }
 
@@ -161,7 +162,7 @@ export function validateFlightNumbers(
         return {
           valid: false,
           error: `Invalid flight number: ${originalNumber}`,
-          suggestion: 'Flight numbers should be 3-4 digits'
+          suggestion: 'Flight numbers should be 1-4 digits'
         };
       }
     }
