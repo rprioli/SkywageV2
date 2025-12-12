@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase-server';
 
 // This route is called by Supabase Auth after a user signs in
 // It exchanges the auth code for a session
@@ -9,6 +9,7 @@ export async function GET(request: Request) {
 
   if (code) {
     try {
+      const supabase = await createClient();
       // Exchange the code for a session
       await supabase.auth.exchangeCodeForSession(code);
     } catch {

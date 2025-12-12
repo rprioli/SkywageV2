@@ -1,31 +1,71 @@
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 // These environment variables are set in .env.local
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
 
-// Create a single supabase client for interacting with your database
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    flowType: 'pkce',
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    // Use Supabase's default storage which handles SSR properly
-    // This eliminates custom cookie parsing issues and hydration mismatches
-  },
-  global: {
-    headers: {
-      'X-Client-Info': 'skywage-v2@1.0.0',
+/**
+ * Supabase client
+ *
+ * - **Browser**: uses `createBrowserClient` so auth state is stored in cookies (required for SSR/middleware auth).
+ * - **Server (Node/Route Handlers)**: falls back to `@supabase/supabase-js` client for non-authenticated operations.
+ *
+ * This aligns with `@supabase/ssr` design: middleware/server clients read cookies, browser client writes cookies.
+ */
+// NOTE: We intentionally keep the client loosely typed because our hand-written
+// `Database` type does not fully match the shape expected by `supabase-js`'s
+// generated schema types (which can cause `insert()`/`update()` to infer `never`).
+// The `Database` type is still exported below for app-level type helpers.
+let browserSupabase: SupabaseClient | null = null;
+
+const createSupabaseClient = (): SupabaseClient => {
+  if (typeof window === 'undefined') {
+    // Server-side fallback: don't persist sessions (no localStorage/cookies here).
+    return createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'skywage-v2@1.0.0',
+        },
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10,
+        },
+      },
+    });
+  }
+
+  if (browserSupabase) return browserSupabase;
+
+  browserSupabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      flowType: 'pkce',
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
     },
-  },
-  // Add timeout and retry configuration for better reliability
-  realtime: {
-    params: {
-      eventsPerSecond: 10,
+    global: {
+      headers: {
+        'X-Client-Info': 'skywage-v2@1.0.0',
+      },
     },
-  },
-});
+    realtime: {
+      params: {
+        eventsPerSecond: 10,
+      },
+    },
+  });
+
+  return browserSupabase;
+};
+
+export const supabase = createSupabaseClient();
 
 // Export types for better type safety
 export type Database = {
