@@ -91,7 +91,8 @@ export class FlydubaiCSVParser implements CSVParser {
 
         // Validate flight numbers
         if (duties && duties.trim() !== '') {
-          const flightNumbers = duties.match(/\b[A-Z]{2}\d{3,4}\b/g);
+          // Supports 1-4 digit flight numbers to handle short Flydubai flights (e.g., FZ43, FZ59)
+          const flightNumbers = duties.match(/\b[A-Z]{2}\d{1,4}\b/g);
           if (flightNumbers) {
             for (const flightNumber of flightNumbers) {
               if (!isValidFlydubaiFlightNumber(flightNumber)) {

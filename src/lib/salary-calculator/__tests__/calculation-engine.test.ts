@@ -160,6 +160,20 @@ describe('Flight Classifier', () => {
       expect(flightNumbers).toEqual(['FZ549', 'FZ550']);
     });
 
+    test('extracts short flight numbers (1-2 digits)', () => {
+      const duties = 'FZ43 FZ44';
+      const flightNumbers = extractFlightNumbers(duties);
+      
+      expect(flightNumbers).toEqual(['FZ43', 'FZ44']);
+    });
+
+    test('extracts mixed length flight numbers', () => {
+      const duties = 'FZ59\nFZ1234';
+      const flightNumbers = extractFlightNumbers(duties);
+      
+      expect(flightNumbers).toEqual(['FZ59', 'FZ1234']);
+    });
+
     test('handles empty duties', () => {
       const flightNumbers = extractFlightNumbers('');
       expect(flightNumbers).toEqual([]);
@@ -192,6 +206,20 @@ describe('Flight Classifier', () => {
 
     test('classifies turnaround correctly', () => {
       const result = classifyFlightDuty('FZ549 FZ550', 'DXB - CMB CMB - DXB');
+      
+      expect(result.dutyType).toBe('turnaround');
+      expect(result.confidence).toBeGreaterThan(0.7);
+    });
+
+    test('classifies turnaround with short flight numbers correctly', () => {
+      const result = classifyFlightDuty('FZ43 FZ44', 'DXB - MCT MCT - DXB');
+      
+      expect(result.dutyType).toBe('turnaround');
+      expect(result.confidence).toBeGreaterThan(0.7);
+    });
+
+    test('classifies another turnaround with short flight numbers correctly', () => {
+      const result = classifyFlightDuty('FZ59\nFZ60', 'DXB - KWI\nKWI - DXB');
       
       expect(result.dutyType).toBe('turnaround');
       expect(result.confidence).toBeGreaterThan(0.7);

@@ -198,7 +198,8 @@ export function validateFlightNumbers(duties: string, rowIndex: number): Validat
   }
 
   // Extract potential flight numbers
-  const flightPattern = /\b[A-Z]{2}\d{3,4}\b/g;
+  // Supports 1-4 digit flight numbers to handle short Flydubai flights (e.g., FZ43, FZ59)
+  const flightPattern = /\b[A-Z]{2}\d{1,4}\b/g;
   const matches = duties.match(flightPattern);
 
   if (matches) {
