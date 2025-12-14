@@ -120,6 +120,11 @@ export async function replaceRosterData(
       deletedCalculation = calculationDeletionResult.deleted;
     }
 
+    // Dispatch event for statistics refresh if any data was deleted
+    if ((deletedFlights > 0 || deletedCalculation) && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('flightDataUpdated'));
+    }
+
     return {
       success: errors.length === 0,
       deletedFlights,

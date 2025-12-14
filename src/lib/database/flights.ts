@@ -203,6 +203,41 @@ export async function getFlightDutiesByMonth(
 }
 
 /**
+ * Gets all flight duties for a specific year
+ */
+export async function getFlightDutiesByYear(
+  userId: string,
+  year: number
+): Promise<{ data: FlightDuty[] | null; error: string | null }> {
+  try {
+    const { data, error } = await supabase
+      .from('flights')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('year', year)
+      .order('date', { ascending: true });
+
+    if (error) {
+      return { data: null, error: error.message };
+    }
+
+    // Convert rows to FlightDuty, filtering out any that fail conversion
+    const flightDuties: FlightDuty[] = [];
+    for (const row of data) {
+      try {
+        flightDuties.push(rowToFlightDuty(row));
+      } catch {
+        // Skip this row and continue with others
+      }
+    }
+
+    return { data: flightDuties, error: null };
+  } catch (error) {
+    return { data: null, error: (error as Error).message };
+  }
+}
+
+/**
  * Gets a specific flight duty by ID
  */
 export async function getFlightDutyById(

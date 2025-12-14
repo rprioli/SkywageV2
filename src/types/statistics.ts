@@ -131,6 +131,20 @@ export interface DutyTypeProfitability {
   rank: number;
 }
 
+// Top duty rankings by flight pay
+export interface TopDutyRankingEntry {
+  rank: number;
+  date: Date;
+  flightPay: number;
+  routing: string; // e.g., "DXB-ZAG" or "DXB → ZAG → DXB"
+  flightNumbers: string[]; // e.g., ["FZ123", "FZ124"]
+}
+
+export interface TopDutyRankings {
+  turnarounds: TopDutyRankingEntry[];
+  layovers: TopDutyRankingEntry[];
+}
+
 // Chart data interfaces for visualization
 export interface ChartDataPoint {
   name: string;
@@ -160,6 +174,7 @@ export interface StatisticsCalculationResult {
   payComponentBreakdown: PayComponentBreakdown;
   dutyTypeStats: DutyTypeStats;
   monthlyTrends: MonthlyTrendData[];
+  topDutyRankings: TopDutyRankings;
   calculatedAt: Date;
   dataRange: {
     startMonth: number;
@@ -175,6 +190,7 @@ export interface UseStatisticsDataReturn {
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
+  availableYears: number[];
 }
 
 export interface UseChartDataReturn {
