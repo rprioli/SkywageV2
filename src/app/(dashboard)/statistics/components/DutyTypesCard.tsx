@@ -42,6 +42,21 @@ const DUTY_TYPE_ICONS: Record<string, typeof Plane> = {
   annual_leave: Clock
 };
 
+const getDutyTypeLabel = (dutyType: string): string => {
+  switch (dutyType) {
+    case 'sby':
+      return 'Standby';
+    case 'business_promotion':
+      return 'Business Promotion';
+    default:
+      return dutyType
+        .split('_')
+        .filter(Boolean)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+  }
+};
+
 export function DutyTypesCard({ data, loading = false }: DutyTypesCardProps) {
   if (loading) {
     return (
@@ -92,7 +107,7 @@ export function DutyTypesCard({ data, loading = false }: DutyTypesCardProps) {
   const pieChartData = data.dutyTypeBreakdown
     .filter(duty => duty.totalEarnings > 0) // Only show paid duties in pie chart
     .map(duty => ({
-      name: duty.dutyType.charAt(0).toUpperCase() + duty.dutyType.slice(1),
+      name: getDutyTypeLabel(duty.dutyType),
       value: duty.count,
       earnings: duty.totalEarnings,
       percentage: duty.percentage,
@@ -127,7 +142,7 @@ export function DutyTypesCard({ data, loading = false }: DutyTypesCardProps) {
           Duty Types Analysis
         </CardTitle>
         <p className="text-xs text-muted-foreground mt-2">
-          Earnings include variable pay (flight pay, per diem) plus fixed salary allocated proportionally by duty hours for paid duty types.
+          Earnings include variable pay only (flight pay and per diem for layovers). Fixed salary is not allocated into duty types.
         </p>
       </CardHeader>
       
@@ -158,8 +173,8 @@ export function DutyTypesCard({ data, loading = false }: DutyTypesCardProps) {
         <div className="space-y-3">
           <h4 className="text-sm font-medium text-gray-700">Duty Distribution</h4>
           {data.dutyTypeBreakdown.map((duty) => {
-            const Icon = DUTY_TYPE_ICONS[duty.dutyType];
-            const color = DUTY_TYPE_COLORS[duty.dutyType];
+            const Icon = DUTY_TYPE_ICONS[duty.dutyType] ?? Plane;
+            const color = DUTY_TYPE_COLORS[duty.dutyType] ?? CHART_COLORS.neutral;
             
             return (
               <div key={duty.dutyType} className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100">
@@ -171,8 +186,8 @@ export function DutyTypesCard({ data, loading = false }: DutyTypesCardProps) {
                     <Icon className="h-2 w-2 text-white" />
                   </div>
                   <div>
-                    <div className="text-sm font-medium capitalize">
-                      {duty.dutyType}
+                    <div className="text-sm font-medium">
+                      {getDutyTypeLabel(duty.dutyType)}
                     </div>
                     <div className="text-xs text-gray-500">
                       {duty.count} duties • {formatPercentage(duty.percentage)}

@@ -1,23 +1,22 @@
 /**
  * Monthly Comparisons Component
- * Shows current vs previous month performance and identifies best/worst months
+ * Shows best/worst months and top 5 highest paying duties
  */
 
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, TrendingUp, TrendingDown, ArrowUp, ArrowDown, Award, AlertTriangle } from 'lucide-react';
-import { Bar, BarChart, ResponsiveContainer, XAxis, Tooltip, Cell } from 'recharts';
-import { MonthlyComparison, MonthlyTrendData } from '@/types/statistics';
-import { formatCurrency, formatPercentage, getMonthName } from '@/lib/statistics/chartHelpers';
+import { Calendar, Award, AlertTriangle, Plane, Hotel } from 'lucide-react';
+import { MonthlyComparison, TopDutyRankings } from '@/types/statistics';
+import { formatCurrency, getMonthName } from '@/lib/statistics/chartHelpers';
 
 interface MonthlyComparisonCardProps {
   data: MonthlyComparison;
-  monthlyTrends: MonthlyTrendData[];
+  topDutyRankings: TopDutyRankings;
   loading?: boolean;
 }
 
-export function MonthlyComparisonCard({ data, monthlyTrends, loading = false }: MonthlyComparisonCardProps) {
+export function MonthlyComparisonCard({ data, topDutyRankings, loading = false }: MonthlyComparisonCardProps) {
   if (loading) {
     return (
       <Card className="bg-white rounded-3xl !border-0 !shadow-none">
@@ -34,41 +33,11 @@ export function MonthlyComparisonCard({ data, monthlyTrends, loading = false }: 
               <div className="h-20 bg-primary/10 rounded"></div>
             </div>
             <div className="h-32 bg-primary/10 rounded"></div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="h-16 bg-primary/10 rounded"></div>
-              <div className="h-16 bg-primary/10 rounded"></div>
-            </div>
           </div>
         </CardContent>
       </Card>
     );
   }
-
-  // Prepare chart data (last 12 months) - Match Dashboard styling
-  const chartData = monthlyTrends
-    .slice(-12)
-    .map(trend => ({
-      month: trend.monthName,
-      earnings: trend.totalEarnings,
-      fill: trend.month === data.currentMonth.month && trend.year === data.currentMonth.year
-        ? '#4C49ED' // Active: Dark purple (matches Dashboard)
-        : 'rgba(76, 73, 237, 0.08)' // Inactive: Light purple (matches Dashboard)
-    }));
-
-  // Custom tooltip for the chart
-  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg">
-          <p className="font-medium">{label}</p>
-          <p className="text-sm text-primary">
-            Earnings: {formatCurrency(payload[0].value)}
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <Card className="bg-white rounded-3xl !border-0 !shadow-none">
@@ -79,103 +48,6 @@ export function MonthlyComparisonCard({ data, monthlyTrends, loading = false }: 
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Current vs Previous Month */}
-        <div className="grid grid-cols-2 gap-3 md:gap-4">
-          {/* Current Month */}
-          <div className="bg-primary/5 rounded-2xl p-3 md:p-4">
-            <div className="text-center">
-              <div className="text-sm md:text-lg font-bold text-primary mb-1 overflow-hidden text-ellipsis">
-                {formatCurrency(data.currentMonth.totalEarnings)}
-              </div>
-              <div className="text-sm md:text-xs text-primary/70 mb-2">
-                {getMonthName(data.currentMonth.month)} {data.currentMonth.year}
-              </div>
-              <div className="text-sm md:text-xs text-primary/50">Current Month</div>
-            </div>
-          </div>
-
-          {/* Previous Month */}
-          <div className="bg-white rounded-2xl p-3 md:p-4 border border-gray-100">
-            <div className="text-center">
-              <div className="text-sm md:text-lg font-bold text-gray-700 mb-1 overflow-hidden text-ellipsis">
-                {data.previousMonth ? formatCurrency(data.previousMonth.totalEarnings) : 'N/A'}
-              </div>
-              <div className="text-sm md:text-xs text-gray-500 mb-2">
-                {data.previousMonth
-                  ? `${getMonthName(data.previousMonth.month)} ${data.previousMonth.year}`
-                  : 'No Data'
-                }
-              </div>
-              <div className="text-sm md:text-xs text-gray-400">Previous Month</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Change Indicator */}
-        {data.previousMonth && (
-          <div className="text-center">
-            <div className={`flex items-center justify-center gap-2 text-sm font-medium ${
-              data.comparison.isIncrease ? 'text-green-600' : 'text-red-600'
-            }`}>
-              {data.comparison.isIncrease ? (
-                <TrendingUp className="h-4 w-4" />
-              ) : (
-                <TrendingDown className="h-4 w-4" />
-              )}
-              <span>
-                {data.comparison.isIncrease ? '+' : ''}{formatCurrency(data.comparison.earningsChange)}
-              </span>
-              <span>
-                ({data.comparison.isIncrease ? '+' : ''}{formatPercentage(data.comparison.earningsPercentChange)})
-              </span>
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">
-              Month-over-month change
-            </div>
-          </div>
-        )}
-
-        {/* Monthly Trend Chart - Optimized for mobile with Dashboard styling */}
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium text-gray-700">Last 12 Months Trend</h4>
-          <div className="h-64 md:h-32 -mx-2 md:mx-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={chartData}
-                margin={{
-                  top: 20,
-                  right: 8,
-                  left: 8,
-                  bottom: 5
-                }}
-                barCategoryGap="12%"
-              >
-                <XAxis
-                  dataKey="month"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 10, fill: '#6B7280', fontWeight: 500 }}
-                  interval={0}
-                  tickMargin={8}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar
-                  dataKey="earnings"
-                  radius={[10, 10, 0, 0]}
-                  maxBarSize={50}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={entry.fill}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
         {/* Best and Worst Months */}
         <div className="grid grid-cols-2 gap-4">
           {/* Best Month */}
@@ -211,35 +83,90 @@ export function MonthlyComparisonCard({ data, monthlyTrends, loading = false }: 
           </div>
         </div>
 
-        {/* Performance Insights */}
-        <div className="bg-primary/5 rounded-2xl p-4">
-          <h4 className="text-sm font-medium text-blue-700 mb-2">Performance Insights</h4>
-          <div className="space-y-2 text-xs text-blue-600">
-            {data.previousMonth && (
-              <div className="flex items-center gap-2">
-                {data.comparison.isIncrease ? (
-                  <ArrowUp className="h-3 w-3 text-green-500" />
-                ) : (
-                  <ArrowDown className="h-3 w-3 text-red-500" />
-                )}
-                <span>
-                  {data.comparison.isIncrease ? 'Improved' : 'Decreased'} by{' '}
-                  {formatPercentage(Math.abs(data.comparison.earningsPercentChange))} from last month
-                </span>
+        {/* Top 5 Highest Paying Duties */}
+        <div className="space-y-3">
+          <h4 className="text-sm font-medium text-gray-700">Top 5 Highest Paying Duties (Flight Pay)</h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Turnarounds Column */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 mb-3">
+                <Plane className="h-4 w-4 text-primary" />
+                <span className="text-xs font-medium text-primary">Turnarounds</span>
               </div>
-            )}
-            
-            {data.bestMonth.totalEarnings > 0 && (
-              <div className="flex items-center gap-2">
-                <Award className="h-3 w-3 text-yellow-500" />
-                <span>
-                  {data.currentMonth.totalEarnings === data.bestMonth.totalEarnings 
-                    ? 'This is your best month!' 
-                    : `${formatPercentage(((data.bestMonth.totalEarnings - data.currentMonth.totalEarnings) / data.bestMonth.totalEarnings) * 100)} below your best month`
-                  }
-                </span>
+              
+              {topDutyRankings.turnarounds.length > 0 ? (
+                <div className="space-y-2">
+                  {topDutyRankings.turnarounds.map((duty) => (
+                    <div key={`turnaround-${duty.rank}`} className="bg-white rounded-lg p-3 border border-gray-100">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-bold text-primary">#{duty.rank}</span>
+                            <span className="text-xs text-gray-500">
+                              {duty.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                            </span>
+                          </div>
+                          <div className="text-xs text-gray-600 truncate" title={duty.routing}>
+                            {duty.routing}
+                          </div>
+                          <div className="text-xs text-gray-400 truncate">
+                            {duty.flightNumbers.join(', ')}
+                          </div>
+                        </div>
+                        <div className="text-xs font-semibold text-primary whitespace-nowrap">
+                          {formatCurrency(duty.flightPay)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                  <p className="text-xs text-gray-500">No turnarounds yet</p>
+                </div>
+              )}
+            </div>
+
+            {/* Layovers Column */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 mb-3">
+                <Hotel className="h-4 w-4 text-accent" />
+                <span className="text-xs font-medium text-accent">Layovers</span>
               </div>
-            )}
+              
+              {topDutyRankings.layovers.length > 0 ? (
+                <div className="space-y-2">
+                  {topDutyRankings.layovers.map((duty) => (
+                    <div key={`layover-${duty.rank}`} className="bg-white rounded-lg p-3 border border-gray-100">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-bold text-accent">#{duty.rank}</span>
+                            <span className="text-xs text-gray-500">
+                              {duty.date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                            </span>
+                          </div>
+                          <div className="text-xs text-gray-600 truncate" title={duty.routing}>
+                            {duty.routing}
+                          </div>
+                          <div className="text-xs text-gray-400 truncate">
+                            {duty.flightNumbers.join(', ')}
+                          </div>
+                        </div>
+                        <div className="text-xs font-semibold text-accent whitespace-nowrap">
+                          {formatCurrency(duty.flightPay)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                  <p className="text-xs text-gray-500">No paired layovers yet</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </CardContent>

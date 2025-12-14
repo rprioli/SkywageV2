@@ -137,7 +137,7 @@ export default function StatisticsPage() {
           {/* Monthly Comparisons */}
           <MonthlyComparisonCard
             data={statisticsData.monthlyComparison}
-            monthlyTrends={statisticsData.monthlyTrends}
+            topDutyRankings={statisticsData.topDutyRankings}
             loading={loading}
           />
 

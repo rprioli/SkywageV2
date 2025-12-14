@@ -158,40 +158,6 @@ export function YTDEarningsCard({ data, loading = false }: YTDEarningsCardProps)
             </div>
           </div>
         </div>
-
-        {/* Variable Pay Breakdown */}
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium text-gray-700">Variable Pay Breakdown</h4>
-          
-          {/* Flight Pay */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-primary"></div>
-              <span className="text-sm text-gray-600">Flight Pay</span>
-            </div>
-            <div className="text-sm font-medium">{formatCurrency(data.flightPay)}</div>
-          </div>
-
-          {/* Per Diem Pay */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-accent"></div>
-              <span className="text-sm text-gray-600">Per Diem</span>
-            </div>
-            <div className="text-sm font-medium">{formatCurrency(data.perDiemPay)}</div>
-          </div>
-
-          {/* ASBY Pay */}
-          {data.asbyPay > 0 && (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                <span className="text-sm text-gray-600">ASBY Pay</span>
-              </div>
-              <div className="text-sm font-medium">{formatCurrency(data.asbyPay)}</div>
-            </div>
-          )}
-        </div>
       </CardContent>
     </Card>
   );
