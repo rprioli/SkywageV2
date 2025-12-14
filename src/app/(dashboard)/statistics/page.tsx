@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BarChart3, Loader2, AlertCircle, Menu } from 'lucide-react';
@@ -8,10 +9,16 @@ import { useMobileNavigation } from '@/contexts/MobileNavigationProvider';
 import { YTDEarningsCard } from './components/YTDEarningsCard';
 import { MonthlyComparisonCard } from './components/MonthlyComparisonCard';
 import { DutyTypesCard } from './components/DutyTypesCard';
+import { YearSelector } from './components/YearSelector';
+import { StatisticsHeader } from './components/StatisticsHeader';
 
 export default function StatisticsPage() {
-  // Use our custom statistics data hook
-  const { data: statisticsData, loading, error, refresh } = useStatisticsData();
+  // Year selector state
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+
+  // Use our custom statistics data hook with selected year
+  const { data: statisticsData, loading, error, refresh, availableYears } = useStatisticsData(selectedYear);
 
   // Get mobile navigation context
   const { isMobile, toggleSidebar, isSidebarOpen } = useMobileNavigation();
@@ -21,33 +28,11 @@ export default function StatisticsPage() {
     return (
       <div className="space-y-4">
         <div className="space-y-6 px-6 pt-6">
-          {/* Header with integrated hamburger menu on mobile */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-3xl font-bold mb-1" style={{ color: '#3A3780' }}>Statistics</h1>
-              <p className="text-primary font-bold">
-                Loading your earnings statistics and flight data analytics...
-              </p>
-            </div>
-
-            {/* Hamburger Menu - Mobile Only */}
-            {isMobile && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleSidebar}
-                className={`flex-shrink-0 p-3 rounded-lg touch-target transition-colors ${
-                  isSidebarOpen
-                    ? 'bg-primary/10 hover:bg-primary/20 text-primary'
-                    : 'hover:bg-gray-100 active:bg-gray-200 text-gray-700'
-                }`}
-                aria-label="Toggle navigation menu"
-                aria-expanded={isSidebarOpen}
-              >
-                <Menu className="h-6 w-6" />
-              </Button>
-            )}
-          </div>
+          <StatisticsHeader
+            isMobile={isMobile}
+            isSidebarOpen={isSidebarOpen}
+            toggleSidebar={toggleSidebar}
+          />
         </div>
 
         <div className="px-6">
@@ -67,33 +52,11 @@ export default function StatisticsPage() {
     return (
       <div className="space-y-4">
         <div className="space-y-6 px-6 pt-6">
-          {/* Header with integrated hamburger menu on mobile */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-3xl font-bold mb-1" style={{ color: '#3A3780' }}>Statistics</h1>
-              <p className="text-primary font-bold">
-                View your earnings statistics and flight data analytics.
-              </p>
-            </div>
-
-            {/* Hamburger Menu - Mobile Only */}
-            {isMobile && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleSidebar}
-                className={`flex-shrink-0 p-3 rounded-lg touch-target transition-colors ${
-                  isSidebarOpen
-                    ? 'bg-primary/10 hover:bg-primary/20 text-primary'
-                    : 'hover:bg-gray-100 active:bg-gray-200 text-gray-700'
-                }`}
-                aria-label="Toggle navigation menu"
-                aria-expanded={isSidebarOpen}
-              >
-                <Menu className="h-6 w-6" />
-              </Button>
-            )}
-          </div>
+          <StatisticsHeader
+            isMobile={isMobile}
+            isSidebarOpen={isSidebarOpen}
+            toggleSidebar={toggleSidebar}
+          />
         </div>
 
         <div className="px-6">
@@ -120,33 +83,11 @@ export default function StatisticsPage() {
     return (
       <div className="space-y-4">
         <div className="space-y-6 px-6 pt-6">
-          {/* Header with integrated hamburger menu on mobile */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-3xl font-bold mb-1" style={{ color: '#3A3780' }}>Statistics</h1>
-              <p className="text-primary font-bold">
-                View your earnings statistics and flight data analytics.
-              </p>
-            </div>
-
-            {/* Hamburger Menu - Mobile Only */}
-            {isMobile && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleSidebar}
-                className={`flex-shrink-0 p-3 rounded-lg touch-target transition-colors ${
-                  isSidebarOpen
-                    ? 'bg-primary/10 hover:bg-primary/20 text-primary'
-                    : 'hover:bg-gray-100 active:bg-gray-200 text-gray-700'
-                }`}
-                aria-label="Toggle navigation menu"
-                aria-expanded={isSidebarOpen}
-              >
-                <Menu className="h-6 w-6" />
-              </Button>
-            )}
-          </div>
+          <StatisticsHeader
+            isMobile={isMobile}
+            isSidebarOpen={isSidebarOpen}
+            toggleSidebar={toggleSidebar}
+          />
         </div>
 
         <div className="px-6">
@@ -166,33 +107,21 @@ export default function StatisticsPage() {
     <div className="space-y-4">
       {/* Header and Statistics - Grouped with consistent spacing */}
       <div className="space-y-6 px-6 pt-6">
-        {/* Header with integrated hamburger menu on mobile */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-3xl font-bold mb-1" style={{ color: '#3A3780' }}>Statistics</h1>
-            <p className="text-primary font-bold">
-              View your earnings statistics and flight data analytics.
-            </p>
-          </div>
+        <StatisticsHeader
+          isMobile={isMobile}
+          isSidebarOpen={isSidebarOpen}
+          toggleSidebar={toggleSidebar}
+        />
 
-          {/* Hamburger Menu - Mobile Only */}
-          {isMobile && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleSidebar}
-              className={`flex-shrink-0 p-3 rounded-lg touch-target transition-colors ${
-                isSidebarOpen
-                  ? 'bg-primary/10 hover:bg-primary/20 text-primary'
-                  : 'hover:bg-gray-100 active:bg-gray-200 text-gray-700'
-              }`}
-              aria-label="Toggle navigation menu"
-              aria-expanded={isSidebarOpen}
-            >
-              <Menu className="h-6 w-6" />
-            </Button>
-          )}
-        </div>
+        {/* Year Selector */}
+        {availableYears.length > 0 && (
+          <YearSelector
+            selectedYear={selectedYear}
+            availableYears={availableYears}
+            onYearChange={setSelectedYear}
+            disabled={loading}
+          />
+        )}
       </div>
 
       {/* Statistics Grid - Phase 1 Essential Features */}

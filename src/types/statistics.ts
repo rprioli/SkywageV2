@@ -175,6 +175,7 @@ export interface UseStatisticsDataReturn {
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
+  availableYears: number[];
 }
 
 export interface UseChartDataReturn {

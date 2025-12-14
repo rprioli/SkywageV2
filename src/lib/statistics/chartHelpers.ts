@@ -42,6 +42,15 @@ export function getMonthName(month: number, short: boolean = true): string {
 }
 
 /**
+ * Get month name with year (e.g., "Jan '25")
+ */
+export function getMonthYearLabel(month: number, year: number, short: boolean = true): string {
+  const monthName = getMonthName(month, short);
+  const yearShort = year.toString().slice(-2);
+  return `${monthName} '${yearShort}`;
+}
+
+/**
  * Get brand colors for charts
  */
 export const CHART_COLORS = {

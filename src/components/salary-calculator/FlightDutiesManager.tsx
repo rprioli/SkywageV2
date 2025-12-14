@@ -125,6 +125,9 @@ export function FlightDutiesManager({
           }
         });
         onRecalculationComplete?.();
+
+        // Dispatch event for statistics refresh
+        window.dispatchEvent(new CustomEvent('flightDataUpdated'));
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -209,6 +212,9 @@ export function FlightDutiesManager({
           }
         });
         onRecalculationComplete?.();
+
+        // Dispatch event for statistics refresh
+        window.dispatchEvent(new CustomEvent('flightDataUpdated'));
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error during delete all';

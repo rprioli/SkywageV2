@@ -126,6 +126,9 @@ export function DutyTypesCard({ data, loading = false }: DutyTypesCardProps) {
           <PieChart className="h-5 w-5 text-primary" />
           Duty Types Analysis
         </CardTitle>
+        <p className="text-xs text-muted-foreground mt-2">
+          Earnings include variable pay (flight pay, per diem) plus fixed salary allocated proportionally by duty hours for paid duty types.
+        </p>
       </CardHeader>
       
       <CardContent className="space-y-6">

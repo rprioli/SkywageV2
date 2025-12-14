@@ -611,6 +611,11 @@ async function saveUploadData(
     details: `Successfully processed ${flightDuties.length} flight duties`
   });
 
+  // Dispatch event for statistics refresh
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('dashboardDataUpdated'));
+  }
+
   return {
     success: true,
     monthlyCalculation,

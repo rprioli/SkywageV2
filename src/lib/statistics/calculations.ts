@@ -3,7 +3,7 @@
  * Transforms raw monthly calculation data into statistics insights
  */
 
-import { MonthlyCalculation } from '@/types/salary-calculator';
+import { MonthlyCalculation, FlightDuty } from '@/types/salary-calculator';
 import {
   YTDData,
   MonthlyComparison,
@@ -50,9 +50,12 @@ export function calculateYTDData(
     const monthlyEarnings = monthData?.totalSalary || 0;
     cumulativeEarnings += monthlyEarnings;
 
+    const monthName = new Date(currentYear, month - 1).toLocaleDateString('en-US', { month: 'short' });
+    const yearShort = currentYear.toString().slice(-2);
+
     monthlyProgression.push({
       month,
-      monthName: new Date(currentYear, month - 1).toLocaleDateString('en-US', { month: 'short' }),
+      monthName: `${monthName} '${yearShort}`,
       cumulativeEarnings,
       monthlyEarnings,
       fixedEarnings: monthData?.totalFixed || 0,
@@ -99,7 +102,7 @@ export function calculateMonthlyComparison(
     calc => calc.month === prevMonth && calc.year === prevYear
   );
 
-  // Find best and worst months
+  // Find best and worst months (only within the filtered data, which should be same year)
   const sortedByEarnings = [...monthlyCalculations].sort((a, b) => b.totalSalary - a.totalSalary);
   const bestMonth = sortedByEarnings[0];
   const worstMonth = sortedByEarnings[sortedByEarnings.length - 1];
@@ -155,11 +158,13 @@ export function calculatePayComponentBreakdown(
 ): PayComponentBreakdown {
   const monthlyBreakdown: PayComponentMonth[] = monthlyCalculations.map(calc => {
     const totalPay = calc.flightPay + calc.perDiemPay + calc.asbyPay;
+    const monthName = new Date(calc.year, calc.month - 1).toLocaleDateString('en-US', { month: 'short' });
+    const yearShort = calc.year.toString().slice(-2);
     
     return {
       month: calc.month,
       year: calc.year,
-      monthName: new Date(calc.year, calc.month - 1).toLocaleDateString('en-US', { month: 'short' }),
+      monthName: `${monthName} '${yearShort}`,
       flightPay: calc.flightPay,
       perDiemPay: calc.perDiemPay,
       asbyPay: calc.asbyPay,
@@ -208,21 +213,162 @@ export function calculateMonthlyTrends(
       if (a.year !== b.year) return a.year - b.year;
       return a.month - b.month;
     })
-    .map(calc => ({
-      month: calc.month,
-      year: calc.year,
-      monthName: new Date(calc.year, calc.month - 1).toLocaleDateString('en-US', { month: 'short' }),
-      totalEarnings: calc.totalSalary,
-      flightPay: calc.flightPay,
-      perDiemPay: calc.perDiemPay,
-      asbyPay: calc.asbyPay,
-      dutyHours: calc.totalDutyHours,
-      flightCount: 0 // Would need flight duties data to calculate
-    }));
+    .map(calc => {
+      const monthName = new Date(calc.year, calc.month - 1).toLocaleDateString('en-US', { month: 'short' });
+      const yearShort = calc.year.toString().slice(-2);
+      return {
+        month: calc.month,
+        year: calc.year,
+        monthName: `${monthName} '${yearShort}`,
+        totalEarnings: calc.totalSalary,
+        flightPay: calc.flightPay,
+        perDiemPay: calc.perDiemPay,
+        asbyPay: calc.asbyPay,
+        dutyHours: calc.totalDutyHours,
+        flightCount: 0 // Would need flight duties data to calculate
+      };
+    });
 }
 
 /**
- * Calculate duty type statistics from monthly calculations
+ * Calculate duty type statistics from real flight duties with allocated fixed pay
+ * Includes fixed salary allocated across paid duty types, weighted by duty hours
+ */
+export function calculateDutyTypeStatsFromFlights(
+  flightDuties: FlightDuty[],
+  monthlyCalculations: MonthlyCalculation[]
+): DutyTypeStats {
+  // Calculate total fixed pay for the period
+  const totalFixedPay = monthlyCalculations.reduce((sum, calc) => sum + calc.totalFixed, 0);
+  const totalPerDiemPay = monthlyCalculations.reduce((sum, calc) => sum + calc.perDiemPay, 0);
+
+  // Paid duty types (eligible for fixed pay allocation)
+  const paidDutyTypes = ['turnaround', 'layover', 'asby', 'recurrent', 'business_promotion'];
+
+  // Types to exclude from display
+  const excludedTypes = ['off', 'rest', 'annual_leave', 'sby'];
+
+  // Group flight duties by duty type and calculate totals
+  // For layover duties, we need to count pairs as one duty
+  const dutyTypeMap = new Map<string, {
+    count: number;
+    totalHours: number;
+    totalFlightPay: number;
+  }>();
+
+  // Track layover flights by date to identify pairs
+  const layoversByDate = new Map<string, FlightDuty[]>();
+
+  flightDuties.forEach(duty => {
+    // Skip excluded types
+    if (excludedTypes.includes(duty.dutyType)) {
+      return;
+    }
+
+    if (duty.dutyType === 'layover') {
+      // Group layover flights by date (outbound and inbound on same date = one duty)
+      const dateKey = duty.date.toISOString().split('T')[0];
+      const existing = layoversByDate.get(dateKey) || [];
+      existing.push(duty);
+      layoversByDate.set(dateKey, existing);
+    } else {
+      // For non-layover duties, count normally
+      const existing = dutyTypeMap.get(duty.dutyType) || {
+        count: 0,
+        totalHours: 0,
+        totalFlightPay: 0
+      };
+
+      dutyTypeMap.set(duty.dutyType, {
+        count: existing.count + 1,
+        totalHours: existing.totalHours + duty.dutyHours,
+        totalFlightPay: existing.totalFlightPay + duty.flightPay
+      });
+    }
+  });
+
+  // Process layover pairs - count each date as one duty
+  layoversByDate.forEach((flights, dateKey) => {
+    const existing = dutyTypeMap.get('layover') || {
+      count: 0,
+      totalHours: 0,
+      totalFlightPay: 0
+    };
+
+    // Sum up all flights on this date (outbound + inbound)
+    const totalHours = flights.reduce((sum, f) => sum + f.dutyHours, 0);
+    const totalPay = flights.reduce((sum, f) => sum + f.flightPay, 0);
+
+    dutyTypeMap.set('layover', {
+      count: existing.count + 1, // Count as ONE duty regardless of number of flights
+      totalHours: existing.totalHours + totalHours,
+      totalFlightPay: existing.totalFlightPay + totalPay
+    });
+  });
+
+  // Calculate total duty hours for paid duty types (for fixed pay allocation)
+  const totalPaidDutyHours = Array.from(dutyTypeMap.entries())
+    .filter(([dutyType]) => paidDutyTypes.includes(dutyType))
+    .reduce((sum, [, data]) => sum + data.totalHours, 0);
+
+  // Build duty type breakdown with allocated fixed pay
+  const dutyTypeBreakdown: DutyTypeBreakdownItem[] = [];
+  // Total duties = sum of all counts (layovers already counted as pairs)
+  const totalDuties = Array.from(dutyTypeMap.values()).reduce((sum, data) => sum + data.count, 0);
+  let totalEarnings = 0;
+
+  dutyTypeMap.forEach((data, dutyType) => {
+    // Allocate fixed pay proportionally based on duty hours (only for paid types)
+    const allocatedFixedPay = paidDutyTypes.includes(dutyType) && totalPaidDutyHours > 0
+      ? (data.totalHours / totalPaidDutyHours) * totalFixedPay
+      : 0;
+
+    // Allocate per diem only to layover duties
+    const allocatedPerDiem = dutyType === 'layover' ? totalPerDiemPay : 0;
+
+    // Total earnings = flight pay + allocated fixed pay + per diem (for layover)
+    const dutyTotalEarnings = data.totalFlightPay + allocatedFixedPay + allocatedPerDiem;
+    totalEarnings += dutyTotalEarnings;
+
+    dutyTypeBreakdown.push({
+      dutyType: dutyType as DutyTypeBreakdownItem['dutyType'],
+      count: data.count,
+      totalEarnings: dutyTotalEarnings,
+      totalHours: data.totalHours,
+      percentage: totalDuties > 0 ? (data.count / totalDuties) * 100 : 0,
+      averageEarningsPerDuty: data.count > 0 ? dutyTotalEarnings / data.count : 0,
+      averageHoursPerDuty: data.count > 0 ? data.totalHours / data.count : 0
+    });
+  });
+
+  // Sort by total earnings descending
+  dutyTypeBreakdown.sort((a, b) => b.totalEarnings - a.totalEarnings);
+
+  // Calculate profitability analysis
+  const profitabilityAnalysis: DutyTypeProfitability[] = dutyTypeBreakdown
+    .map(duty => ({
+      dutyType: duty.dutyType,
+      earningsPerHour: duty.totalHours > 0 ? duty.totalEarnings / duty.totalHours : 0,
+      efficiency: 'medium' as 'high' | 'medium' | 'low',
+      rank: 0
+    }))
+    .sort((a, b) => b.earningsPerHour - a.earningsPerHour)
+    .map((duty, index) => ({
+      ...duty,
+      rank: index + 1,
+      efficiency: index === 0 ? 'high' : index === dutyTypeBreakdown.length - 1 ? 'low' : 'medium'
+    }));
+
+  return {
+    dutyTypeBreakdown,
+    profitabilityAnalysis,
+    totalDuties,
+    totalEarnings
+  };
+}
+
+/**
+ * Calculate duty type statistics from monthly calculations (legacy/fallback)
  * Note: This is a simplified version based on available data
  */
 export function calculateDutyTypeStats(
@@ -311,10 +457,12 @@ export function calculateDutyTypeStats(
  * Main statistics calculation function
  */
 export function calculateStatistics(
-  monthlyCalculations: MonthlyCalculation[]
+  monthlyCalculations: MonthlyCalculation[],
+  selectedYear?: number,
+  flightDuties?: FlightDuty[]
 ): StatisticsCalculationResult {
   const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
+  const currentYear = selectedYear || currentDate.getFullYear();
   const currentMonth = currentDate.getMonth() + 1;
 
   // Sort calculations by date
@@ -328,8 +476,10 @@ export function calculateStatistics(
   const payComponentBreakdown = calculatePayComponentBreakdown(sortedCalculations);
   const monthlyTrends = calculateMonthlyTrends(sortedCalculations);
 
-  // Calculate duty type stats from monthly calculations
-  const dutyTypeStats = calculateDutyTypeStats(sortedCalculations);
+  // Calculate duty type stats from real flights if available, otherwise fall back to estimation
+  const dutyTypeStats = flightDuties && flightDuties.length > 0
+    ? calculateDutyTypeStatsFromFlights(flightDuties, sortedCalculations)
+    : calculateDutyTypeStats(sortedCalculations);
 
   // Determine data range
   const dataRange = {

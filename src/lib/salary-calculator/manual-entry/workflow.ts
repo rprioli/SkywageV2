@@ -109,6 +109,11 @@ export async function processManualEntry(
       warnings.push('Flight saved but monthly calculation update failed');
     }
 
+    // Dispatch event for statistics refresh
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('calculationUpdated'));
+    }
+
     return {
       success: true,
       flightDuty: firstDuty,
@@ -322,6 +327,11 @@ export async function processManualEntryBatch(
       if (!monthlyCalculation) {
         monthlyCalculation = recalcResult.updatedCalculation ?? undefined;
       }
+    }
+
+    // Dispatch event for statistics refresh
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('calculationUpdated'));
     }
 
     return {
