@@ -17,10 +17,10 @@ export const StatisticsHeader = ({
   return (
     <div className="flex items-start justify-between gap-4">
       <div className="flex-1 min-w-0">
-        <h1 className="text-3xl font-bold mb-1" style={{ color: '#3A3780' }}>
+        <h1 className="text-responsive-3xl font-bold space-responsive-sm" style={{ color: '#3A3780' }}>
           Statistics
         </h1>
-        <p className="text-primary font-bold">
+        <p className="text-responsive-base text-primary font-bold">
           View your earnings statistics and flight data analytics.
         </p>
       </div>

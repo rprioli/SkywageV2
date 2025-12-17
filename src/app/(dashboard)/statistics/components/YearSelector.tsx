@@ -26,13 +26,12 @@ export const YearSelector = ({
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-sm font-medium text-gray-700">Year:</span>
       <Select
         value={selectedYear.toString()}
         onValueChange={(value) => onYearChange(parseInt(value, 10))}
         disabled={disabled}
       >
-        <SelectTrigger className="w-[120px]">
+        <SelectTrigger className="w-[100px] h-7 text-sm border-gray-200 !px-2.5 !py-0 !justify-start [&>*]:!gap-0 [&_svg]:ml-auto">
           <SelectValue placeholder="Select year" />
         </SelectTrigger>
         <SelectContent>

@@ -24,7 +24,8 @@ const DUTY_TYPE_COLORS: Record<string, string> = {
   recurrent: CHART_COLORS.tertiary,
   sby: CHART_COLORS.neutral,
   off: CHART_COLORS.light,
-  business_promotion: CHART_COLORS.tertiary,
+  // Use a different color than Recurrent to visually differentiate
+  business_promotion: CHART_COLORS.quaternary,
   rest: CHART_COLORS.light,
   annual_leave: CHART_COLORS.light
 };
@@ -46,6 +47,8 @@ const getDutyTypeLabel = (dutyType: string): string => {
   switch (dutyType) {
     case 'sby':
       return 'Standby';
+    case 'asby':
+      return 'Airport Standby';
     case 'business_promotion':
       return 'Business Promotion';
     default:
@@ -170,36 +173,42 @@ export function DutyTypesCard({ data, loading = false }: DutyTypesCardProps) {
         </div>
 
         {/* Duty Type Breakdown */}
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium text-gray-700">Duty Distribution</h4>
+        <div className="space-y-4">
+          <h4 className="text-sm font-semibold text-[#3A3780]">Duty Distribution</h4>
           {data.dutyTypeBreakdown.map((duty) => {
             const Icon = DUTY_TYPE_ICONS[duty.dutyType] ?? Plane;
             const color = DUTY_TYPE_COLORS[duty.dutyType] ?? CHART_COLORS.neutral;
             
             return (
-              <div key={duty.dutyType} className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100">
-                <div className="flex items-center gap-3">
+              <div
+                key={duty.dutyType}
+                className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100/80 hover:bg-gray-50/40 transition-colors"
+              >
+                <div className="flex items-center gap-4 min-w-0">
                   <div 
-                    className="w-4 h-4 rounded-full flex items-center justify-center"
+                    className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
                     style={{ backgroundColor: color }}
                   >
-                    <Icon className="h-2 w-2 text-white" />
+                    <Icon className="h-3.5 w-3.5 text-white" />
                   </div>
-                  <div>
-                    <div className="text-sm font-medium">
+                  <div className="min-w-0">
+                    <div className="text-base font-medium text-gray-900 truncate">
                       {getDutyTypeLabel(duty.dutyType)}
                     </div>
-                    <div className="text-xs text-gray-500">
-                      {duty.count} duties • {formatPercentage(duty.percentage)}
+                    <div className="text-sm text-gray-500">
+                      {duty.count} duties
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium">
+                <div className="text-right flex flex-col items-end gap-1">
+                  <div
+                    className="text-xs font-bold text-white rounded-full px-2 py-0.5"
+                    style={{ backgroundColor: duty.dutyType === 'sby' ? '#9CA3AF' : '#6DDC91' }}
+                  >
                     {duty.dutyType === 'sby' ? 'No Pay' : formatCurrency(duty.totalEarnings)}
                   </div>
                   {duty.dutyType === 'sby' && (
-                    <div className="text-xs text-gray-500">
+                    <div className="text-sm text-gray-500">
                       Unpaid duty
                     </div>
                   )}
