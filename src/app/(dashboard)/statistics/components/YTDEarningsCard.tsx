@@ -10,21 +10,36 @@ import { TrendingUp, ArrowUp, ArrowDown } from 'lucide-react';
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { YTDData } from '@/types/statistics';
 import { formatCurrency, formatPercentage, CHART_COLORS } from '@/lib/statistics/chartHelpers';
+import { YearSelector } from './YearSelector';
 
 interface YTDEarningsCardProps {
   data: YTDData;
   loading?: boolean;
+  selectedYear: number;
+  availableYears: number[];
+  onYearChange: (year: number) => void;
+  yearSelectorDisabled?: boolean;
 }
 
-export function YTDEarningsCard({ data, loading = false }: YTDEarningsCardProps) {
+export function YTDEarningsCard({ 
+  data, 
+  loading = false,
+  selectedYear,
+  availableYears,
+  onYearChange,
+  yearSelectorDisabled = false
+}: YTDEarningsCardProps) {
   if (loading) {
     return (
       <Card className="bg-white rounded-3xl !border-0 !shadow-none">
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2" style={{ color: '#3A3780' }}>
-            <TrendingUp className="h-5 w-5 text-primary" />
-            Year-to-Date Earnings
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2" style={{ color: '#3A3780' }}>
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Year-to-Date Earnings
+            </CardTitle>
+            <div className="w-[100px] h-7 bg-primary/5 rounded animate-pulse" />
+          </div>
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-4">
@@ -66,10 +81,18 @@ export function YTDEarningsCard({ data, loading = false }: YTDEarningsCardProps)
   return (
     <Card className="bg-white rounded-3xl !border-0 !shadow-none">
       <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2" style={{ color: '#3A3780' }}>
-          <TrendingUp className="h-5 w-5 text-primary" />
-          Year-to-Date Earnings
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2" style={{ color: '#3A3780' }}>
+            <TrendingUp className="h-5 w-5 text-primary" />
+            Year-to-Date Earnings
+          </CardTitle>
+          <YearSelector
+            selectedYear={selectedYear}
+            availableYears={availableYears}
+            onYearChange={onYearChange}
+            disabled={yearSelectorDisabled}
+          />
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* YTD Total with Comparison */}
@@ -138,7 +161,7 @@ export function YTDEarningsCard({ data, loading = false }: YTDEarningsCardProps)
         <div className="grid grid-cols-2 gap-3 md:gap-4">
           {/* Fixed Earnings */}
           <div className="bg-white rounded-2xl p-3 md:p-4 text-center border border-gray-100">
-            <div className="text-sm md:text-lg font-bold text-gray-700 mb-1 overflow-hidden text-ellipsis">
+            <div className="text-sm md:text-lg font-bold text-[#3A3780] mb-1 overflow-hidden text-ellipsis">
               {formatCurrency(data.fixedEarnings)}
             </div>
             <div className="text-sm md:text-xs text-gray-500 mb-2">Fixed Pay</div>
