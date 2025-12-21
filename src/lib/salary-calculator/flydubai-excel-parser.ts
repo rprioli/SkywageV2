@@ -589,6 +589,14 @@ export class FlydubaiExcelParser {
           reportTime = createTimeValue(startHour, startMin);
           debriefTime = createTimeValue(endHour, endMin);
           actualDutyHours = standbyTime.totalHours;
+          
+          // Detect crossday for SBY based on parsed times
+          // If debrief time is earlier than report time, it crosses midnight
+          const standbyIsCrossDay = debriefTime.totalMinutes < reportTime.totalMinutes;
+          if (standbyIsCrossDay) {
+            // Override the isCrossDay flag from Excel columns for SBY duties
+            excelDuty.isCrossDay = true;
+          }
         } catch {
           // Fallback to default times
           reportTime = createTimeValue(6, 0);  // Default 06:00

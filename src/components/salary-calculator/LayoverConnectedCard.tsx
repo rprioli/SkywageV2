@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MoreVertical, Trash2, ChevronLeft, ChevronRight, Edit } from 'lucide-react';
-import { FlightDuty, TimeValue, Position } from '@/types/salary-calculator';
+import { FlightDuty, TimeValue, Position, LayoverRestPeriod } from '@/types/salary-calculator';
 import {
   mapFlightDutyToCardData,
   findLayoverPair,
@@ -31,6 +31,7 @@ const BRAND = { primary: "#4C49ED", accent: "#6DDC91", neutral: "#FFFFFF" };
 interface LayoverConnectedCardProps {
   flightDuty: FlightDuty;
   allFlightDuties?: FlightDuty[];
+  layoverRestPeriods?: LayoverRestPeriod[];
   onDelete?: (flightDuty: FlightDuty) => void;
   showActions?: boolean;
   bulkMode?: boolean;
@@ -44,6 +45,7 @@ interface LayoverConnectedCardProps {
 export function LayoverConnectedCard({
   flightDuty,
   allFlightDuties = [],
+  layoverRestPeriods = [],
   onDelete,
   showActions = true,
   bulkMode = false,
@@ -57,10 +59,16 @@ export function LayoverConnectedCard({
   const [currentSegment, setCurrentSegment] = useState<'outbound' | 'inbound'>('outbound');
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
-  // Find layover pair
+  // Find layover pair from in-month flights
   const layoverPair = useMemo(() => {
     return findLayoverPair(flightDuty, allFlightDuties);
   }, [flightDuty, allFlightDuties]);
+
+  // If no in-month pair found, check if there's a persisted rest period for cross-month layover
+  const crossMonthRestPeriod = useMemo(() => {
+    if (layoverPair) return null; // Already paired in-month
+    return layoverRestPeriods.find(rp => rp.outboundFlightId === flightDuty.id);
+  }, [layoverPair, layoverRestPeriods, flightDuty.id]);
 
   // Determine current duty and segment
   const { currentDuty, isOutbound } = useMemo(() => {
@@ -177,8 +185,23 @@ export function LayoverConnectedCard({
     }
   };
 
-  // If no layover pair found, show as single card
+  // If no in-month layover pair found, show as outbound-only card
+  // (may have cross-month rest period data)
   if (!layoverPair) {
+    // Handle multiple routing formats
+    let routingParts: string[];
+    if (cardData.routing.includes(' → ')) {
+      routingParts = cardData.routing.split(' → ');
+    } else if (cardData.routing.includes(' - ')) {
+      routingParts = cardData.routing.split(' - ');
+    } else if (cardData.routing.includes('-')) {
+      routingParts = cardData.routing.split('-').map(part => part.trim());
+    } else {
+      routingParts = [cardData.routing, ''];
+    }
+    const from = routingParts[0] || '';
+    const to = routingParts[routingParts.length - 1] || '';
+
     return (
       <div className="relative">
         <Card
@@ -187,13 +210,98 @@ export function LayoverConnectedCard({
           } ${bulkMode ? 'cursor-pointer' : ''}`}
           onClick={bulkMode ? handleToggleSelection : undefined}
         >
-          <div className="px-4 py-3 h-full flex flex-col">
-            {/* Single layover card content */}
-            <div className="text-center text-sm text-gray-500">
-              Layover (No pair found)
+          <div className="card-mobile-optimized h-full flex flex-col">
+            {/* Actions Menu */}
+            {showActions && onDelete && (
+              <div className="absolute bottom-2 right-2 z-10" onClick={(e) => e.stopPropagation()}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger className="p-1 hover:bg-gray-100 rounded-full transition-colors">
+                    <MoreVertical className="h-4 w-4 text-gray-500" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {userId && position && (
+                      <DropdownMenuItem onClick={handleEditClick}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit Times
+                      </DropdownMenuItem>
+                    )}
+                    {onDelete !== undefined && (
+                      <DropdownMenuItem onClick={handleDelete} className="text-red-600">
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
+
+            {/* Top row - Flight number and payment badge */}
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-gray-500 font-bold">{cardData.flightNumber}</span>
+              <div
+                className="text-xs font-semibold text-white rounded-full px-2 py-0.5"
+                style={{ backgroundColor: BRAND.accent }}
+              >
+                {cardData.pay}
+              </div>
+            </div>
+
+            {/* Duty badge */}
+            <div className="flex justify-center mb-1">
+              <span
+                className="inline-block text-white text-xs font-bold px-2 py-0.5 rounded-full"
+                style={{ backgroundColor: BRAND.primary }}
+              >
+                {cardData.totalDuty} Duty
+              </span>
+            </div>
+
+            {/* Main routing section */}
+            <div className="flight-card-main-content">
+              <div className="grid grid-cols-3 items-center gap-2">
+                <div className="text-center">
+                  <div className="text-lg font-bold tracking-wide" style={{ color: 'rgb(58, 55, 128)' }}>{from}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">{cardData.reporting}</div>
+                </div>
+
+                <div className="flex flex-col items-center justify-center">
+                  <div className="flex items-center gap-1 mb-1">
+                    <div className="h-px w-6" style={{ backgroundColor: BRAND.primary }}></div>
+                    <div className="text-sm" style={{ color: BRAND.primary }}>✈</div>
+                    <div className="h-px w-6" style={{ backgroundColor: BRAND.primary }}></div>
+                  </div>
+                  <div className="text-xs font-semibold text-gray-700">
+                    Layover
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <div className="text-lg font-bold tracking-wide" style={{ color: 'rgb(58, 55, 128)' }}>{to}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">{cardData.debriefing}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom space - show cross-month rest/per diem if available */}
+            <div className="flex-1 flex items-end justify-center">
+              {crossMonthRestPeriod && (
+                <div className="text-xs text-gray-600 text-center">
+                  {formatDutyHours(crossMonthRestPeriod.restHours)} - {formatCurrency(crossMonthRestPeriod.perDiemPay)}
+                </div>
+              )}
             </div>
           </div>
         </Card>
+
+        {/* Edit Times Dialog */}
+        <EditTimesDialog
+          flightDuty={flightDuty}
+          allFlightDuties={allFlightDuties}
+          isOpen={editDialogOpen}
+          onClose={() => setEditDialogOpen(false)}
+          onSave={handleSaveEdit}
+        />
       </div>
     );
   }
@@ -323,10 +431,16 @@ export function LayoverConnectedCard({
 
             {/* Bottom space reserved for layover details */}
             <div className="flex-1 flex items-end justify-center">
-              {/* Layover details - only show on outbound */}
+              {/* Layover details - show on outbound from in-month pair or cross-month rest period */}
               {isOutbound && layoverPair && (
                 <div className="text-xs text-gray-600 text-center">
                   {layoverPair.destination} {formatDutyHours(layoverPair.restHours)} - {formatCurrency(layoverPair.perDiemPay)}
+                </div>
+              )}
+              {/* Cross-month layover: show rest/per diem from persisted record */}
+              {isOutbound && !layoverPair && crossMonthRestPeriod && (
+                <div className="text-xs text-gray-600 text-center">
+                  {formatDutyHours(crossMonthRestPeriod.restHours)} - {formatCurrency(crossMonthRestPeriod.perDiemPay)}
                 </div>
               )}
             </div>

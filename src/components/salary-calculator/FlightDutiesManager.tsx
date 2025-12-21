@@ -7,7 +7,7 @@
  */
 
 import { useState } from 'react';
-import { FlightDuty, Position } from '@/types/salary-calculator';
+import { FlightDuty, Position, LayoverRestPeriod } from '@/types/salary-calculator';
 import { deleteFlightDuty } from '@/lib/database/flights';
 import { FlightDutiesTable } from './FlightDutiesTable';
 
@@ -27,6 +27,7 @@ import { Trash2 } from 'lucide-react';
 
 interface FlightDutiesManagerProps {
   flightDuties: FlightDuty[];
+  layoverRestPeriods?: LayoverRestPeriod[];
   position: Position;
   userId: string;
   loading?: boolean;
@@ -36,6 +37,7 @@ interface FlightDutiesManagerProps {
 
 export function FlightDutiesManager({
   flightDuties,
+  layoverRestPeriods = [],
   position,
   userId,
   loading = false,
@@ -229,6 +231,7 @@ export function FlightDutiesManager({
       {/* Flight Duties Table */}
       <FlightDutiesTable
         flightDuties={flightDuties}
+        layoverRestPeriods={layoverRestPeriods}
         loading={loading}
         onDelete={handleDeleteClick}
         onBulkDelete={handleBulkDelete}

@@ -557,50 +557,49 @@ async function saveUploadData(
 
   const savedFlightDuties = flightSaveResult.data || [];
 
-  // Recalculate layover rest periods with saved flight duties
-  const updatedLayoverRestPeriods = calculateLayoverRestPeriods(savedFlightDuties, userId, position);
-
-  // Save layover rest periods
-  if (updatedLayoverRestPeriods.length > 0) {
-    const validRestPeriods = updatedLayoverRestPeriods.filter(period =>
-      period.outboundFlightId && period.inboundFlightId
-    );
-
-    if (validRestPeriods.length > 0) {
-      const restSaveResult = await createLayoverRestPeriods(validRestPeriods, userId);
-      if (restSaveResult.error) {
-        warnings.push(`Warning: Failed to save rest periods: ${restSaveResult.error}`);
-      }
-    } else {
-      warnings.push('Warning: No layover rest periods could be saved due to missing flight IDs');
-    }
-  }
-
-  // Calculate monthly totals
+  // Calculate monthly totals using recalculation engine
+  // This ensures cross-month layover pairing is handled correctly
   onProgress?.({
     step: 'calculating',
     progress: 85,
     message: 'Calculating monthly totals...',
-    details: 'Computing final salary breakdown'
+    details: 'Computing final salary breakdown with cross-month layover pairing'
   });
 
-  const monthlyCalculation = calculateMonthlySalary(
-    savedFlightDuties,
-    updatedLayoverRestPeriods,
-    position,
+  const { recalculateMonthlyTotals } = await import('@/lib/salary-calculator/recalculation-engine');
+  const recalcResult = await recalculateMonthlyTotals(
+    userId,
     month,
     year,
-    userId
+    position
   );
 
-  // Save monthly calculation
-  const calculationSaveResult = await upsertMonthlyCalculation(monthlyCalculation.monthlyCalculation, userId);
-  if (calculationSaveResult.error) {
+  if (!recalcResult.success) {
     return {
       success: false,
-      errors: [`Failed to save monthly calculation: ${calculationSaveResult.error}`],
-      warnings
+      errors: [`Failed to calculate monthly totals: ${recalcResult.errors.join(', ')}`],
+      warnings: [...warnings, ...recalcResult.warnings]
     };
+  }
+
+  // Also recalculate the previous month.
+  // Reason: flights in the first days of this month may be the inbound segment for a previous-month layover
+  // (e.g., outbound on Dec 31, inbound on Jan 2). Without this, the previous month keeps the "old behavior".
+  const previousMonth = month === 1 ? 12 : month - 1;
+  const previousYear = month === 1 ? year - 1 : year;
+  if (previousYear >= 2020) {
+    const previousRecalc = await recalculateMonthlyTotals(
+      userId,
+      previousMonth,
+      previousYear,
+      position
+    );
+
+    if (!previousRecalc.success) {
+      warnings.push(
+        `Warning: Uploaded month calculated, but failed to update previous month (${previousMonth}/${previousYear}): ${previousRecalc.errors.join(', ')}`
+      );
+    }
   }
 
   // Complete
@@ -618,9 +617,9 @@ async function saveUploadData(
 
   return {
     success: true,
-    monthlyCalculation,
+    monthlyCalculation: recalcResult.updatedCalculation ?? undefined,
     flightDuties: savedFlightDuties,
-    layoverRestPeriods: updatedLayoverRestPeriods,
+    layoverRestPeriods: recalcResult.updatedLayovers,
     warnings: warnings.length > 0 ? warnings : undefined
   };
 }

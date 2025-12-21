@@ -4,6 +4,7 @@
  */
 
 import { FlightDuty, TimeValue } from '@/types/salary-calculator';
+import { createTimestamp, calculateTimestampDuration } from './time-calculator';
 
 export interface CardData {
   flightNumber: string;
@@ -120,19 +121,20 @@ function calculateLayoverInfo(
 
   if (!matchingInboundFlight) return null;
 
-  // Calculate rest period using the same logic as the production system
-  const daysBetween = Math.floor(
-    (matchingInboundFlight.date.getTime() - flightDuty.date.getTime()) / (24 * 60 * 60 * 1000)
+  // Calculate rest period using timestamp-based calculation (matches production system)
+  // Use the same logic as calculation-engine.ts to ensure consistency
+  const outboundDebriefTs = createTimestamp(
+    flightDuty.date,
+    flightDuty.debriefTime,
+    flightDuty.isCrossDay
+  );
+  const inboundReportTs = createTimestamp(
+    matchingInboundFlight.date,
+    matchingInboundFlight.reportTime,
+    false // Inbound report is always on the inbound date (no crossday adjustment)
   );
 
-  // Simple rest calculation (this should match the production calculation)
-  const restHours = calculateRestPeriod(
-    flightDuty.debriefTime,
-    flightDuty.isCrossDay,
-    matchingInboundFlight.reportTime,
-    matchingInboundFlight.isCrossDay,
-    daysBetween
-  );
+  const restHours = calculateTimestampDuration(outboundDebriefTs, inboundReportTs);
 
   const perDiemRate = 8.82; // AED per hour
   const perDiemPay = restHours * perDiemRate;
@@ -181,40 +183,6 @@ function isOutboundFlight(sectors: string[]): boolean {
 }
 
 /**
- * Simple rest period calculation
- */
-function calculateRestPeriod(
-  flight1DebriefTime: TimeValue,
-  flight1DebriefCrossDay: boolean,
-  flight2ReportTime: TimeValue,
-  flight2ReportCrossDay: boolean,
-  daysBetween: number = 0
-): number {
-  let debrief = flight1DebriefTime.totalMinutes;
-  let report = flight2ReportTime.totalMinutes;
-
-  // Apply cross-day adjustments
-  if (flight1DebriefCrossDay) {
-    debrief += 24 * 60;
-  }
-
-  if (flight2ReportCrossDay) {
-    report += 24 * 60;
-  }
-
-  // Add days between flights
-  report += daysBetween * 24 * 60;
-
-  // If report time is before debrief time, assume next day
-  if (report <= debrief) {
-    report += 24 * 60;
-  }
-
-  const restMinutes = report - debrief;
-  return restMinutes / 60; // Return decimal hours
-}
-
-/**
  * Identifies layover pairs for UI navigation
  */
 export function identifyLayoverPairs(flightDuties: FlightDuty[]): LayoverPair[] {
@@ -249,13 +217,19 @@ export function identifyLayoverPairs(flightDuties: FlightDuty[]): LayoverPair[] 
 
       if (matchingInboundFlight) {
         // Calculate rest period and per diem with error handling
-        const restHours = calculateRestPeriod(
+        // Use timestamp-based calculation to match production system
+        const outboundDebriefTs = createTimestamp(
+          outboundFlight.date,
           outboundFlight.debriefTime,
-          outboundFlight.isCrossDay,
-          matchingInboundFlight.reportTime,
-          matchingInboundFlight.isCrossDay,
-          Math.floor((matchingInboundFlight.date.getTime() - outboundFlight.date.getTime()) / (24 * 60 * 60 * 1000))
+          outboundFlight.isCrossDay
         );
+        const inboundReportTs = createTimestamp(
+          matchingInboundFlight.date,
+          matchingInboundFlight.reportTime,
+          false // Inbound report is always on the inbound date
+        );
+
+        const restHours = calculateTimestampDuration(outboundDebriefTs, inboundReportTs);
 
         const perDiemRate = 8.82; // AED per hour
         const perDiemPay = restHours * perDiemRate;
@@ -337,34 +311,49 @@ function findLayoverPairFallback(
     Math.abs(b.date.getTime() - flightDuty.date.getTime())
   )[0];
 
-  // Determine which is outbound and which is inbound based on date
+  // Determine which is outbound and which is inbound based on date.
+  // IMPORTANT: Even in fallback mode, never pair unrelated flights (prevents false layovers like "rest in DXB").
   const isCurrentOutbound = flightDuty.date.getTime() < closestPair.date.getTime();
+  const outboundCandidate = isCurrentOutbound ? flightDuty : closestPair;
+  const inboundCandidate = isCurrentOutbound ? closestPair : flightDuty;
 
-  if (isCurrentOutbound) {
-    return {
-      outbound: flightDuty,
-      inbound: closestPair,
-      destination: getDestination(flightDuty.sectors) || 'Unknown',
-      restHours: calculateRestPeriod(
-        flightDuty.debriefTime,
-        flightDuty.isCrossDay,
-        closestPair.reportTime,
-        false
-      ),
-      perDiemPay: 0 // Will be calculated elsewhere
-    };
-  } else {
-    return {
-      outbound: closestPair,
-      inbound: flightDuty,
-      destination: getDestination(closestPair.sectors) || 'Unknown',
-      restHours: calculateRestPeriod(
-        closestPair.debriefTime,
-        closestPair.isCrossDay,
-        flightDuty.reportTime,
-        false
-      ),
-      perDiemPay: 0 // Will be calculated elsewhere
-    };
+  // Validate route directions
+  if (!isOutboundFlight(outboundCandidate.sectors) || !isInboundFlight(inboundCandidate.sectors)) {
+    return null;
   }
+
+  // Validate destination match (outstation) and avoid treating home-base rest as layover
+  const destination = getDestination(outboundCandidate.sectors);
+  if (!destination || destination === 'DXB') {
+    return null;
+  }
+
+  // Inbound must originate from the same destination
+  const inboundOrigin = inboundCandidate.sectors?.[0]?.split(/[-→]/)?.[0]?.trim();
+  if (!inboundOrigin || inboundOrigin !== destination) {
+    return null;
+  }
+
+  const outboundDebriefTs = createTimestamp(
+    outboundCandidate.date,
+    outboundCandidate.debriefTime,
+    outboundCandidate.isCrossDay
+  );
+  const inboundReportTs = createTimestamp(
+    inboundCandidate.date,
+    inboundCandidate.reportTime,
+    false // Inbound report is always on the inbound date
+  );
+
+  const restHours = calculateTimestampDuration(outboundDebriefTs, inboundReportTs);
+  const perDiemRate = 8.82; // AED per hour
+  const perDiemPay = restHours * perDiemRate;
+
+  return {
+    outbound: outboundCandidate,
+    inbound: inboundCandidate,
+    destination,
+    restHours,
+    perDiemPay
+  };
 }
