@@ -30,6 +30,7 @@ import { getProfile } from '@/lib/db';
 import { useDataRefresh } from '@/hooks/useDataRefresh';
 import { useFlightDuties } from '@/hooks/useFlightDuties';
 import { useMonthlyCalculations } from '@/hooks/useMonthlyCalculations';
+import { useLayoverRestPeriods } from '@/hooks/useLayoverRestPeriods';
 import { MonthSelector } from '@/components/dashboard/MonthSelector';
 import { RosterUploadSection } from '@/components/dashboard/RosterUploadSection';
 import { ManualEntrySection } from '@/components/dashboard/ManualEntrySection';
@@ -111,6 +112,15 @@ export default function DashboardPage() {
     enabled: !!user?.id,
   });
 
+  const {
+    layoverRestPeriods,
+    refetch: refetchLayoverRestPeriods,
+  } = useLayoverRestPeriods(
+    user?.id || null,
+    selectedOverviewMonth + 1, // Convert from 0-based to 1-based month
+    selectedYear
+  );
+
   // Initialize overview month based on available data (only on first load)
   useEffect(() => {
     if (!calculationsLoading && allCalculations.length > 0 && !hasUserSelectedMonth) {
@@ -152,6 +162,7 @@ export default function DashboardPage() {
         refetchCurrentCalculation(), // Update current month calculation
         refetchAllCalculations(),    // Update chart data
         refetchFlightDuties(),        // Update flight duties table
+        refetchLayoverRestPeriods(),  // Update layover rest periods
       ]);
     },
     onFlightDutiesUpdate: async () => {
@@ -506,6 +517,7 @@ export default function DashboardPage() {
         {flightDuties.length > 0 ? (
           <FlightDutiesManager
             flightDuties={flightDuties}
+            layoverRestPeriods={layoverRestPeriods}
             position={userPosition as Position}
             userId={user?.id || ''}
             loading={flightDutiesLoading}

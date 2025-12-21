@@ -13,7 +13,7 @@ import {
   FlightCalculationResult,
   MonthlyCalculationResult
 } from '@/types/salary-calculator';
-import { calculateDuration, calculateRestPeriod } from './time-calculator';
+import { calculateDuration, calculateRestPeriod, createTimestamp, calculateTimestampDuration } from './time-calculator';
 
 // Historical salary rates (effective until June 2025)
 export const FLYDUBAI_RATES_LEGACY: { [K in Position]: SalaryRates } = {
@@ -421,17 +421,21 @@ export function calculateLayoverRestPeriods(
 
     // Calculate rest period between the paired flights
     try {
-      const daysDiff = Math.floor(
-        (matchingInboundFlight.date.getTime() - outboundFlight.date.getTime()) / (1000 * 60 * 60 * 24)
+      // Use timestamp-based calculation to avoid confusion between report/debrief crossday flags
+      // outbound.isCrossDay applies to debrief time (correct)
+      // inbound.isCrossDay applies to debrief time, NOT report time (was the bug)
+      const outboundDebriefTs = createTimestamp(
+        outboundFlight.date,
+        outboundFlight.debriefTime,
+        outboundFlight.isCrossDay
+      );
+      const inboundReportTs = createTimestamp(
+        matchingInboundFlight.date,
+        matchingInboundFlight.reportTime,
+        false // Inbound report is always on the inbound date (no crossday adjustment)
       );
 
-      const restHours = calculateRestPeriod(
-        outboundFlight.debriefTime,
-        outboundFlight.isCrossDay,
-        matchingInboundFlight.reportTime,
-        matchingInboundFlight.isCrossDay,
-        daysDiff
-      );
+      const restHours = calculateTimestampDuration(outboundDebriefTs, inboundReportTs);
 
       if (restHours > 0) {
         // Only create rest period if both flights have valid IDs

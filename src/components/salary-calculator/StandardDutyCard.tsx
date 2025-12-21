@@ -145,6 +145,13 @@ export function StandardDutyCard({
   // Get duty type specific information
   const getDutyTypeInfo = () => {
     switch (flightDuty.dutyType) {
+      case 'layover':
+        // In rare cases we intentionally render a single-segment layover duty as a standard card
+        // (e.g., inbound segment belongs to a previous month and should not connect in this month).
+        return {
+          icon: Timer,
+          label: 'Layover'
+        };
       case 'asby':
         return {
           icon: Timer,
@@ -175,6 +182,9 @@ export function StandardDutyCard({
 
   const dutyInfo = getDutyTypeInfo();
   const DutyIcon = dutyInfo.icon;
+  const routingLabel = cardData.routing?.trim();
+  const primaryLabel =
+    flightDuty.dutyType === 'layover' && routingLabel ? routingLabel : dutyInfo.label;
 
   return (
     <div className="relative">
@@ -238,24 +248,55 @@ export function StandardDutyCard({
 
           {/* Main content section - flex-based alignment */}
           <div className="flight-card-main-content">
-            <div className="flex flex-col items-center justify-center text-center">
-            <div className="flex items-center gap-1 mb-2">
-              <div className="h-px w-6" style={{ backgroundColor: BRAND.primary }}></div>
-              <DutyIcon className="h-5 w-5" style={{ color: BRAND.primary }} />
-              <div className="h-px w-6" style={{ backgroundColor: BRAND.primary }}></div>
-            </div>
-            
-            <div className="text-xs font-semibold text-gray-700">
-              {dutyInfo.label}
-            </div>
+            {flightDuty.dutyType === 'layover' && routingLabel ? (
+              /* Layover grid layout to match flight cards */
+              <div className="grid grid-cols-3 items-center gap-2">
+                <div className="text-center">
+                  <div className="text-lg font-bold tracking-wide" style={{ color: 'rgb(58, 55, 128)' }}>
+                    {routingLabel.split(/[-→]/)[0]?.trim()}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-0.5">{cardData.reporting}</div>
+                </div>
 
-            {/* Show times if available */}
-            {cardData.reporting && cardData.debriefing && (
-              <div className="text-xs text-gray-500 mt-1">
-                {cardData.reporting} - {cardData.debriefing}
+                <div className="flex flex-col items-center justify-center">
+                  <div className="flex items-center gap-1 mb-1">
+                    <div className="h-px w-6" style={{ backgroundColor: BRAND.primary }}></div>
+                    <div className="text-sm" style={{ color: BRAND.primary }}>✈</div>
+                    <div className="h-px w-6" style={{ backgroundColor: BRAND.primary }}></div>
+                  </div>
+                  <div className="text-xs font-semibold text-gray-700">
+                    Layover
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <div className="text-lg font-bold tracking-wide" style={{ color: 'rgb(58, 55, 128)' }}>
+                    {routingLabel.split(/[-→]/)[1]?.trim()}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-0.5">{cardData.debriefing}</div>
+                </div>
+              </div>
+            ) : (
+              /* Standard centered layout for other duty types */
+              <div className="flex flex-col items-center justify-center text-center">
+                <div className="flex items-center gap-1 mb-2">
+                  <div className="h-px w-6" style={{ backgroundColor: BRAND.primary }}></div>
+                  <DutyIcon className="h-5 w-5" style={{ color: BRAND.primary }} />
+                  <div className="h-px w-6" style={{ backgroundColor: BRAND.primary }}></div>
+                </div>
+                
+                <div className="text-xs font-semibold text-gray-700">
+                  {primaryLabel}
+                </div>
+
+                {/* Show times if available */}
+                {cardData.reporting && cardData.debriefing && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    {cardData.reporting} - {cardData.debriefing}
+                  </div>
+                )}
               </div>
             )}
-            </div>
           </div>
 
           {/* Bottom spacer for consistent layout */}

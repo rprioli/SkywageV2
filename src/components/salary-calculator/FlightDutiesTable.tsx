@@ -7,7 +7,7 @@
  */
 
 import { useState } from 'react';
-import { FlightDuty, Position } from '@/types/salary-calculator';
+import { FlightDuty, Position, LayoverRestPeriod } from '@/types/salary-calculator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -36,6 +36,7 @@ import { identifyLayoverPairs } from '@/lib/salary-calculator/card-data-mapper';
 
 interface FlightDutiesTableProps {
   flightDuties: FlightDuty[];
+  layoverRestPeriods?: LayoverRestPeriod[];
   loading?: boolean;
   onDelete?: (flightDuty: FlightDuty) => void;
   onBulkDelete?: (flightDuties: FlightDuty[]) => void;
@@ -49,6 +50,7 @@ interface FlightDutiesTableProps {
 
 export function FlightDutiesTable({
   flightDuties,
+  layoverRestPeriods = [],
   loading = false,
   onDelete,
   onBulkDelete,
@@ -345,6 +347,7 @@ export function FlightDutiesTable({
                 ) : useNewCardDesign ? (
                   <NewFlightDutyCard
                     flightDuty={duty}
+                    layoverRestPeriods={layoverRestPeriods}
                     allFlightDuties={flightDuties} // Use original array for layover pairing
                     onDelete={onDelete}
                     showActions={showActions}

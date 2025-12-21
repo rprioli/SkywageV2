@@ -203,6 +203,57 @@ export async function getFlightDutiesByMonth(
 }
 
 /**
+ * Gets flight duties for a month with a lookahead window into the next month
+ * Used for cross-month layover pairing (e.g., outbound on Dec 31, inbound on Jan 2)
+ */
+export async function getFlightDutiesByMonthWithLookahead(
+  userId: string,
+  month: number,
+  year: number,
+  lookaheadDays: number = 3
+): Promise<{ data: FlightDuty[] | null; error: string | null }> {
+  try {
+    // Calculate month start and end dates in UTC
+    const monthStart = new Date(Date.UTC(year, month - 1, 1));
+    const monthEnd = new Date(Date.UTC(year, month, 0)); // Last day of the month
+    
+    // Add lookahead days to month end
+    const lookaheadEnd = new Date(monthEnd);
+    lookaheadEnd.setUTCDate(lookaheadEnd.getUTCDate() + lookaheadDays);
+    
+    // Format as YYYY-MM-DD for database query
+    const startDateStr = monthStart.toISOString().split('T')[0];
+    const endDateStr = lookaheadEnd.toISOString().split('T')[0];
+    
+    const { data, error } = await supabase
+      .from('flights')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('date', startDateStr)
+      .lte('date', endDateStr)
+      .order('date', { ascending: true });
+
+    if (error) {
+      return { data: null, error: error.message };
+    }
+
+    // Convert rows to FlightDuty, filtering out any that fail conversion
+    const flightDuties: FlightDuty[] = [];
+    for (const row of data) {
+      try {
+        flightDuties.push(rowToFlightDuty(row));
+      } catch {
+        // Skip this row and continue with others
+      }
+    }
+
+    return { data: flightDuties, error: null };
+  } catch (error) {
+    return { data: null, error: (error as Error).message };
+  }
+}
+
+/**
  * Gets all flight duties for a specific year
  */
 export async function getFlightDutiesByYear(

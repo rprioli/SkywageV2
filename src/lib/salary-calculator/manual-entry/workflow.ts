@@ -109,6 +109,21 @@ export async function processManualEntry(
       warnings.push('Flight saved but monthly calculation update failed');
     }
 
+    // Also recalculate the previous month so cross-month layovers can be attributed correctly.
+    const previousMonth = firstDuty.month === 1 ? 12 : firstDuty.month - 1;
+    const previousYear = firstDuty.month === 1 ? firstDuty.year - 1 : firstDuty.year;
+    if (previousYear >= 2020) {
+      const previousRecalc = await recalculateMonthlyTotals(
+        userId,
+        previousMonth,
+        previousYear,
+        position
+      );
+      if (!previousRecalc.success) {
+        warnings.push(`Previous month recalculation failed for ${previousMonth}/${previousYear}`);
+      }
+    }
+
     // Dispatch event for statistics refresh
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('calculationUpdated'));

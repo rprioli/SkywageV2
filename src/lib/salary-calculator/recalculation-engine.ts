@@ -15,7 +15,8 @@ import {
   calculateLayoverRestPeriods
 } from '@/lib/salary-calculator';
 import {
-  getFlightDutiesByMonth
+  getFlightDutiesByMonth,
+  getFlightDutiesByMonthWithLookahead
 } from '@/lib/database/flights';
 import {
   createLayoverRestPeriods,
@@ -45,7 +46,7 @@ export async function recalculateMonthlyTotals(
   const warnings: string[] = [];
 
   try {
-    // Get all flight duties for the month
+    // Get all flight duties for the month (for display and duty hour totals)
     const flightsResult = await getFlightDutiesByMonth(userId, month, year);
     if (flightsResult.error) {
       errors.push(`Failed to fetch flights: ${flightsResult.error}`);
@@ -109,8 +110,31 @@ export async function recalculateMonthlyTotals(
       return 0;
     });
 
-    // Recalculate layover rest periods
-    const layoverRestPeriods = calculateLayoverRestPeriods(sortedFlights, userId, position);
+    // Fetch flights with lookahead for cross-month layover pairing
+    // This allows pairing outbound flights at month-end with inbound flights in early next month
+    const pairingFlightsResult = await getFlightDutiesByMonthWithLookahead(userId, month, year, 3);
+    if (pairingFlightsResult.error) {
+      warnings.push(`Warning: Could not fetch lookahead flights for pairing: ${pairingFlightsResult.error}`);
+      // Fall back to month-only flights for pairing
+      var pairingFlights = sortedFlights;
+    } else {
+      var pairingFlights = (pairingFlightsResult.data || []).sort((a, b) => {
+        const dateCompare = a.date.getTime() - b.date.getTime();
+        if (dateCompare !== 0) return dateCompare;
+        if (a.reportTime && b.reportTime) {
+          return a.reportTime.totalMinutes - b.reportTime.totalMinutes;
+        }
+        return 0;
+      });
+    }
+
+    // Recalculate layover rest periods using the expanded pairing window
+    const allLayoverRestPeriods = calculateLayoverRestPeriods(pairingFlights, userId, position);
+    
+    // Filter to only rest periods attributed to the target month (outbound month)
+    const layoverRestPeriods = allLayoverRestPeriods.filter(
+      rp => rp.month === month && rp.year === year
+    );
 
     // Delete existing layover rest periods for the month
     const deleteResult = await deleteLayoverRestPeriods(userId, month, year);

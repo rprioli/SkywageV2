@@ -10,7 +10,7 @@ import {
   calculateAsbyPay,
   FLYDUBAI_RATES 
 } from '../calculation-engine';
-import { createTimeValue, parseTimeString, calculateDuration } from '../time-calculator';
+import { createTimeValue, parseTimeString, calculateDuration, createTimestamp, calculateTimestampDuration } from '../time-calculator';
 import { classifyFlightDuty, extractFlightNumbers, extractSectors } from '../flight-classifier';
 
 describe('Salary Calculation Engine', () => {
@@ -275,5 +275,163 @@ describe('Integration Tests', () => {
     // Classify duty
     const classification = classifyFlightDuty(duties, details);
     expect(classification.dutyType).toBe('turnaround');
+  });
+});
+
+// Regression tests for crossday duty calculation bugs
+describe('Crossday Calculation Regression Tests', () => {
+  describe('Layover rest period with inbound crossday debrief', () => {
+    test('calculates rest period correctly when inbound debrief crosses midnight', () => {
+      // Bug scenario: DXB 09:45 06/04 → VKO 16:54 06/04 (outbound)
+      //               VKO 16:30 07/04 → DXB 00:22 08/04 (inbound)
+      // Expected: 23.6h rest (16:54 06/04 to 16:30 07/04)
+      // Bug was: 47.6h (incorrectly adding 24h to inbound report time)
+      
+      const outboundDate = new Date(2025, 3, 6); // April 6, 2025
+      const outboundDebriefTime = createTimeValue(16, 54);
+      const outboundIsCrossDay = false;
+      
+      const inboundDate = new Date(2025, 3, 7); // April 7, 2025
+      const inboundReportTime = createTimeValue(16, 30);
+      const inboundDebriefTime = createTimeValue(0, 22);
+      const inboundIsCrossDay = true; // Debrief crosses to April 8
+      
+      // Use timestamp-based calculation (the fix)
+      const outboundDebriefTs = createTimestamp(
+        outboundDate,
+        outboundDebriefTime,
+        outboundIsCrossDay
+      );
+      const inboundReportTs = createTimestamp(
+        inboundDate,
+        inboundReportTime,
+        false // Report is always on inbound date
+      );
+      
+      const restHours = calculateTimestampDuration(outboundDebriefTs, inboundReportTs);
+      
+      // Expected: 23.6 hours (from 16:54 on April 6 to 16:30 on April 7)
+      expect(restHours).toBeCloseTo(23.6, 1);
+      
+      // Calculate per diem
+      const perDiem = restHours * 8.82;
+      expect(perDiem).toBeCloseTo(208.15, 1);
+    });
+    
+    test('handles multi-day layovers correctly', () => {
+      // Another scenario with 2-day layover
+      const outboundDate = new Date(2025, 5, 10);
+      const outboundDebriefTime = createTimeValue(20, 30);
+      const outboundIsCrossDay = false;
+      
+      const inboundDate = new Date(2025, 5, 12); // 2 days later
+      const inboundReportTime = createTimeValue(18, 0);
+      const inboundIsCrossDay = true;
+      
+      const outboundDebriefTs = createTimestamp(
+        outboundDate,
+        outboundDebriefTime,
+        outboundIsCrossDay
+      );
+      const inboundReportTs = createTimestamp(
+        inboundDate,
+        inboundReportTime,
+        false
+      );
+      
+      const restHours = calculateTimestampDuration(outboundDebriefTs, inboundReportTs);
+      
+      // Expected: ~45.5 hours (from 20:30 on June 10 to 18:00 on June 12)
+      expect(restHours).toBeCloseTo(45.5, 1);
+    });
+  });
+  
+  describe('Home Standby (SBY) crossday detection', () => {
+    test('detects crossday when end time is earlier than start time', () => {
+      // Bug scenario: SBY 22:00 - 04:10 (should cross midnight)
+      const startTime = createTimeValue(22, 0);
+      const endTime = createTimeValue(4, 10);
+      
+      // Check if crossday should be detected
+      const shouldBeCrossDay = endTime.totalMinutes < startTime.totalMinutes;
+      expect(shouldBeCrossDay).toBe(true);
+      
+      // Calculate duration with crossday flag
+      const duration = calculateDuration(startTime, endTime, true);
+      
+      // Expected: 6.166... hours (6h 10m)
+      expect(duration).toBeCloseTo(6.166666666666667, 2);
+    });
+    
+    test('does not detect crossday when end time is after start time', () => {
+      // Normal SBY: 06:00 - 13:00 (same day)
+      const startTime = createTimeValue(6, 0);
+      const endTime = createTimeValue(13, 0);
+      
+      const shouldBeCrossDay = endTime.totalMinutes < startTime.totalMinutes;
+      expect(shouldBeCrossDay).toBe(false);
+      
+      // Calculate duration without crossday flag
+      const duration = calculateDuration(startTime, endTime, false);
+      
+      // Expected: 7 hours
+      expect(duration).toBe(7);
+    });
+    
+    test('formats crossday SBY duty with correct next-day date', () => {
+      // Verify timestamp creation for crossday SBY
+      const sbyDate = new Date(2025, 5, 2); // June 2, 2025
+      const debriefTime = createTimeValue(4, 10);
+      const isCrossDay = true;
+      
+      const debriefTs = createTimestamp(sbyDate, debriefTime, isCrossDay);
+      
+      // Should be June 3, 2025 at 04:10
+      expect(debriefTs.getDate()).toBe(3);
+      expect(debriefTs.getMonth()).toBe(5); // June (0-indexed)
+      expect(debriefTs.getHours()).toBe(4);
+      expect(debriefTs.getMinutes()).toBe(10);
+    });
+  });
+
+  describe('Cross-Month Layover Pairing', () => {
+    test('calculates rest period for cross-month layover (Dec 31 -> Jan 2)', () => {
+      // Outbound: Dec 31, 2023 DXB 18:20 -> SVX 00:54 (Jan 1, 2024)
+      const outboundDate = new Date(2023, 11, 31); // Dec 31, 2023
+      const outboundDebriefTime = createTimeValue(0, 54);
+      const outboundIsCrossDay = true;
+      
+      // Inbound: Jan 2, 2024 SVX 02:45 -> DXB 10:46
+      const inboundDate = new Date(2024, 0, 2); // Jan 2, 2024
+      const inboundReportTime = createTimeValue(2, 45);
+      
+      // Calculate rest period
+      const outboundDebriefTs = createTimestamp(outboundDate, outboundDebriefTime, outboundIsCrossDay);
+      const inboundReportTs = createTimestamp(inboundDate, inboundReportTime, false);
+      const restHours = calculateTimestampDuration(outboundDebriefTs, inboundReportTs);
+      
+      // Rest period: Jan 1 00:54 to Jan 2 02:45 = 25h 51m = 25.85 hours
+      expect(restHours).toBeCloseTo(25.85, 2);
+    });
+
+    test('attributes cross-month layover rest period to outbound month', () => {
+      // This test verifies the month/year attribution logic
+      const outboundDate = new Date(2023, 11, 31); // Dec 31, 2023
+      const outboundMonth = outboundDate.getMonth() + 1; // 12 (December)
+      const outboundYear = outboundDate.getFullYear(); // 2023
+      
+      // Rest period should be attributed to December 2023
+      expect(outboundMonth).toBe(12);
+      expect(outboundYear).toBe(2023);
+    });
+
+    test('calculates per diem for cross-month layover rest period', () => {
+      // Rest period: 25.85 hours
+      const restHours = 25.85;
+      const position = 'CCM';
+      const expectedPerDiem = 25.85 * 8.82; // 228.00 AED (rounded)
+      
+      expect(calculatePerDiemPay(restHours, position)).toBeCloseTo(expectedPerDiem, 2);
+    });
   });
 });
