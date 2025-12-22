@@ -11,6 +11,7 @@ import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'rec
 import { YTDData } from '@/types/statistics';
 import { formatCurrency, formatPercentage, CHART_COLORS } from '@/lib/statistics/chartHelpers';
 import { YearSelector } from './YearSelector';
+import { MIN_SUPPORTED_YEAR } from '@/lib/constants/dates';
 
 interface YTDEarningsCardProps {
   data: YTDData;
@@ -104,8 +105,8 @@ export function YTDEarningsCard({
             Total Earnings {currentYear}
           </div>
           
-          {/* Previous Year Comparison */}
-          {comparisonToPreviousYear.previousYearTotal > 0 && (
+          {/* Previous Year Comparison (only if not at minimum supported year) */}
+          {comparisonToPreviousYear.previousYearTotal > 0 && selectedYear > MIN_SUPPORTED_YEAR && (
             <div className={`flex items-center justify-center gap-1 text-sm ${
               comparisonToPreviousYear.isIncrease ? 'text-green-600' : 'text-red-600'
             }`}>

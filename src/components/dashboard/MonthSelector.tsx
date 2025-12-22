@@ -13,19 +13,21 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ResponsiveContainer, XAxis, Bar, BarChart, Cell } from 'recharts';
 import { MonthlyCalculation } from '@/types/salary-calculator';
+import { MIN_SUPPORTED_YEAR } from '@/lib/constants/dates';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-// Helper function to get year range (current year ± 2)
+// Helper function to get year range (current year ± 2, but never below MIN_SUPPORTED_YEAR)
 const getYearRange = (): number[] => {
   const currentYear = new Date().getFullYear();
+  const minYear = Math.max(MIN_SUPPORTED_YEAR, currentYear - 2);
   return [
-    currentYear - 2,
-    currentYear - 1,
-    currentYear,
+    minYear,
+    Math.max(minYear, currentYear - 1),
+    Math.max(minYear, currentYear),
     currentYear + 1,
     currentYear + 2,
-  ];
+  ].filter((year, index, self) => self.indexOf(year) === index); // Remove duplicates
 };
 
 interface MonthSelectorProps {

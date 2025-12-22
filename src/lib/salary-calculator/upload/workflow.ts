@@ -29,6 +29,7 @@ import {
 } from './types';
 import { detectFileType, validateFileQuick, readFileContent } from './validation';
 import { parseFileContent } from './parsing';
+import { MIN_SUPPORTED_YEAR, MAX_SUPPORTED_YEAR } from '@/lib/constants/dates';
 
 /**
  * Checks for existing roster data before processing
@@ -157,10 +158,10 @@ export async function processCSVUpload(
       year = firstFlight.year;
     }
 
-    if (!month || !year || month < 1 || month > 12 || year < 2020 || year > 2100) {
+    if (!month || !year || month < 1 || month > 12 || year < MIN_SUPPORTED_YEAR || year > MAX_SUPPORTED_YEAR) {
       return {
         success: false,
-        errors: [`Invalid month/year: ${month}/${year}. Expected month 1-12 and year 2020-2100.`],
+        errors: [`Invalid month/year: ${month}/${year}. Expected month 1-12 and year ${MIN_SUPPORTED_YEAR}-${MAX_SUPPORTED_YEAR}.`],
         warnings
       };
     }
@@ -343,10 +344,10 @@ export async function processFileUpload(
       });
     }
 
-    if (!month || !year || month < 1 || month > 12 || year < 2020 || year > 2100) {
+    if (!month || !year || month < 1 || month > 12 || year < MIN_SUPPORTED_YEAR || year > MAX_SUPPORTED_YEAR) {
       return {
         success: false,
-        errors: [`Invalid month/year: ${month}/${year}. Expected month 1-12 and year 2020-2100.`],
+        errors: [`Invalid month/year: ${month}/${year}. Expected month 1-12 and year ${MIN_SUPPORTED_YEAR}-${MAX_SUPPORTED_YEAR}.`],
         warnings
       };
     }
@@ -587,7 +588,7 @@ async function saveUploadData(
   // (e.g., outbound on Dec 31, inbound on Jan 2). Without this, the previous month keeps the "old behavior".
   const previousMonth = month === 1 ? 12 : month - 1;
   const previousYear = month === 1 ? year - 1 : year;
-  if (previousYear >= 2020) {
+  if (previousYear >= MIN_SUPPORTED_YEAR) {
     const previousRecalc = await recalculateMonthlyTotals(
       userId,
       previousMonth,

@@ -10,6 +10,7 @@ import type { Database } from '@/lib/supabase';
 import type { FlightDuty } from '@/types/salary-calculator';
 import { rowToFlightDuty } from '@/lib/database/flights';
 import { createServiceClient } from '@/lib/supabase-service';
+import { MIN_SUPPORTED_YEAR } from '@/lib/constants/dates';
 
 export async function GET(request: NextRequest) {
   try {
@@ -65,9 +66,9 @@ export async function GET(request: NextRequest) {
     const month = parseInt(monthStr, 10);
     const year = parseInt(yearStr, 10);
 
-    if (isNaN(month) || isNaN(year) || month < 1 || month > 12) {
+    if (isNaN(month) || isNaN(year) || month < 1 || month > 12 || year < MIN_SUPPORTED_YEAR) {
       return NextResponse.json(
-        { error: 'Invalid month or year' },
+        { error: `Invalid month or year. Year must be ${MIN_SUPPORTED_YEAR} or later.` },
         { status: 400 }
       );
     }

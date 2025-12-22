@@ -9,6 +9,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { MonthlyCalculation } from '@/types/salary-calculator';
 import { getMonthlyCalculation, getAllMonthlyCalculations } from '@/lib/database/calculations';
+import { MIN_SUPPORTED_YEAR } from '@/lib/constants/dates';
 
 interface UseMonthlyCalculationsOptions {
   userId: string;
@@ -74,7 +75,10 @@ export function useMonthlyCalculations({
         setError(allResult.error);
         setAllCalculations([]);
       } else {
-        setAllCalculations(allResult.data || []);
+        const supportedCalculations = (allResult.data || []).filter(
+          calc => calc.year >= MIN_SUPPORTED_YEAR
+        );
+        setAllCalculations(supportedCalculations);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
@@ -108,12 +112,15 @@ export function useMonthlyCalculations({
         setCurrentCalculation(currentResult.data || null);
       }
 
-      // Handle all calculations
+      // Handle all calculations (filter to supported years only)
       if (allResult.error) {
         setError(allResult.error);
         setAllCalculations([]);
       } else {
-        setAllCalculations(allResult.data || []);
+        const supportedCalculations = (allResult.data || []).filter(
+          calc => calc.year >= MIN_SUPPORTED_YEAR
+        );
+        setAllCalculations(supportedCalculations);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
