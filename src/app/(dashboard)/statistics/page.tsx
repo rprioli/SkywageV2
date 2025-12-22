@@ -11,11 +11,12 @@ import { MonthlyComparisonCard } from './components/MonthlyComparisonCard';
 import { DutyTypesCard } from './components/DutyTypesCard';
 import { StatisticsHeader } from './components/StatisticsHeader';
 import { YTDData, MonthlyComparison, TopDutyRankings, DutyTypeStats } from '@/types/statistics';
+import { MIN_SUPPORTED_YEAR } from '@/lib/constants/dates';
 
 export default function StatisticsPage() {
-  // Year selector state
+  // Year selector state (clamped to MIN_SUPPORTED_YEAR)
   const currentYear = new Date().getFullYear();
-  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedYear, setSelectedYear] = useState(Math.max(currentYear, MIN_SUPPORTED_YEAR));
 
   // Use our custom statistics data hook with selected year
   const { data: statisticsData, loading, error, refresh, availableYears } = useStatisticsData(selectedYear);

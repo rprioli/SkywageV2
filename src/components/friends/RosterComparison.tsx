@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthProvider';
 import { FriendWithProfile, getFriendDisplayName, getFriendInitial } from '@/lib/database/friends';
 import { createMonthGrid, MonthGridData } from '@/lib/roster-comparison';
 import { DayGrid, LoadingSkeleton } from './roster-comparison';
+import { MIN_SUPPORTED_YEAR } from '@/lib/constants/dates';
 
 interface RosterComparisonProps {
   friend: FriendWithProfile;
@@ -42,10 +43,12 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
   const [rosterData, setRosterData] = useState<RosterData | null>(null);
   const [gridData, setGridData] = useState<MonthGridData | null>(null);
 
-  // Initialize to current month/year
+  // Initialize to current month/year (clamped to MIN_SUPPORTED_YEAR)
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1); // 1-12
-  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedYear, setSelectedYear] = useState(
+    Math.max(now.getFullYear(), MIN_SUPPORTED_YEAR)
+  );
 
   const friendDisplayName = getFriendDisplayName(friend);
   const friendInitial = getFriendInitial(friend);
@@ -120,11 +123,14 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
     }
   };
 
-  // Month navigation
+  // Month navigation (with MIN_SUPPORTED_YEAR restriction)
   const handlePreviousMonth = () => {
     if (selectedMonth === 1) {
+      const newYear = selectedYear - 1;
+      // Don't allow navigation before MIN_SUPPORTED_YEAR
+      if (newYear < MIN_SUPPORTED_YEAR) return;
       setSelectedMonth(12);
-      setSelectedYear(selectedYear - 1);
+      setSelectedYear(newYear);
     } else {
       setSelectedMonth(selectedMonth - 1);
     }

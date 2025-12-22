@@ -23,6 +23,7 @@ import {
 } from '../manual-entry-validation';
 import { ManualEntryResult, BatchManualEntryResult } from './types';
 import { convertToFlightDuty } from './conversion';
+import { MIN_SUPPORTED_YEAR } from '@/lib/constants/dates';
 
 /**
  * Validates manual entry data in real-time
@@ -112,7 +113,7 @@ export async function processManualEntry(
     // Also recalculate the previous month so cross-month layovers can be attributed correctly.
     const previousMonth = firstDuty.month === 1 ? 12 : firstDuty.month - 1;
     const previousYear = firstDuty.month === 1 ? firstDuty.year - 1 : firstDuty.year;
-    if (previousYear >= 2020) {
+    if (previousYear >= MIN_SUPPORTED_YEAR) {
       const previousRecalc = await recalculateMonthlyTotals(
         userId,
         previousMonth,

@@ -21,8 +21,8 @@ export const YearSelector = ({
   onYearChange,
   disabled = false,
 }: YearSelectorProps) => {
-  // Sort years in descending order (newest first)
-  const sortedYears = [...availableYears].sort((a, b) => b - a);
+  // Sort years in ascending order (MIN_SUPPORTED_YEAR first)
+  const sortedYears = [...availableYears].sort((a, b) => a - b);
 
   return (
     <div className="flex items-center gap-2">

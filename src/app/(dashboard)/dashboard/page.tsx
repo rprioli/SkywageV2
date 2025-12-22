@@ -32,6 +32,7 @@ import { useFlightDuties } from '@/hooks/useFlightDuties';
 import { useMonthlyCalculations } from '@/hooks/useMonthlyCalculations';
 import { useLayoverRestPeriods } from '@/hooks/useLayoverRestPeriods';
 import { MonthSelector } from '@/components/dashboard/MonthSelector';
+import { MIN_SUPPORTED_YEAR } from '@/lib/constants/dates';
 import { RosterUploadSection } from '@/components/dashboard/RosterUploadSection';
 import { ManualEntrySection } from '@/components/dashboard/ManualEntrySection';
 
@@ -46,8 +47,10 @@ export default function DashboardPage() {
   const [hasUserSelectedMonth, setHasUserSelectedMonth] = useState<boolean>(false);
   const [isMonthSwitching, setIsMonthSwitching] = useState<boolean>(false);
 
-  // Year selection state
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  // Year selection state (clamped to MIN_SUPPORTED_YEAR)
+  const [selectedYear, setSelectedYear] = useState<number>(
+    Math.max(new Date().getFullYear(), MIN_SUPPORTED_YEAR)
+  );
 
   // Delete dialog states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -124,17 +127,24 @@ export default function DashboardPage() {
   // Initialize overview month based on available data (only on first load)
   useEffect(() => {
     if (!calculationsLoading && allCalculations.length > 0 && !hasUserSelectedMonth) {
+      // Filter to supported years only
+      const supportedCalculations = allCalculations.filter(
+        calc => calc.year >= MIN_SUPPORTED_YEAR
+      );
+
+      if (supportedCalculations.length === 0) return;
+
       const currentMonthIndex = new Date().getMonth();
 
-      const currentMonthData = allCalculations.find(calc =>
+      const currentMonthData = supportedCalculations.find(calc =>
         calc.month === currentMonthIndex + 1 && calc.year === selectedYear
       );
 
       if (currentMonthData) {
         setSelectedOverviewMonth(currentMonthIndex);
       } else {
-        // Use the most recent month with data
-        const sortedCalculations = [...allCalculations].sort((a, b) => {
+        // Use the most recent month with data (from supported years only)
+        const sortedCalculations = [...supportedCalculations].sort((a, b) => {
           if (a.year !== b.year) return b.year - a.year;
           return b.month - a.month;
         });

@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthProvider';
 import { getAllMonthlyCalculations } from '@/lib/database/calculations';
 import { getFlightDutiesByYear } from '@/lib/database/flights';
 import { calculateStatistics } from '@/lib/statistics/calculations';
+import { MIN_SUPPORTED_YEAR } from '@/lib/constants/dates';
 import {
   StatisticsCalculationResult,
   UseStatisticsDataReturn
@@ -49,16 +50,21 @@ export function useStatisticsData(selectedYear?: number): UseStatisticsDataRetur
 
       const monthlyCalculations = calculationsResult.data || [];
 
-      // Extract available years from data
-      const years = [...new Set(monthlyCalculations.map(calc => calc.year))].sort((a, b) => b - a);
+      // Filter to supported years only
+      const supportedCalculations = monthlyCalculations.filter(
+        calc => calc.year >= MIN_SUPPORTED_YEAR
+      );
+
+      // Extract available years from supported data only
+      const years = [...new Set(supportedCalculations.map(calc => calc.year))].sort((a, b) => b - a);
       setAvailableYears(years);
 
-      // Use selectedYear or default to current year
+      // Use selectedYear or default to current year (clamped to MIN_SUPPORTED_YEAR)
       const currentYear = new Date().getFullYear();
-      const yearToUse = selectedYear || currentYear;
+      const yearToUse = Math.max(selectedYear || currentYear, MIN_SUPPORTED_YEAR);
 
       // Filter calculations for selected year
-      const filteredCalculations = monthlyCalculations.filter(calc => calc.year === yearToUse);
+      const filteredCalculations = supportedCalculations.filter(calc => calc.year === yearToUse);
 
       // Fetch flight duties for selected year to get accurate duty type stats
       const flightsResult = await getFlightDutiesByYear(user.id, yearToUse);

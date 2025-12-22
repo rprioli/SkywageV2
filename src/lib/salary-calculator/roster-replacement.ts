@@ -12,6 +12,7 @@ import {
   deleteLayoverRestPeriods,
   deleteMonthlyCalculation
 } from '@/lib/database/calculations';
+import { MIN_SUPPORTED_YEAR, MAX_SUPPORTED_YEAR } from '@/lib/constants/dates';
 
 // Result types for roster replacement operations
 export interface ExistingDataCheck {
@@ -155,8 +156,8 @@ export function validateMonthYear(month: number, year: number): { valid: boolean
     return { valid: false, error: 'Month must be between 1 and 12' };
   }
   
-  if (!Number.isInteger(year) || year < 2020 || year > 2100) {
-    return { valid: false, error: 'Year must be between 2020 and 2100' };
+  if (!Number.isInteger(year) || year < MIN_SUPPORTED_YEAR || year > MAX_SUPPORTED_YEAR) {
+    return { valid: false, error: `Year must be between ${MIN_SUPPORTED_YEAR} and ${MAX_SUPPORTED_YEAR}` };
   }
   
   return { valid: true };
