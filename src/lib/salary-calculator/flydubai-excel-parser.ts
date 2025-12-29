@@ -35,7 +35,7 @@ import {
   FlexibleExcelStructure
 } from './excel-parser';
 import { classifyFlightDuty, detectNonWorkingDay } from './flight-classifier';
-import { createTimeValue, parseTimeStringWithCrossDay } from './time-calculator';
+import { createTimeValue, parseTimeStringWithCrossDay, calculateDuration } from './time-calculator';
 
 /**
  * Main Flydubai Excel Parser Class
@@ -560,13 +560,13 @@ export class FlydubaiExcelParser {
         actualDutyHours = 8;
       }
     } else if (excelDuty.dutyType === 'business_promotion') {
-      // For Business Promotion, use fixed 5-hour calculation (similar to ASBY with fixed 4 hours)
-      // Payment is always 5 hours × position rate, regardless of actual time worked
+      // For Business Promotion, compute rostered duty duration (not fixed 5 hours)
       reportTime = excelDuty.reportTime ?
         this.parseTimeValue(excelDuty.reportTime) : createTimeValue(8, 0);
       debriefTime = excelDuty.debriefTime ?
-        this.parseTimeValue(excelDuty.debriefTime) : createTimeValue(13, 0);
-      actualDutyHours = 5; // Fixed 5 hours for Business Promotion duties
+        this.parseTimeValue(excelDuty.debriefTime) : createTimeValue(16, 0);
+      // Compute rostered duration from report/debrief times
+      actualDutyHours = calculateDuration(reportTime, debriefTime, excelDuty.isCrossDay);
     } else if (excelDuty.dutyType === 'asby') {
       // For ASBY duties, use fixed 4-hour calculation regardless of actual times
       reportTime = excelDuty.reportTime ?

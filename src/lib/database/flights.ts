@@ -612,6 +612,62 @@ export async function deleteFlightDataByMonth(
 }
 
 /**
+ * Updates computed flight duty values (duty hours and flight pay) without marking as user-edited
+ * Used for system recalculations (e.g., fixing BP duty calculations)
+ */
+export async function updateFlightDutyComputedValues(
+  flightId: string,
+  updates: {
+    dutyHours: number;
+    flightPay: number;
+  },
+  userId: string,
+  changeReason?: string
+): Promise<{ success: boolean; error: string | null }> {
+  try {
+    // Get current data for audit trail
+    const { data: currentData, error: fetchError } = await getFlightDutyById(flightId, userId);
+
+    if (fetchError || !currentData) {
+      return { success: false, error: fetchError || 'Flight duty not found' };
+    }
+
+    // Update database with both old and new schema columns
+    // Do NOT change data_source or original_data - this is a system recalculation
+    const { error } = await supabase
+      .from('flights')
+      .update({
+        // Old schema columns (for backward compatibility)
+        hours: updates.dutyHours,
+        pay: updates.flightPay,
+        // New schema columns
+        duty_hours: updates.dutyHours,
+        flight_pay: updates.flightPay
+      })
+      .eq('id', flightId)
+      .eq('user_id', userId);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    // Create audit trail entry for system recalculation
+    await createAuditTrailEntry({
+      flightId,
+      userId,
+      action: 'updated',
+      oldData: { dutyHours: currentData.dutyHours, flightPay: currentData.flightPay },
+      newData: updates,
+      changeReason: changeReason || 'System recalculation'
+    });
+
+    return { success: true, error: null };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+/**
  * Creates an audit trail entry
  */
 async function createAuditTrailEntry(entry: {

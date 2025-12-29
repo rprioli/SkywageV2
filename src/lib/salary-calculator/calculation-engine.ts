@@ -150,20 +150,6 @@ export function calculateRecurrentPay(
   return 4 * rates.hourlyRate; // 4 hours at hourly rate
 }
 
-/**
- * Calculates Business Promotion pay (5 hours at flight rate)
- * Overloaded to support date-aware rate selection
- */
-export function calculateBusinessPromotionPay(
-  position: Position,
-  year?: number,
-  month?: number
-): number {
-  const rates = year && month
-    ? getPositionRatesForDate(position, year, month)
-    : FLYDUBAI_RATES[position];
-  return 5 * rates.hourlyRate; // 5 hours at hourly rate
-}
 
 /**
  * Calculates duty hours for a flight
@@ -272,7 +258,8 @@ export function calculateFlightDuty(
         break;
 
       case 'business_promotion':
-        flightPay = calculateBusinessPromotionPay(position, calculationYear, calculationMonth);
+        // Pay BP like a normal duty: rostered duty hours × hourly rate
+        flightPay = calculateFlightPay(dutyHours, position, calculationYear, calculationMonth);
         break;
 
       // Note: 'sby', 'off', 'rest', and 'annual_leave' are handled by early return at the start of this function
@@ -485,10 +472,10 @@ export function calculateMonthlySalary(
   const totalFixed = basicSalary + housingAllowance + transportAllowance;
 
   // Variable components
-  // Only count duty hours for actual flight duties (turnaround, layover, asby)
-  // Exclude recurrent, business_promotion, sby (Home Standby), off, rest, and annual_leave from flight hours total
+  // Only count duty hours for actual flight duties (turnaround, layover, asby, business_promotion)
+  // Exclude recurrent, sby (Home Standby), off, rest, and annual_leave from flight hours total
   let totalDutyHours = flightDuties
-    .filter(flight => !['recurrent', 'business_promotion', 'sby', 'off', 'rest', 'annual_leave'].includes(flight.dutyType))
+    .filter(flight => !['recurrent', 'sby', 'off', 'rest', 'annual_leave'].includes(flight.dutyType))
     .reduce((sum, flight) => sum + flight.dutyHours, 0);
 
   // Apply precision adjustment to match Excel calculations
@@ -509,9 +496,9 @@ export function calculateMonthlySalary(
   const totalSalary = totalFixed + totalVariable;
 
   // Calculate summary statistics
-  // Only count actual flight duties (exclude recurrent and business_promotion)
+  // Only count actual flight duties (exclude recurrent)
   const totalFlights = flightDuties.filter(flight =>
-    ['turnaround', 'layover', 'asby'].includes(flight.dutyType)
+    ['turnaround', 'layover', 'asby', 'business_promotion'].includes(flight.dutyType)
   ).length;
   
   const totalTurnarounds = flightDuties.filter(flight => flight.dutyType === 'turnaround').length;

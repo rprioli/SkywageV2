@@ -397,8 +397,8 @@ export function convertToFlightDuty(
         flightPay = 4 * rates[position].hourlyRate;
       }
     } else if (data.dutyType === 'business_promotion') {
-      const rates = { CCM: { hourlyRate: 50 }, SCCM: { hourlyRate: 62 } };
-      flightPay = 5 * rates[position].hourlyRate;
+      // Pay BP like a normal duty: rostered duty hours × hourly rate
+      flightPay = calculateFlightPay(dutyHours, position);
     } else if (data.dutyType === 'turnaround') {
       flightPay = calculateFlightPay(dutyHours, position);
     }

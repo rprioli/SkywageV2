@@ -434,4 +434,31 @@ describe('Crossday Calculation Regression Tests', () => {
       expect(calculatePerDiemPay(restHours, position)).toBeCloseTo(expectedPerDiem, 2);
     });
   });
+
+  describe('Business Promotion Pay Calculations', () => {
+    test('BP duty from 08:00 to 16:00 pays 8 hours × hourly rate for CCM', () => {
+      const dutyHours = 8; // 08:00 to 16:00
+      const position = 'CCM';
+      const expectedPay = 8 * 50; // 400 AED
+      
+      expect(calculateFlightPay(dutyHours, position)).toBe(expectedPay);
+    });
+
+    test('BP duty from 08:00 to 16:00 pays 8 hours × hourly rate for SCCM', () => {
+      const dutyHours = 8; // 08:00 to 16:00
+      const position = 'SCCM';
+      const expectedPay = 8 * 62; // 496 AED
+      
+      expect(calculateFlightPay(dutyHours, position)).toBe(expectedPay);
+    });
+
+    test('BP duty with different duration pays correctly', () => {
+      const dutyHours = 6.5; // e.g., 09:00 to 15:30
+      const ccmPay = calculateFlightPay(dutyHours, 'CCM');
+      const sccmPay = calculateFlightPay(dutyHours, 'SCCM');
+      
+      expect(ccmPay).toBe(6.5 * 50); // 325 AED
+      expect(sccmPay).toBe(6.5 * 62); // 403 AED
+    });
+  });
 });

@@ -12,11 +12,13 @@ import {
 } from '@/types/salary-calculator';
 import {
   calculateMonthlySalary,
-  calculateLayoverRestPeriods
+  calculateLayoverRestPeriods,
+  calculateFlightDuty
 } from '@/lib/salary-calculator';
 import {
   getFlightDutiesByMonth,
-  getFlightDutiesByMonthWithLookahead
+  getFlightDutiesByMonthWithLookahead,
+  updateFlightDutyComputedValues
 } from '@/lib/database/flights';
 import {
   createLayoverRestPeriods,
@@ -84,6 +86,41 @@ export async function recalculateMonthlyTotals(
         warnings
       };
     }
+
+    // Backfill: Recompute BP duties that may have been saved with fixed 5 hours
+    // This corrects historical data when a month is recalculated
+    const backfillPromises = flightDuties
+      .filter(duty => duty.dutyType === 'business_promotion' && duty.id)
+      .map(async (duty) => {
+        // Recompute duty hours and flight pay from stored times
+        const recalcResult = calculateFlightDuty(duty, position, year, month);
+        const newDutyHours = recalcResult.flightDuty.dutyHours;
+        const newFlightPay = recalcResult.flightDuty.flightPay;
+        
+        // Only update if values differ (avoid unnecessary DB writes)
+        const needsUpdate = 
+          Math.abs(newDutyHours - duty.dutyHours) > 0.01 ||
+          Math.abs(newFlightPay - duty.flightPay) > 0.01;
+        
+        if (needsUpdate) {
+          const updateResult = await updateFlightDutyComputedValues(
+            duty.id!,
+            { dutyHours: newDutyHours, flightPay: newFlightPay },
+            userId,
+            'System recalculation: BP rule update'
+          );
+          
+          if (!updateResult.success) {
+            warnings.push(`Warning: Could not update BP duty ${duty.id}: ${updateResult.error}`);
+          } else {
+            // Update the in-memory duty for subsequent calculations
+            duty.dutyHours = newDutyHours;
+            duty.flightPay = newFlightPay;
+          }
+        }
+      });
+    
+    await Promise.all(backfillPromises);
 
     // Sort flights by date and time for proper layover calculation
     const sortedFlights = flightDuties.sort((a, b) => {
