@@ -1,14 +1,6 @@
-/**
- * RosterUploadSection Component
- * 
- * Handles roster file upload UI and logic.
- * Supports CSV and Excel files with month selection and replacement confirmation.
- * Extracted from dashboard page to reduce complexity.
- */
-
 'use client';
 
-import React, { useState, useCallback, memo } from 'react';
+import React, { useState, useCallback, memo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -62,6 +54,10 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [replacementProcessing, setReplacementProcessing] = useState(false);
 
+  // File picker refs (needed to detect native picker cancel, since onChange doesn't fire on cancel)
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const awaitingFileSelectionRef = useRef(false);
+
   // Handle upload modal opening
   const handleUploadClick = useCallback(() => {
     setUploadModalOpen(true);
@@ -83,6 +79,33 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
     setReplacementProcessing(false);
   }, []);
 
+  const openFilePicker = useCallback(() => {
+    const fileInput = fileInputRef.current;
+    if (!fileInput) return;
+
+    // Ensure we don't keep a previous selection around (important for cancel detection).
+    fileInput.value = '';
+
+    awaitingFileSelectionRef.current = true;
+
+    // When the native file picker closes via "Cancel", onChange doesn't fire.
+    // Focus returns to the window, so we close the modal if no file was selected.
+    const handleWindowFocus = () => {
+      window.setTimeout(() => {
+        if (!awaitingFileSelectionRef.current) return;
+
+        const hasFile = (fileInputRef.current?.files?.length ?? 0) > 0;
+        if (!hasFile) {
+          handleUploadModalClose();
+        }
+        awaitingFileSelectionRef.current = false;
+      }, 0);
+    };
+
+    window.addEventListener('focus', handleWindowFocus, { once: true });
+    fileInput.click();
+  }, [handleUploadModalClose]);
+
   // Handle month selection for upload - automatically trigger file selection
   const handleMonthSelect = useCallback((month: number) => {
     setSelectedUploadMonth(month);
@@ -90,12 +113,9 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
 
     // Automatically trigger file selection after a brief delay
     setTimeout(() => {
-      const fileInput = document.getElementById('roster-file-input') as HTMLInputElement;
-      if (fileInput) {
-        fileInput.click();
-      }
+      openFilePicker();
     }, 100);
-  }, []);
+  }, [openFilePicker]);
 
   // Process file upload (with or without replacement)
   const processFileUpload = useCallback(async (file: File, performReplacement: boolean) => {
@@ -241,8 +261,8 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
       {/* Upload Roster Modal */}
       <Dialog open={uploadModalOpen} onOpenChange={handleUploadModalClose}>
         <DialogContent className="modal-xl modal-touch-friendly max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+          <DialogHeader className="pr-10">
+            <DialogTitle className="flex items-center gap-2 justify-center sm:justify-start">
               <Upload className="h-5 w-5 text-primary" />
               Upload Roster
             </DialogTitle>
@@ -254,6 +274,29 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
           </DialogHeader>
 
           <div className="space-y-6">
+            {/* Hidden file input (kept mounted so the auto-triggered native picker always works) */}
+            <input
+              ref={fileInputRef}
+              id="roster-file-input"
+              type="file"
+              accept=".csv,.xlsx,.xlsm,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+
+                // Whether a file was selected or the picker was dismissed, we’re no longer awaiting.
+                awaitingFileSelectionRef.current = false;
+
+                // Some browsers may still fire onChange with no file on cancel.
+                if (!file) {
+                  handleUploadModalClose();
+                  return;
+                }
+
+                handleFileSelect(file);
+              }}
+            />
+
             {uploadState === 'month' && (
               <div className="w-full max-w-sm mx-auto space-y-4">
                 <div className="space-y-2">
@@ -274,23 +317,8 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
               </div>
             )}
 
-            {uploadState === 'upload' && selectedUploadMonth && (
-              <div>
-                {/* Hidden file input */}
-                <input
-                  id="roster-file-input"
-                  type="file"
-                  accept=".csv,.xlsx,.xlsm,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12"
-                  style={{ display: 'none' }}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      handleFileSelect(file);
-                    }
-                  }}
-                />
-              </div>
-            )}
+            {/* uploadState === 'upload' intentionally renders no UI because the native file picker is auto-opened.
+                If the user cancels the picker, the modal auto-closes via the focus handler in openFilePicker(). */}
 
             {uploadState === 'processing' && processingStatus && (
               <ProcessingStatus status={processingStatus} />
