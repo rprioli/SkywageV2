@@ -274,6 +274,29 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
           </DialogHeader>
 
           <div className="space-y-6">
+            {/* Hidden file input (kept mounted so the auto-triggered native picker always works) */}
+            <input
+              ref={fileInputRef}
+              id="roster-file-input"
+              type="file"
+              accept=".csv,.xlsx,.xlsm,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+
+                // Whether a file was selected or the picker was dismissed, we’re no longer awaiting.
+                awaitingFileSelectionRef.current = false;
+
+                // Some browsers may still fire onChange with no file on cancel.
+                if (!file) {
+                  handleUploadModalClose();
+                  return;
+                }
+
+                handleFileSelect(file);
+              }}
+            />
+
             {uploadState === 'month' && (
               <div className="w-full max-w-sm mx-auto space-y-4">
                 <div className="space-y-2">
@@ -294,48 +317,8 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
               </div>
             )}
 
-            {uploadState === 'upload' && selectedUploadMonth && (
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground text-center sm:text-left">
-                  Choose a roster file for{' '}
-                  <span className="font-medium">
-                    {getMonthName(selectedUploadMonth)} {selectedYear}
-                  </span>
-                  .
-                </p>
-
-                <div className="flex items-center justify-center sm:justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={handleUploadModalClose}>
-                    Cancel
-                  </Button>
-                  <Button type="button" onClick={openFilePicker}>
-                    Choose file
-                  </Button>
-                </div>
-
-                <input
-                  ref={fileInputRef}
-                  id="roster-file-input"
-                  type="file"
-                  accept=".csv,.xlsx,.xlsm,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-
-                    // Whether a file was selected or the picker was dismissed, we’re no longer awaiting.
-                    awaitingFileSelectionRef.current = false;
-
-                    // Some browsers may still fire onChange with no file on cancel.
-                    if (!file) {
-                      handleUploadModalClose();
-                      return;
-                    }
-
-                    handleFileSelect(file);
-                  }}
-                />
-              </div>
-            )}
+            {/* uploadState === 'upload' intentionally renders no UI because the native file picker is auto-opened.
+                If the user cancels the picker, the modal auto-closes via the focus handler in openFilePicker(). */}
 
             {uploadState === 'processing' && processingStatus && (
               <ProcessingStatus status={processingStatus} />
