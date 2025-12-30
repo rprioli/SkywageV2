@@ -115,8 +115,10 @@ export function classifyFlightDuty(
   // Check for Business Promotion
   if (dutiesUpper.includes('BP') || detailsUpper.includes('BUSINESS PROMOTION')) {
     // Compute BP duty hours from rostered times (not fixed 5 hours)
-    const inferredIsCrossDay = Boolean(reportTimeValue && debriefTimeValue) &&
-      (debriefTimeValue.totalMinutes < reportTimeValue.totalMinutes);
+    const inferredIsCrossDay =
+      reportTimeValue && debriefTimeValue
+        ? debriefTimeValue.totalMinutes < reportTimeValue.totalMinutes
+        : false;
     
     const dutyHours = typeof actualDutyHours === 'number' && actualDutyHours > 0
       ? actualDutyHours
