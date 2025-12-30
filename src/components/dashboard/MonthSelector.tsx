@@ -63,12 +63,16 @@ export const MonthSelector = memo<MonthSelectorProps>(({
 
   // Memoized month selection handler for smooth transitions
   const handleMonthSelection = useCallback((index: number) => {
+    // Prevent the "month switching" state from getting stuck when re-clicking the active month.
+    // If the month doesn't change, data hooks won't refetch, so we shouldn't enable the switching UI.
+    if (index === selectedOverviewMonth) return;
+
     // Immediate month selection for smooth chart transition
     onMonthChange(index);
     onUserSelectedChange(true);
     // Set switching state for other UI elements (not chart)
     onMonthSwitchingChange(true);
-  }, [onMonthChange, onUserSelectedChange, onMonthSwitchingChange]);
+  }, [onMonthChange, onUserSelectedChange, onMonthSwitchingChange, selectedOverviewMonth]);
 
   // Memoize chart data to prevent unnecessary re-renders
   const chartData = useMemo(() => {
