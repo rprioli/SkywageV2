@@ -241,8 +241,8 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
       {/* Upload Roster Modal */}
       <Dialog open={uploadModalOpen} onOpenChange={handleUploadModalClose}>
         <DialogContent className="modal-xl modal-touch-friendly max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+          <DialogHeader className="pr-10">
+            <DialogTitle className="flex items-center gap-2 justify-center sm:justify-start">
               <Upload className="h-5 w-5 text-primary" />
               Upload Roster
             </DialogTitle>
