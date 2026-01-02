@@ -19,6 +19,7 @@ import { FlightDuty, TimeValue, Position } from '@/types/salary-calculator';
 import { mapFlightDutyToCardData } from '@/lib/salary-calculator/card-data-mapper';
 import { EditTimesDialog } from './EditTimesDialog';
 import { parseSectors } from './flight-duty-card/utils';
+import { isDoubleSectorTurnaroundPattern, extractTurnaroundDestinations } from '@/lib/salary-calculator/input-transformers';
 import { updateFlightDuty } from '@/lib/database/flights';
 import { recalculateMonthlyTotals } from '@/lib/salary-calculator/recalculation-engine';
 import { useToast } from '@/hooks/use-toast';
@@ -55,6 +56,10 @@ export function TurnaroundCard({
 
   const cardData = mapFlightDutyToCardData(flightDuty, allFlightDuties);
 
+  // Detect if this is a double-sector turnaround
+  const isDoubleSector = isDoubleSectorTurnaroundPattern(flightDuty.sectors || []);
+  const turnaroundDestinations = extractTurnaroundDestinations(flightDuty.sectors || []);
+
   const getArrivalAirport = (sector?: string): string => {
     if (!sector) return '';
     const airports = parseSectors(sector);
@@ -77,10 +82,19 @@ export function TurnaroundCard({
     to = routingParts[1] || '';
   }
 
-  const outboundDestination = getArrivalAirport(flightDuty.sectors?.[0]);
-  const inboundDestination = getArrivalAirport(flightDuty.sectors?.[flightDuty.sectors.length - 1]);
-  const leftLabel = outboundDestination || from;
-  const rightLabel = inboundDestination || to;
+  // For double-sector, use the two destinations; for standard, use first/last sectors
+  let leftLabel: string;
+  let rightLabel: string;
+  
+  if (isDoubleSector && turnaroundDestinations.length >= 2) {
+    leftLabel = turnaroundDestinations[0];
+    rightLabel = turnaroundDestinations[1];
+  } else {
+    const outboundDestination = getArrivalAirport(flightDuty.sectors?.[0]);
+    const inboundDestination = getArrivalAirport(flightDuty.sectors?.[flightDuty.sectors.length - 1]);
+    leftLabel = outboundDestination || from;
+    rightLabel = inboundDestination || to;
+  }
 
   const handleDelete = () => {
     if (onDelete) onDelete(flightDuty);
@@ -221,14 +235,30 @@ export function TurnaroundCard({
             </div>
 
             <div className="flex flex-col items-center justify-center">
-              <div className="flex items-center gap-1 mb-1">
-                <div className="h-px w-6" style={{ backgroundColor: BRAND.primary }}></div>
-                <div className="text-sm" style={{ color: BRAND.primary }}>✈</div>
-                <div className="h-px w-6" style={{ backgroundColor: BRAND.primary }}></div>
-              </div>
-              <div className="text-xs font-semibold text-gray-700">
-                Turnaround
-              </div>
+              {isDoubleSector ? (
+                <>
+                  {/* Double sector: show + between destinations */}
+                  <div className="flex items-center gap-1 mb-1">
+                    <div className="h-px w-4" style={{ backgroundColor: BRAND.primary }}></div>
+                    <div className="text-sm font-bold" style={{ color: BRAND.primary }}>+</div>
+                    <div className="h-px w-4" style={{ backgroundColor: BRAND.primary }}></div>
+                  </div>
+                  <div className="text-xs font-semibold text-gray-700 text-center leading-tight">
+                    Double Sector
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-1 mb-1">
+                    <div className="h-px w-6" style={{ backgroundColor: BRAND.primary }}></div>
+                    <div className="text-sm" style={{ color: BRAND.primary }}>✈</div>
+                    <div className="h-px w-6" style={{ backgroundColor: BRAND.primary }}></div>
+                  </div>
+                  <div className="text-xs font-semibold text-gray-700">
+                    Turnaround
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="text-center">

@@ -18,7 +18,9 @@ import {
 } from '@/lib/salary-calculator';
 import {
   transformFlightNumbers,
-  transformSectors
+  transformSectors,
+  isDoubleSectorTurnaroundPattern,
+  isStandardTurnaroundPattern
 } from './input-transformers';
 
 // Manual entry form data
@@ -117,10 +119,14 @@ export function validateDestination(destination: string): FieldValidationResult 
 
 /**
  * Validates flight numbers based on duty type
+ * @param flightNumbers - Array of flight numbers (digits only, FZ prefix added automatically)
+ * @param dutyType - The type of duty
+ * @param isDoubleSectorTurnaround - Optional flag for double-sector turnaround mode
  */
 export function validateFlightNumbers(
   flightNumbers: string[],
-  dutyType: DutyType
+  dutyType: DutyType,
+  isDoubleSectorTurnaround = false
 ): FieldValidationResult {
   if (dutyType === 'asby' || dutyType === 'recurrent' || dutyType === 'sby' || dutyType === 'off' || dutyType === 'business_promotion') {
     // ASBY/Recurrent/SBY/OFF/Business Promotion duties don't require flight numbers
@@ -189,7 +195,19 @@ export function validateFlightNumbers(
     };
   }
 
-  if (dutyType === 'turnaround' && validNumbers.length < 2) {
+  // Double-sector turnaround requires exactly 4 flight numbers
+  if (dutyType === 'turnaround' && isDoubleSectorTurnaround) {
+    if (validNumbers.length !== 4) {
+      return {
+        valid: false,
+        error: 'Double sector turnarounds require exactly 4 flight numbers',
+        suggestion: 'Enter 2 flight numbers for each turnaround leg'
+      };
+    }
+  }
+
+  // Standard turnaround warning if less than 2 flight numbers
+  if (dutyType === 'turnaround' && !isDoubleSectorTurnaround && validNumbers.length < 2) {
     return { 
       valid: true, 
       warning: 'Turnarounds typically have multiple flight numbers'
@@ -202,10 +220,14 @@ export function validateFlightNumbers(
 /**
  * Validates sectors based on duty type
  * Now supports individual airport codes (e.g., ['DXB', 'KHI'] instead of ['DXB-KHI'])
+ * @param airportCodes - Array of airport codes
+ * @param dutyType - The type of duty
+ * @param isDoubleSectorTurnaround - Optional flag for double-sector turnaround mode
  */
 export function validateSectors(
   airportCodes: string[],
-  dutyType: DutyType
+  dutyType: DutyType,
+  isDoubleSectorTurnaround = false
 ): FieldValidationResult {
   if (dutyType === 'asby' || dutyType === 'recurrent' || dutyType === 'sby' || dutyType === 'off' || dutyType === 'business_promotion') {
     // ASBY/Recurrent/SBY/OFF/Business Promotion duties don't require sectors
@@ -245,6 +267,50 @@ export function validateSectors(
           valid: false,
           error: `Invalid route: ${sector}`,
           suggestion: 'Please check airport codes'
+        };
+      }
+    }
+
+    // Double-sector turnaround validation
+    if (dutyType === 'turnaround' && isDoubleSectorTurnaround) {
+      // Must have exactly 4 sectors (5 airport codes)
+      if (validCodes.length !== 5) {
+        return {
+          valid: false,
+          error: 'Double sector turnaround requires 2 destinations',
+          suggestion: 'Enter both destinations for the double sector turnaround'
+        };
+      }
+
+      // Validate the strict pattern: DXB → A → DXB → B → DXB
+      if (!isDoubleSectorTurnaroundPattern(transformedSectors)) {
+        return {
+          valid: false,
+          error: 'Invalid double sector route pattern',
+          suggestion: 'Route must be: DXB → Dest1 → DXB → Dest2 → DXB'
+        };
+      }
+
+      // Enforce two distinct outstations (Dest1 !== Dest2)
+      const dest1 = transformedSectors[0]?.split('-')?.[1]?.trim().toUpperCase() || '';
+      const dest2 = transformedSectors[2]?.split('-')?.[1]?.trim().toUpperCase() || '';
+      if (dest1 && dest2 && dest1 === dest2) {
+        return {
+          valid: false,
+          error: 'Destination 2 must be different from Destination 1',
+          suggestion: 'Choose two different outstations for a double sector turnaround'
+        };
+      }
+    }
+
+    // Standard turnaround validation
+    if (dutyType === 'turnaround' && !isDoubleSectorTurnaround) {
+      // Standard turnaround should have 3 airport codes (DXB → A → DXB)
+      if (validCodes.length === 3 && !isStandardTurnaroundPattern(transformedSectors)) {
+        return {
+          valid: false,
+          error: 'Invalid turnaround route pattern',
+          suggestion: 'Route must be: DXB → Destination → DXB'
         };
       }
     }
@@ -393,8 +459,20 @@ export function validateManualEntry(
     }
   }
 
+  // Detect whether this turnaround is in double-sector mode.
+  // We cannot rely on a dedicated field (the UI does not submit one), so we infer from the shape:
+  // - 4 flight-number inputs (even if partially filled), OR
+  // - 5 airport codes (DXB → A → DXB → B → DXB) when destinations are filled.
+  const isDoubleSectorTurnaround =
+    data.dutyType === 'turnaround' &&
+    (data.flightNumbers.length >= 4 || data.sectors.filter(s => s.trim() !== '').length >= 5);
+
   // Validate flight numbers
-  const flightNumbersValidation = validateFlightNumbers(data.flightNumbers, data.dutyType);
+  const flightNumbersValidation = validateFlightNumbers(
+    data.flightNumbers,
+    data.dutyType,
+    isDoubleSectorTurnaround
+  );
   if (!flightNumbersValidation.valid) {
     fieldErrors.flightNumbers = flightNumbersValidation.error!;
     errors.push(flightNumbersValidation.error!);
@@ -403,7 +481,7 @@ export function validateManualEntry(
   }
 
   // Validate sectors
-  const sectorsValidation = validateSectors(data.sectors, data.dutyType);
+  const sectorsValidation = validateSectors(data.sectors, data.dutyType, isDoubleSectorTurnaround);
   if (!sectorsValidation.valid) {
     fieldErrors.sectors = sectorsValidation.error!;
     errors.push(sectorsValidation.error!);
