@@ -211,3 +211,119 @@ export function validateAndTransformInput(
     errors
   };
 }
+
+// ============================================================================
+// Double Sector Turnaround Helpers
+// ============================================================================
+
+/**
+ * Converts two destination airport codes to double-sector turnaround airport codes
+ * Pattern: DXB → dest1 → DXB → dest2 → DXB
+ * @param dest1 First destination airport code (e.g., 'KHI')
+ * @param dest2 Second destination airport code (e.g., 'MCT')
+ * @returns Array of airport codes (e.g., ['DXB', 'KHI', 'DXB', 'MCT', 'DXB'])
+ */
+export function destinationToDoubleSectorTurnaround(dest1: string, dest2: string): string[] {
+  const d1 = dest1.trim().toUpperCase();
+  const d2 = dest2.trim().toUpperCase();
+  
+  if (!d1 || d1.length !== 3 || !d2 || d2.length !== 3) return [];
+  
+  // Return airport codes array: DXB -> dest1 -> DXB -> dest2 -> DXB
+  // transformSectors will convert this to ['DXB-KHI', 'KHI-DXB', 'DXB-MCT', 'MCT-DXB']
+  return ['DXB', d1, 'DXB', d2, 'DXB'];
+}
+
+/**
+ * Extracts all outstation destinations from turnaround sectors
+ * Works with both standard (1 outstation) and double-sector (2 outstations) turnarounds
+ * Handles both sector strings and airport code arrays
+ * @param sectors Array of sector strings (e.g., ['DXB-KHI', 'KHI-DXB', 'DXB-MCT', 'MCT-DXB'])
+ * @returns Array of unique outstation codes in order (e.g., ['KHI', 'MCT'])
+ */
+export function extractTurnaroundDestinations(sectors: string[]): string[] {
+  if (!sectors || sectors.length === 0) return [];
+  
+  const destinations: string[] = [];
+  
+  // Extract airport codes from sectors
+  const airportCodes = extractAirportCodes(sectors);
+  
+  // Find unique outstations (non-DXB airports) preserving order
+  for (const code of airportCodes) {
+    const upperCode = code.toUpperCase();
+    if (upperCode !== 'DXB' && !destinations.includes(upperCode)) {
+      destinations.push(upperCode);
+    }
+  }
+  
+  return destinations;
+}
+
+/**
+ * Detects if sectors match the strict double-sector turnaround pattern
+ * Pattern: DXB → A → DXB → B → DXB (4 sectors, 5 airports)
+ * @param sectors Array of sector strings
+ * @returns true if matches double-sector turnaround pattern
+ */
+export function isDoubleSectorTurnaroundPattern(sectors: string[]): boolean {
+  if (!sectors || sectors.length !== 4) return false;
+  
+  const airportCodes = extractAirportCodes(sectors);
+  
+  // Must have exactly 5 airport codes
+  if (airportCodes.length !== 5) return false;
+  
+  // Pattern must be: DXB → A → DXB → B → DXB
+  // where A and B are different non-DXB airports
+  const [first, second, third, fourth, fifth] = airportCodes.map(c => c.toUpperCase());
+  
+  // First, third, and fifth must be DXB
+  if (first !== 'DXB' || third !== 'DXB' || fifth !== 'DXB') return false;
+  
+  // Second and fourth must be non-DXB
+  if (second === 'DXB' || fourth === 'DXB') return false;
+  
+  // Second and fourth must be different (not required but validates the pattern)
+  // Actually, they could be the same destination for two separate turnarounds to same place
+  // But for our strict pattern we allow same destination
+  
+  return true;
+}
+
+/**
+ * Detects if sectors match a standard (single) turnaround pattern
+ * Pattern: DXB → A → DXB (2 sectors, 3 airports)
+ * @param sectors Array of sector strings
+ * @returns true if matches standard turnaround pattern
+ */
+export function isStandardTurnaroundPattern(sectors: string[]): boolean {
+  if (!sectors || sectors.length !== 2) return false;
+  
+  const airportCodes = extractAirportCodes(sectors);
+  
+  // Must have exactly 3 airport codes
+  if (airportCodes.length !== 3) return false;
+  
+  // Pattern must be: DXB → A → DXB
+  const [first, second, third] = airportCodes.map(c => c.toUpperCase());
+  
+  // First and third must be DXB
+  if (first !== 'DXB' || third !== 'DXB') return false;
+  
+  // Second must be non-DXB
+  if (second === 'DXB') return false;
+  
+  return true;
+}
+
+/**
+ * Determines the turnaround mode based on sectors
+ * @param sectors Array of sector strings
+ * @returns 'double' | 'standard' | 'unknown'
+ */
+export function detectTurnaroundMode(sectors: string[]): 'double' | 'standard' | 'unknown' {
+  if (isDoubleSectorTurnaroundPattern(sectors)) return 'double';
+  if (isStandardTurnaroundPattern(sectors)) return 'standard';
+  return 'unknown';
+}
