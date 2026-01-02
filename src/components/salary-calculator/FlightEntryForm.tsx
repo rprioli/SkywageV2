@@ -8,6 +8,8 @@
 
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -770,36 +772,14 @@ export function FlightEntryForm({
           {showFlightFields && formData.dutyType === 'turnaround' && (
             <div className="space-y-4">
               {/* Turnaround Mode Toggle */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium">Turnaround Type</label>
-                <div className="flex rounded-lg border border-input overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => handleTurnaroundModeChange('standard')}
-                    disabled={isFormDisabled}
-                    className={cn(
-                      'flex-1 px-3 py-2 text-sm font-medium transition-colors',
-                      turnaroundMode === 'standard'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-background hover:bg-muted'
-                    )}
-                  >
-                    Standard
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleTurnaroundModeChange('double')}
-                    disabled={isFormDisabled}
-                    className={cn(
-                      'flex-1 px-3 py-2 text-sm font-medium transition-colors',
-                      turnaroundMode === 'double'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-background hover:bg-muted'
-                    )}
-                  >
-                    Double Sector
-                  </button>
-                </div>
+              <div className="flex items-center space-x-2 py-2">
+                <Switch
+                  id="double-sector-mode"
+                  checked={turnaroundMode === 'double'}
+                  onCheckedChange={(checked) => handleTurnaroundModeChange(checked ? 'double' : 'standard')}
+                  disabled={isFormDisabled}
+                />
+                <Label htmlFor="double-sector-mode">Double Sector</Label>
               </div>
 
               {/* Standard Turnaround: Single Destination */}
@@ -917,14 +897,9 @@ export function FlightEntryForm({
               {turnaroundMode === 'double' && (
                 <>
                   {/* First Leg */}
-                  <div className="space-y-4 p-3 rounded-lg bg-muted/30 border border-muted">
-                    <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: '#4C49ED' }}>
-                      <Plane className="h-4 w-4" />
-                      FIRST LEG
-                    </div>
-
+                  <div className="space-y-4">
                     <div className="space-y-2">
-                      <label className="block text-sm font-medium">Destination 1</label>
+                      <label className="block text-sm font-medium">First Sector</label>
                       <div className="relative">
                         <div className="input-icon-left">
                           <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -969,7 +944,7 @@ export function FlightEntryForm({
                         <p className="text-destructive text-sm">{validateDestination(destination).error}</p>
                       )}
                       {submitAttempted && !destination && (
-                        <p className="text-destructive text-sm">Destination 1 is required</p>
+                        <p className="text-destructive text-sm">First Sector is required</p>
                       )}
                     </div>
 
@@ -1025,14 +1000,9 @@ export function FlightEntryForm({
                   </div>
 
                   {/* Second Leg */}
-                  <div className="space-y-4 p-3 rounded-lg bg-muted/30 border border-muted">
-                    <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: '#4C49ED' }}>
-                      <Plane className="h-4 w-4" />
-                      SECOND LEG
-                    </div>
-
+                  <div className="space-y-4">
                     <div className="space-y-2">
-                      <label className="block text-sm font-medium">Destination 2</label>
+                      <label className="block text-sm font-medium">Second Sector</label>
                       <div className="relative">
                         <div className="input-icon-left">
                           <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -1077,7 +1047,7 @@ export function FlightEntryForm({
                         <p className="text-destructive text-sm">{validateDestination(destination2).error}</p>
                       )}
                       {submitAttempted && !destination2 && (
-                        <p className="text-destructive text-sm">Destination 2 is required</p>
+                        <p className="text-destructive text-sm">Second Sector is required</p>
                       )}
                     </div>
 
