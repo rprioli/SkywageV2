@@ -8,8 +8,9 @@
 
 import { useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
-import { Search, Users } from 'lucide-react';
-import { FriendWithProfile } from '@/lib/database/friends';
+import { Button } from '@/components/ui/button';
+import { Search, Users, UserPlus, Mail, Check, X } from 'lucide-react';
+import { FriendWithProfile, PendingRequest, getAvatarColor } from '@/lib/database/friends';
 import { getFriendDisplayName, getFriendInitial } from '@/lib/database/friends';
 import { cn } from '@/lib/utils';
 
@@ -18,6 +19,16 @@ interface FriendListSidebarProps {
   loading: boolean;
   selectedFriendId: string | null;
   onSelectFriend: (friend: FriendWithProfile) => void;
+  
+  // Add Friend & Pending Requests Props
+  pendingRequests: {
+    sent: PendingRequest[];
+    received: PendingRequest[];
+  };
+  onSendRequest: (email: string) => Promise<void>;
+  onAcceptRequest: (id: string) => Promise<void>;
+  onRejectRequest: (id: string) => Promise<void>;
+  sendingRequest: boolean;
 }
 
 export function FriendListSidebar({
@@ -25,8 +36,14 @@ export function FriendListSidebar({
   loading,
   selectedFriendId,
   onSelectFriend,
+  pendingRequests,
+  onSendRequest,
+  onAcceptRequest,
+  onRejectRequest,
+  sendingRequest,
 }: FriendListSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [emailInput, setEmailInput] = useState('');
 
   // Client-side filtering based on search query
   const filteredFriends = useMemo(() => {
@@ -46,27 +63,167 @@ export function FriendListSidebar({
     });
   }, [friends, searchQuery]);
 
+  const handleSendRequest = async () => {
+    if (!emailInput.trim()) return;
+    await onSendRequest(emailInput.trim());
+    setEmailInput('');
+  };
+
+  const hasPendingRequests = pendingRequests.received.length > 0 || pendingRequests.sent.length > 0;
+
   return (
     <div className="h-full flex flex-col bg-white">
-      {/* Header */}
-      <div className="card-responsive-padding pb-3">
-        <h2 className="text-responsive-xl font-bold mb-3" style={{ color: '#3A3780' }}>Friends</h2>
+      {/* Add Friend Section */}
+      <div className="card-responsive-padding pb-3 space-y-3">
+        <h2 className="flex items-center gap-2 text-responsive-base font-bold" style={{ color: '#3A3780' }}>
+          <UserPlus className="h-5 w-5" style={{ color: '#4C49ED' }} />
+          Add Friend
+        </h2>
+        <div className="space-y-2">
+          <Input
+            type="email"
+            placeholder="Email address"
+            value={emailInput}
+            onChange={(e) => setEmailInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSendRequest()}
+            disabled={sendingRequest}
+            className="w-full rounded-xl h-10 py-2"
+          />
+          <Button
+            onClick={handleSendRequest}
+            disabled={sendingRequest || !emailInput.trim()}
+            style={{ backgroundColor: '#4C49ED' }}
+            className="w-full hover:opacity-90 whitespace-nowrap rounded-xl h-10"
+          >
+            <Mail className="h-4 w-4 mr-2" />
+            Send Request
+          </Button>
+        </div>
+      </div>
+
+      <div className="px-4">
+        <div className="h-px bg-gray-100" />
+      </div>
+
+      {/* Pending Requests Section */}
+      {hasPendingRequests && (
+        <>
+          <div className="card-responsive-padding py-3 space-y-3">
+             {/* Received Requests */}
+             {pendingRequests.received.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="font-semibold text-xs text-gray-500 uppercase tracking-wider">
+                  Received Requests
+                </h3>
+                <div className="space-y-2">
+                  {pendingRequests.received.map((request) => (
+                    <div
+                      key={request.friendshipId}
+                      className="p-3 bg-gray-50/80 rounded-2xl space-y-2"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0">
+                           <div className={cn(
+                             "w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm",
+                             getAvatarColor(request.userId)
+                           )}>
+                             {getFriendInitial(request)}
+                           </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate text-sm text-gray-900">
+                             {getFriendDisplayName(request)}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {request.airline} • {request.position}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => onAcceptRequest(request.friendshipId)}
+                          style={{ backgroundColor: '#6DDC91' }}
+                          className="flex-1 h-8 hover:opacity-90 rounded-lg text-xs"
+                        >
+                          <Check className="h-3 w-3 mr-1" /> Accept
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onRejectRequest(request.friendshipId)}
+                          className="flex-1 h-8 rounded-lg text-xs"
+                        >
+                          <X className="h-3 w-3 mr-1" /> Reject
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sent Requests */}
+            {pendingRequests.sent.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="font-semibold text-xs text-gray-500 uppercase tracking-wider">
+                  Sent Requests
+                </h3>
+                <div className="space-y-2">
+                  {pendingRequests.sent.map((request) => (
+                    <div
+                      key={request.friendshipId}
+                      className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-2xl"
+                    >
+                      <div className="flex-shrink-0">
+                         <div className={cn(
+                           "w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm",
+                           getAvatarColor(request.userId)
+                         )}>
+                           {getFriendInitial(request)}
+                         </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate text-sm text-gray-900">
+                           {getFriendDisplayName(request)}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          Pending
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="px-4">
+            <div className="h-px bg-gray-100" />
+          </div>
+        </>
+      )}
+
+      {/* Friends List Header */}
+      <div className="card-responsive-padding py-3 space-y-3">
+        <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+          Your Friends
+        </h2>
         
         {/* Search Input */}
         <div className="relative">
           <Search className="absolute input-icon-left h-4 w-4 text-gray-400" />
           <Input
             type="text"
-            placeholder="Search friends..."
+            placeholder="Search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="input-with-left-icon rounded-xl border-gray-200 h-10 py-2"
+            className="input-with-left-icon rounded-xl border-gray-200 h-9 py-2 text-sm"
           />
         </div>
       </div>
 
       {/* Friends List */}
-      <div className="flex-1 overflow-y-auto px-2 md:px-3">
+      <div className="flex-1 overflow-y-auto px-2 md:px-3 pb-2">
         {loading ? (
           <LoadingState />
         ) : filteredFriends.length === 0 ? (
@@ -104,6 +261,7 @@ interface FriendListItemProps {
 function FriendListItem({ friend, isActive, onClick }: FriendListItemProps) {
   const displayName = getFriendDisplayName(friend);
   const initial = getFriendInitial(friend);
+  const avatarColor = getAvatarColor(friend.userId);
 
   return (
     <button
@@ -130,7 +288,7 @@ function FriendListItem({ friend, isActive, onClick }: FriendListItemProps) {
               const parent = target.parentElement;
               if (parent) {
                 parent.innerHTML = `
-                  <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
+                  <div class="w-10 h-10 rounded-full ${avatarColor} flex items-center justify-center">
                     <span class="text-white font-semibold text-lg">${initial}</span>
                   </div>
                 `;
@@ -138,7 +296,10 @@ function FriendListItem({ friend, isActive, onClick }: FriendListItemProps) {
             }}
           />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
+          <div className={cn(
+            "w-10 h-10 rounded-full flex items-center justify-center",
+            avatarColor
+          )}>
             <span className="text-white font-semibold text-lg">{initial}</span>
           </div>
         )}
@@ -186,10 +347,10 @@ function LoadingState() {
  */
 function EmptyState() {
   return (
-    <div className="px-4 py-12 text-center">
-      <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-      <p className="text-responsive-base font-bold" style={{ color: '#3A3780' }}>No friends yet</p>
-      <p className="text-responsive-sm text-gray-500 mt-1">
+    <div className="px-4 py-8 text-center">
+      <Users className="h-8 w-8 mx-auto mb-3 text-gray-400" />
+      <p className="text-sm font-bold" style={{ color: '#3A3780' }}>No friends yet</p>
+      <p className="text-xs text-gray-500 mt-1">
         Add friends to see them here
       </p>
     </div>
@@ -201,13 +362,12 @@ function EmptyState() {
  */
 function EmptySearchState({ query }: { query: string }) {
   return (
-    <div className="px-4 py-12 text-center">
-      <Search className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-      <p className="text-responsive-base font-bold" style={{ color: '#3A3780' }}>No results for &quot;{query}&quot;</p>
-      <p className="text-responsive-sm text-gray-500 mt-1">
-        Try searching by name, email, or airline
+    <div className="px-4 py-8 text-center">
+      <Search className="h-8 w-8 mx-auto mb-3 text-gray-400" />
+      <p className="text-sm font-bold" style={{ color: '#3A3780' }}>No results</p>
+      <p className="text-xs text-gray-500 mt-1">
+        No friends matching "{query}"
       </p>
     </div>
   );
 }
-
