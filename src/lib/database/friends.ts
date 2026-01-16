@@ -443,3 +443,30 @@ export function getFriendInitial(friend: FriendWithProfile | PendingRequest): st
   return friend.email.charAt(0).toUpperCase();
 }
 
+/**
+ * Generate a consistent color based on string ID
+ */
+export function getAvatarColor(id: string): string {
+  const colors = [
+    'bg-emerald-500',
+    'bg-blue-500',
+    'bg-indigo-500',
+    'bg-violet-500',
+    'bg-purple-500',
+    'bg-fuchsia-500',
+    'bg-pink-500',
+    'bg-rose-500',
+    'bg-cyan-500',
+    'bg-teal-500',
+  ];
+  
+  let hash = 0;
+  if (id) {
+    for (let i = 0; i < id.length; i++) {
+      hash = id.charCodeAt(i) + ((hash << 5) - hash);
+    }
+  }
+  
+  return colors[Math.abs(hash) % colors.length];
+}
+

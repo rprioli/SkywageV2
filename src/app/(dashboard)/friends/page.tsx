@@ -11,8 +11,7 @@ import { useFriendsContext } from '@/contexts/FriendsProvider';
 import { useMobileNavigation } from '@/contexts/MobileNavigationProvider';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Menu, UserPlus, Mail, Check, X, Users } from 'lucide-react';
+import { Menu, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { RosterComparison } from '@/components/friends/RosterComparison';
 import { FriendListSidebar } from '@/components/friends/FriendListSidebar';
@@ -31,26 +30,19 @@ export default function FriendsPage() {
   const { isMobile, toggleSidebar, isSidebarOpen } = useMobileNavigation();
   const { showSuccess, showError } = useToast();
 
-  const [emailInput, setEmailInput] = useState('');
   const [sendingRequest, setSendingRequest] = useState(false);
   const [selectedFriend, setSelectedFriend] = useState<FriendWithProfile | null>(null);
 
   /**
    * Handle sending a friend request
    */
-  const handleSendRequest = async () => {
-    if (!emailInput.trim()) {
-      showError('Email required', { description: 'Please enter an email address' });
-      return;
-    }
-
+  const handleSendRequest = async (email: string) => {
     setSendingRequest(true);
-    const result = await sendFriendRequest(emailInput.trim().toLowerCase());
+    const result = await sendFriendRequest(email.toLowerCase());
     setSendingRequest(false);
 
     if (result.success) {
       showSuccess('Friend request sent!');
-      setEmailInput('');
     } else {
       showError('Failed to send request', { description: result.error });
     }
@@ -126,118 +118,8 @@ export default function FriendsPage() {
           </Card>
         )}
 
-        {/* Add Friend Section */}
-        <Card className="bg-white rounded-3xl !border-0 !shadow-none">
-          <CardContent className="card-responsive-padding">
-            <h2 className="flex items-center gap-2 text-responsive-xl font-bold mb-3" style={{ color: '#3A3780' }}>
-              <UserPlus className="h-5 w-5" style={{ color: '#4C49ED' }} />
-              Add Friend
-            </h2>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-              <Input
-                type="email"
-                placeholder="Enter friend's email address"
-                value={emailInput}
-                onChange={(e) => setEmailInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSendRequest()}
-                disabled={sendingRequest}
-                className="flex-1 rounded-xl h-10 py-2"
-              />
-              <Button
-                onClick={handleSendRequest}
-                disabled={sendingRequest || !emailInput.trim()}
-                style={{ backgroundColor: '#4C49ED' }}
-                className="hover:opacity-90 whitespace-nowrap rounded-xl h-10"
-              >
-                <Mail className="h-4 w-4 mr-2" />
-                Send Request
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Pending Requests Section */}
-        {(pendingRequests.received.length > 0 || pendingRequests.sent.length > 0) && (
-          <Card className="bg-white rounded-3xl !border-0 !shadow-none">
-            <CardContent className="card-responsive-padding">
-              <h2 className="flex items-center gap-2 text-responsive-xl font-bold mb-3" style={{ color: '#3A3780' }}>
-                <Mail className="h-5 w-5" style={{ color: '#4C49ED' }} />
-                Pending Requests
-              </h2>
-              <div className="space-y-4">
-              {/* Received Requests */}
-              {pendingRequests.received.length > 0 && (
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-responsive-sm text-gray-600">
-                    Received ({pendingRequests.received.length})
-                  </h3>
-                  <div className="space-y-2">
-                    {pendingRequests.received.map((request) => (
-                      <div
-                        key={request.friendshipId}
-                        className="flex items-center justify-between p-3 md:p-4 bg-gray-50/50 rounded-2xl hover:bg-gray-100/50 transition-colors"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate text-responsive-base">{request.email}</p>
-                          <p className="text-responsive-sm text-gray-500">
-                            {request.airline} • {request.position}
-                          </p>
-                        </div>
-                        <div className="flex gap-2 ml-4">
-                          <Button
-                            size="sm"
-                            onClick={() => handleAccept(request.friendshipId)}
-                            style={{ backgroundColor: '#6DDC91' }}
-                            className="hover:opacity-90 rounded-xl"
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleReject(request.friendshipId)}
-                            className="rounded-xl"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Sent Requests */}
-              {pendingRequests.sent.length > 0 && (
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-responsive-sm text-gray-600">
-                    Sent ({pendingRequests.sent.length})
-                  </h3>
-                  <div className="space-y-2">
-                    {pendingRequests.sent.map((request) => (
-                      <div
-                        key={request.friendshipId}
-                        className="flex items-center justify-between p-3 md:p-4 bg-gray-50/50 rounded-2xl"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate text-responsive-base">{request.email}</p>
-                          <p className="text-responsive-sm text-gray-500">
-                            {request.airline} • {request.position}
-                          </p>
-                        </div>
-                        <span className="text-responsive-sm text-gray-500 ml-4">Pending</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Friends & Roster Comparison - Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 h-[calc(100vh-32rem)] min-h-[400px]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 h-[calc(100vh-16rem)] min-h-[600px]">
           {/* Left Column: Friend List Sidebar */}
           <div className="lg:col-span-4 xl:col-span-3 h-full">
             <Card className="bg-white rounded-3xl !border-0 !shadow-none overflow-hidden h-full">
@@ -246,6 +128,11 @@ export default function FriendsPage() {
                 loading={loading}
                 selectedFriendId={selectedFriend?.userId || null}
                 onSelectFriend={(friend) => setSelectedFriend(friend)}
+                pendingRequests={pendingRequests}
+                onSendRequest={handleSendRequest}
+                onAcceptRequest={handleAccept}
+                onRejectRequest={handleReject}
+                sendingRequest={sendingRequest}
               />
             </Card>
           </div>
@@ -260,13 +147,18 @@ export default function FriendsPage() {
                 />
               </Card>
             ) : (
-              <Card className="bg-white rounded-3xl !border-0 !shadow-none overflow-hidden h-full flex items-center justify-center">
-                <CardContent className="text-center py-6 md:py-8">
-                  <Users className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 md:mb-6 text-gray-400" />
-                  <h3 className="text-responsive-2xl font-bold space-responsive-md tracking-tight" style={{ color: '#3A3780' }}>
+              <Card className="bg-white rounded-3xl !border-0 !shadow-none overflow-hidden h-full flex items-center justify-center relative">
+                 {/* Subtle radial gradient background */}
+                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-50/50 via-white to-white pointer-events-none" />
+                 
+                <CardContent className="text-center py-6 md:py-8 relative z-10">
+                  <div className="w-20 h-20 md:w-24 md:h-24 mx-auto mb-6 rounded-full bg-white shadow-lg flex items-center justify-center border border-gray-50">
+                    <Users className="h-10 w-10 md:h-12 md:w-12 text-slate-400" />
+                  </div>
+                  <h3 className="text-2xl md:text-3xl font-bold mb-3 tracking-tight" style={{ color: '#3A3780' }}>
                     Select a Friend
                   </h3>
-                  <p className="text-responsive-sm text-gray-500 max-w-sm mx-auto leading-relaxed">
+                  <p className="text-slate-500 max-w-sm mx-auto text-base md:text-lg leading-relaxed font-medium">
                     Choose a friend from the list to view and compare your rosters side by side
                   </p>
                 </CardContent>
@@ -278,4 +170,3 @@ export default function FriendsPage() {
     </div>
   );
 }
-

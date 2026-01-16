@@ -9,9 +9,10 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, X, Search, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { FlightDuty } from '@/types/salary-calculator';
 import { useAuth } from '@/contexts/AuthProvider';
-import { FriendWithProfile, getFriendDisplayName, getFriendInitial } from '@/lib/database/friends';
+import { FriendWithProfile, getFriendDisplayName, getFriendInitial, getAvatarColor } from '@/lib/database/friends';
 import { createMonthGrid, MonthGridData } from '@/lib/roster-comparison';
 import { DayGrid, LoadingSkeleton } from './roster-comparison';
 import { MIN_SUPPORTED_YEAR } from '@/lib/constants/dates';
@@ -226,7 +227,10 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
                 className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover"
               />
             ) : (
-              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
+              <div className={cn(
+                "h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center",
+                getAvatarColor(user?.id || '')
+              )}>
                 <span className="text-base sm:text-lg font-semibold text-white">{getUserInitial()}</span>
               </div>
             )}
@@ -242,7 +246,10 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
                 className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover"
               />
             ) : (
-              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-[#4C49ED] to-[#6DDC91] flex items-center justify-center">
+              <div className={cn(
+                "h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center",
+                getAvatarColor(friend.userId)
+              )}>
                 <span className="text-base sm:text-lg font-semibold text-white">{friendInitial}</span>
               </div>
             )}
