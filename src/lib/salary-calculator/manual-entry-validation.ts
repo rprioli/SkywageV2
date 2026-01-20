@@ -489,16 +489,90 @@ export function validateManualEntry(
 
   // Validate time sequence (skip for Day Off - no times required)
   if (data.dutyType !== 'off') {
-    const timeValidation = validateTimeSequence(
-      data.reportTime,
-      data.debriefTime,
-      data.isCrossDay
-    );
-    if (!timeValidation.valid) {
-      fieldErrors.timeSequence = timeValidation.error!;
-      errors.push(timeValidation.error!);
-    } else if (timeValidation.warning) {
-      warnings.push(timeValidation.warning);
+    if (data.dutyType === 'layover') {
+      // LAYOVER: Validate outbound and inbound legs separately
+      let outboundValid = true;
+      let inboundValid = true;
+
+      // OUTBOUND: reportTime -> debriefTimeOutbound
+      const outboundReport = validateTime(data.reportTime, 'Report time');
+      if (!outboundReport.valid) {
+        fieldErrors.reportTime = outboundReport.error!;
+        errors.push(outboundReport.error!);
+        outboundValid = false;
+      }
+
+      const outboundDebrief = validateTime(data.debriefTimeOutbound ?? '', 'Debrief time');
+      if (!outboundDebrief.valid) {
+        fieldErrors.debriefTimeOutbound = outboundDebrief.error!;
+        errors.push(outboundDebrief.error!);
+        outboundValid = false;
+      }
+
+      if (outboundValid) {
+        const outboundSeq = validateTimeSequence(
+          data.reportTime,
+          data.debriefTimeOutbound!,
+          data.isCrossDayOutbound ?? false
+        );
+
+        if (!outboundSeq.valid) {
+          fieldErrors.debriefTimeOutbound = outboundSeq.error!;
+          errors.push(`Outbound: ${outboundSeq.error!}`);
+          outboundValid = false;
+        } else if (outboundSeq.warning) {
+          warnings.push(`Outbound: ${outboundSeq.warning}`);
+        }
+      }
+
+      // INBOUND: reportTimeInbound -> debriefTime
+      const inboundReport = validateTime(data.reportTimeInbound ?? '', 'Report time');
+      if (!inboundReport.valid) {
+        fieldErrors.reportTimeInbound = inboundReport.error!;
+        errors.push(inboundReport.error!);
+        inboundValid = false;
+      }
+
+      const inboundDebrief = validateTime(data.debriefTime, 'Debrief time');
+      if (!inboundDebrief.valid) {
+        fieldErrors.debriefTime = inboundDebrief.error!;
+        errors.push(inboundDebrief.error!);
+        inboundValid = false;
+      }
+
+      if (inboundValid) {
+        const inboundSeq = validateTimeSequence(
+          data.reportTimeInbound!,
+          data.debriefTime,
+          data.isCrossDayInbound ?? false
+        );
+
+        if (!inboundSeq.valid) {
+          fieldErrors.debriefTime = inboundSeq.error!;
+          errors.push(`Inbound: ${inboundSeq.error!}`);
+          inboundValid = false;
+        } else if (inboundSeq.warning) {
+          warnings.push(`Inbound: ${inboundSeq.warning}`);
+        }
+      }
+
+      // Set combined timeSequence error for bottom banner if either leg failed
+      if (!outboundValid || !inboundValid) {
+        fieldErrors.timeSequence = 'Invalid time sequence for layover duty';
+      }
+    } else {
+      // NON-LAYOVER: Standard validation (turnaround, asby, etc.)
+      const timeValidation = validateTimeSequence(
+        data.reportTime,
+        data.debriefTime,
+        data.isCrossDay
+      );
+      if (!timeValidation.valid) {
+        fieldErrors.timeSequence = timeValidation.error!;
+        errors.push(timeValidation.error!);
+      } else if (timeValidation.warning) {
+        warnings.push(timeValidation.warning);
+      }
     }
   }
 
