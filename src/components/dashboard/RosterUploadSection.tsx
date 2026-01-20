@@ -90,6 +90,8 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
 
     // When the native file picker closes via "Cancel", onChange doesn't fire.
     // Focus returns to the window, so we close the modal if no file was selected.
+    // NOTE: Windows browsers can fire 'focus' before the file input populates and before onChange fires.
+    // We delay the check by 300ms to allow time for the browser to dispatch onChange if a file was selected.
     const handleWindowFocus = () => {
       window.setTimeout(() => {
         if (!awaitingFileSelectionRef.current) return;
@@ -99,7 +101,7 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
           handleUploadModalClose();
         }
         awaitingFileSelectionRef.current = false;
-      }, 0);
+      }, 300);
     };
 
     window.addEventListener('focus', handleWindowFocus, { once: true });
@@ -119,7 +121,11 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
 
   // Process file upload (with or without replacement)
   const processFileUpload = useCallback(async (file: File, performReplacement: boolean) => {
-    if (!selectedUploadMonth) return;
+    if (!selectedUploadMonth) {
+      salaryCalculator.csvUploadError('Please select a month before uploading a roster.');
+      setUploadState('month');
+      return;
+    }
 
     setUploadState('processing');
 
@@ -172,7 +178,11 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
 
   // Handle file selection and start processing
   const handleFileSelect = useCallback(async (file: File) => {
-    if (!selectedUploadMonth) return;
+    if (!selectedUploadMonth) {
+      salaryCalculator.csvUploadError('Please select a month before uploading a roster.');
+      setUploadState('month');
+      return;
+    }
 
     // Validate file first (unified validation for both CSV and Excel)
     const validation = validateFileQuick(file);
@@ -301,7 +311,7 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
               <div className="w-full max-w-sm mx-auto space-y-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Month</label>
-                  <Select onValueChange={(value) => handleMonthSelect(parseInt(value))}>
+                  <Select onValueChange={(value) => handleMonthSelect(parseInt(value, 10))}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select a month" />
                     </SelectTrigger>
