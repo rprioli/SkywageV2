@@ -80,7 +80,9 @@ export function FlightEntryForm({
     // Layover-specific fields
     inboundDate: initialData?.inboundDate || '',
     reportTimeInbound: initialData?.reportTimeInbound || '',
-    debriefTimeOutbound: initialData?.debriefTimeOutbound || ''
+    debriefTimeOutbound: initialData?.debriefTimeOutbound || '',
+    isCrossDayOutbound: initialData?.isCrossDayOutbound || false,
+    isCrossDayInbound: initialData?.isCrossDayInbound || false
   });
 
   // Track whether form submission has been attempted
@@ -139,7 +141,9 @@ export function FlightEntryForm({
         // Layover-specific fields
         inboundDate: initialData.inboundDate || '',
         reportTimeInbound: initialData.reportTimeInbound || '',
-        debriefTimeOutbound: initialData.debriefTimeOutbound || ''
+        debriefTimeOutbound: initialData.debriefTimeOutbound || '',
+        isCrossDayOutbound: initialData.isCrossDayOutbound || false,
+        isCrossDayInbound: initialData.isCrossDayInbound || false
       });
       
       // Extract destination(s) from sectors for turnaround/layover edit mode
@@ -211,9 +215,9 @@ export function FlightEntryForm({
   // eslint-disable-next-line react-hooks/exhaustive-deps -- Only run on mount to initialize form
   }, []);
 
-  // Auto-sync isCrossDay with detected value for proper real-time validation
-  // This fixes the issue where cross-day flights (e.g., report 16:00, debrief 01:00 next day)
-  // were failing validation because isCrossDay wasn't being updated when times changed
+  // Auto-sync cross-day flags with detected values for proper real-time validation
+  // For layovers: track outbound and inbound separately
+  // For other duties: track single isCrossDay flag
   useEffect(() => {
     // Helper to detect if debrief is on the next day (when debrief time < report time)
     const detectCrossDay = (reportTime: string, debriefTime: string): boolean => {
@@ -226,23 +230,45 @@ export function FlightEntryForm({
       return debriefMinutes < reportMinutes;
     };
 
-    const detectedCrossDay = formData.dutyType === 'layover'
-      ? detectCrossDay(formData.reportTimeInbound || '', formData.debriefTime)
-      : detectCrossDay(formData.reportTime, formData.debriefTime);
-    
-    // Only update if both times are filled and there's a change
-    const hasRequiredTimes = formData.dutyType === 'layover'
-      ? (formData.reportTimeInbound && formData.debriefTime)
-      : (formData.reportTime && formData.debriefTime);
-
-    if (hasRequiredTimes && detectedCrossDay !== formData.isCrossDay) {
-      setFormData(prev => ({
-        ...prev,
-        isCrossDay: detectedCrossDay
-      }));
+    if (formData.dutyType !== 'layover') {
+      // Non-layover: use standard isCrossDay for reportTime -> debriefTime
+      const detected = detectCrossDay(formData.reportTime, formData.debriefTime);
+      if (formData.reportTime && formData.debriefTime && detected !== formData.isCrossDay) {
+        setFormData(prev => ({ ...prev, isCrossDay: detected }));
+      }
+      return;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- Only react to time changes, not isCrossDay itself to avoid loops
-  }, [formData.reportTime, formData.debriefTime, formData.reportTimeInbound, formData.dutyType]);
+
+    // Layover: detect outbound and inbound cross-day separately
+    const outboundDetected = detectCrossDay(formData.reportTime, formData.debriefTimeOutbound || '');
+    const inboundDetected = detectCrossDay(formData.reportTimeInbound || '', formData.debriefTime);
+
+    const hasOutboundTimes = !!(formData.reportTime && formData.debriefTimeOutbound);
+    const hasInboundTimes = !!(formData.reportTimeInbound && formData.debriefTime);
+
+    if (!hasOutboundTimes && !hasInboundTimes) return;
+
+    setFormData(prev => {
+      let next = prev;
+
+      if (hasOutboundTimes && outboundDetected !== (prev.isCrossDayOutbound ?? false)) {
+        next = { ...next, isCrossDayOutbound: outboundDetected };
+      }
+
+      if (hasInboundTimes && inboundDetected !== (prev.isCrossDayInbound ?? false)) {
+        next = { ...next, isCrossDayInbound: inboundDetected };
+      }
+
+      return next;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- Only react to time changes
+  }, [
+    formData.dutyType,
+    formData.reportTime,
+    formData.debriefTime,
+    formData.debriefTimeOutbound,
+    formData.reportTimeInbound,
+  ]);
 
   // Handle form field changes
   const handleFieldChange = <K extends keyof ManualFlightEntryData>(
@@ -365,7 +391,9 @@ export function FlightEntryForm({
       isCrossDay: false,
       inboundDate: '',
       reportTimeInbound: '',
-      debriefTimeOutbound: ''
+      debriefTimeOutbound: '',
+      isCrossDayOutbound: false,
+      isCrossDayInbound: false
     });
     setDestination(''); // Clear destinations
     setDestination2('');
