@@ -112,7 +112,7 @@ export function useToast() {
   // Salary Calculator specific toast messages
   const salaryCalculator = {
     csvUploadSuccess: (fileName: string, flightCount: number, customMessage?: string) => {
-      showSuccess('CSV uploaded successfully', {
+      showSuccess('Roster uploaded successfully', {
         description: customMessage || `Processed ${flightCount} flights from ${fileName}`,
         duration: 5000,
       });
