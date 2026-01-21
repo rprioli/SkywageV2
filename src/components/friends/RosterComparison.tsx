@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { FlightDuty } from '@/types/salary-calculator';
 import { useAuth } from '@/contexts/AuthProvider';
+import { useProfile } from '@/contexts/ProfileProvider';
 import { FriendWithProfile, getFriendDisplayName, getFriendInitial, getAvatarColor } from '@/lib/database/friends';
 import { createMonthGrid, MonthGridData } from '@/lib/roster-comparison';
 import { DayGrid, LoadingSkeleton } from './roster-comparison';
@@ -39,6 +40,7 @@ interface SerializableFlightDuty
 
 export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
   const { session, user } = useAuth();
+  const { profile } = useProfile();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rosterData, setRosterData] = useState<RosterData | null>(null);
@@ -146,8 +148,11 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
     }
   };
 
-  // Get user initial
+  // Get user initial from profile (DB source of truth) with fallback to auth metadata
   const getUserInitial = () => {
+    if (profile?.first_name) {
+      return profile.first_name.charAt(0).toUpperCase();
+    }
     if (user?.user_metadata?.first_name) {
       return user.user_metadata.first_name.charAt(0).toUpperCase();
     }
@@ -220,9 +225,9 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
 
           {/* User avatar column */}
           <div className="flex flex-col items-center">
-            {user?.user_metadata?.avatar_url ? (
+            {(profile?.avatar_url || user?.user_metadata?.avatar_url) ? (
               <img
-                src={user.user_metadata.avatar_url}
+                src={profile?.avatar_url || user?.user_metadata?.avatar_url || ''}
                 alt="You"
                 className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover"
               />

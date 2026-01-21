@@ -7,18 +7,31 @@ import { supabase } from './supabase';
 import { updateProfile } from './db';
 
 /**
- * Updates the user's avatar URL in their metadata
+ * Updates the user's avatar URL in their profile
  * @param avatarUrl The URL of the uploaded avatar
+ * @param userId The user ID (optional, will get current user if not provided)
  * @returns An object with success status and error message if failed
  */
-export async function updateUserAvatar(avatarUrl: string): Promise<{ success: boolean; error: string | null }> {
+export async function updateUserAvatar(avatarUrl: string, userId?: string): Promise<{ success: boolean; error: string | null }> {
   try {
-    const { error } = await supabase.auth.updateUser({
-      data: { avatar_url: avatarUrl }
-    });
+    let user_id = userId;
 
-    if (error) {
-      throw error;
+    // If no user ID provided, get current user
+    if (!user_id) {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        throw new Error('User not authenticated');
+      }
+
+      user_id = user.id;
+    }
+
+    // Update profiles table (this is the source of truth for avatar_url)
+    const { error: profileError } = await updateProfile(user_id, { avatar_url: avatarUrl });
+
+    if (profileError) {
+      throw new Error(profileError.message || 'Failed to update profile table');
     }
 
     return { success: true, error: null };

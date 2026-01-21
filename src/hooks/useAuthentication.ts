@@ -159,6 +159,7 @@ export function useAuthentication() {
     lastName: string,
     airline: string,
     position: 'CCM' | 'SCCM',
+    username: string,
     nationality?: string
   ) => {
     try {
@@ -171,6 +172,7 @@ export function useAuthentication() {
         last_name: lastName,
         airline,
         position,
+        username,
         nationality
       });
 

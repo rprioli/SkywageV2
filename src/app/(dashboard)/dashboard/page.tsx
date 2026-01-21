@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
+import { useProfile } from '@/contexts/ProfileProvider';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,6 +41,7 @@ import { ManualEntrySection } from '@/components/dashboard/ManualEntrySection';
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const { salaryCalculator, showError } = useToast();
 
   // Month selection state
@@ -390,7 +392,7 @@ export default function DashboardPage() {
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <h1 className="text-responsive-3xl font-bold space-responsive-sm" style={{ color: '#3A3780' }}>
-              {getTimeBasedGreeting()}, {user?.user_metadata?.first_name || 'User'}
+              {getTimeBasedGreeting()}, {profile?.first_name || user?.user_metadata?.first_name || 'User'}
             </h1>
             <p className="text-responsive-base text-primary font-bold">
               {getCurrentDateInfo()}

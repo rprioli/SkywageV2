@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
+import { useProfile } from '@/contexts/ProfileProvider';
 import { uploadAvatar } from '@/lib/fileUpload';
 import { updateUserAvatar } from '@/lib/userProfile';
 import { validateImageFile, ALLOWED_FILE_TYPES } from '@/lib/fileValidation';
 import { setupAvatarsBucket } from '@/lib/setupStorage';
+import { getProfile } from '@/lib/db';
 import { Upload } from 'lucide-react';
 
 // Default avatar as a data URL (simple user silhouette)
@@ -18,6 +20,7 @@ interface AvatarUploadProps {
 
 export function AvatarUpload({ onUploadComplete, size = 150 }: AvatarUploadProps) {
   const { user } = useAuth();
+  const { profile, setProfile } = useProfile();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,11 +28,23 @@ export function AvatarUpload({ onUploadComplete, size = 150 }: AvatarUploadProps
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
-    // Set initial avatar URL from user metadata
-    if (user?.user_metadata?.avatar_url) {
-      setAvatarUrl(user.user_metadata.avatar_url);
-    }
-  }, [user]);
+    // Load avatar URL from database profile (source of truth)
+    const loadAvatar = async () => {
+      if (user?.id) {
+        try {
+          const { data: profile, error } = await getProfile(user.id);
+          if (profile && !error) {
+            setAvatarUrl(profile.avatar_url || null);
+          }
+        } catch {
+          // Fallback to auth metadata if database fails
+          setAvatarUrl(user?.user_metadata?.avatar_url || null);
+        }
+      }
+    };
+
+    loadAvatar();
+  }, [user?.id, user?.user_metadata?.avatar_url]);
 
   // Create a preview when a file is selected
   useEffect(() => {
@@ -67,7 +82,7 @@ export function AvatarUpload({ onUploadComplete, size = 150 }: AvatarUploadProps
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !user?.id) return;
 
     setUploading(true);
     setError(null);
@@ -80,8 +95,8 @@ export function AvatarUpload({ onUploadComplete, size = 150 }: AvatarUploadProps
         throw new Error(bucketError || 'Storage is not properly configured');
       }
 
-      // Upload the file
-      const { url, error: uploadError } = await uploadAvatar(selectedFile);
+      // Upload the file with user-scoped path
+      const { url, error: uploadError } = await uploadAvatar(selectedFile, user.id);
 
       if (uploadError) {
         throw new Error(uploadError);
@@ -91,8 +106,8 @@ export function AvatarUpload({ onUploadComplete, size = 150 }: AvatarUploadProps
         throw new Error('Failed to get URL for uploaded image');
       }
 
-      // Update user metadata
-      const { success, error: updateError } = await updateUserAvatar(url);
+      // Update profile table (source of truth)
+      const { success, error: updateError } = await updateUserAvatar(url, user.id);
 
       if (!success || updateError) {
         throw new Error(updateError || 'Failed to update profile');
@@ -102,6 +117,11 @@ export function AvatarUpload({ onUploadComplete, size = 150 }: AvatarUploadProps
       setAvatarUrl(url);
       setSelectedFile(null);
       setPreview(null);
+
+      // Update shared profile state so changes propagate across the app
+      if (profile) {
+        setProfile({ ...profile, avatar_url: url });
+      }
 
       // Notify parent component
       if (onUploadComplete) {

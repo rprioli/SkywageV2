@@ -36,9 +36,9 @@ export default function FriendsPage() {
   /**
    * Handle sending a friend request
    */
-  const handleSendRequest = async (email: string) => {
+  const handleSendRequest = async (username: string) => {
     setSendingRequest(true);
-    const result = await sendFriendRequest(email.toLowerCase());
+    const result = await sendFriendRequest(username.toLowerCase());
     setSendingRequest(false);
 
     if (result.success) {

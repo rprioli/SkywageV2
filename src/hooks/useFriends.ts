@@ -27,7 +27,7 @@ interface UseFriendsReturn {
   pendingCount: number;
   loading: boolean;
   error: string | null;
-  sendFriendRequest: (email: string) => Promise<{ success: boolean; error?: string }>;
+  sendFriendRequest: (username: string) => Promise<{ success: boolean; error?: string }>;
   respondToRequest: (friendshipId: string, status: 'accepted' | 'rejected') => Promise<{ success: boolean; error?: string }>;
   unfriend: (friendshipId: string) => Promise<{ success: boolean; error?: string }>;
   refetch: () => Promise<void>;
@@ -94,17 +94,17 @@ export function useFriends(): UseFriendsReturn {
   }, [userId]);
 
   /**
-   * Send a friend request
+   * Send a friend request by username
    */
   const sendFriendRequest = useCallback(
-    async (email: string): Promise<{ success: boolean; error?: string }> => {
+    async (username: string): Promise<{ success: boolean; error?: string }> => {
       if (!userId) {
         return { success: false, error: 'Not authenticated' };
       }
 
       try {
-        const normalizedEmail = email.trim().toLowerCase();
-        const { error: dbError } = await sendFriendRequestDb(userId, normalizedEmail);
+        const normalizedUsername = username.trim().toLowerCase();
+        const { error: dbError } = await sendFriendRequestDb(userId, normalizedUsername);
 
         if (dbError) {
           return { success: false, error: dbError };

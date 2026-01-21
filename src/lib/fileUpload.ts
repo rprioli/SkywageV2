@@ -9,9 +9,10 @@ import { validateImageFile } from './fileValidation';
 /**
  * Uploads an avatar image to Supabase Storage
  * @param file The file to upload
+ * @param userId The user ID (required for user-scoped storage paths)
  * @returns An object with the URL of the uploaded file or an error message
  */
-export async function uploadAvatar(file: File): Promise<{ url: string | null; error: string | null }> {
+export async function uploadAvatar(file: File, userId: string): Promise<{ url: string | null; error: string | null }> {
   try {
     // Validate file
     const validation = validateImageFile(file);
@@ -19,17 +20,21 @@ export async function uploadAvatar(file: File): Promise<{ url: string | null; er
       return { url: null, error: validation.error || 'Invalid file' };
     }
 
-    // Generate a unique filename
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${crypto.randomUUID()}.${fileExt}`;
-    const filePath = `${fileName}`;
+    if (!userId) {
+      return { url: null, error: 'User ID required for avatar upload' };
+    }
 
-    // Upload file to Supabase Storage
+    // Generate a user-scoped filename for easier cleanup on account deletion
+    const fileExt = file.name.split('.').pop();
+    const fileName = `avatar.${fileExt}`;
+    const filePath = `${userId}/${fileName}`;
+
+    // Upload file to Supabase Storage (upsert to replace old avatar)
     const { error: uploadError } = await supabase.storage
       .from('avatars')
       .upload(filePath, file, {
         contentType: file.type,
-        upsert: false
+        upsert: true
       });
 
     if (uploadError) {

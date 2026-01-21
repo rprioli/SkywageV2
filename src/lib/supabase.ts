@@ -81,6 +81,7 @@ export type Database = {
           first_name?: string;
           last_name?: string;
           avatar_url?: string;
+          username?: string;
           created_at: string;
           updated_at: string;
         };
@@ -93,6 +94,7 @@ export type Database = {
           first_name?: string;
           last_name?: string;
           avatar_url?: string;
+          username?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -105,6 +107,7 @@ export type Database = {
           first_name?: string;
           last_name?: string;
           avatar_url?: string;
+          username?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -401,6 +404,36 @@ export type Database = {
           updated_at?: string;
           responded_at?: string | null;
         };
+      };
+    };
+    Functions: {
+      find_profile_by_username: {
+        Args: {
+          p_username: string;
+        };
+        Returns: Array<{
+          id: string;
+          username: string | null;
+          first_name: string | null;
+          last_name: string | null;
+          airline: string;
+          position: string;
+          avatar_url: string | null;
+        }>;
+      };
+      get_profiles_public_by_ids: {
+        Args: {
+          p_ids: string[];
+        };
+        Returns: Array<{
+          id: string;
+          username: string | null;
+          first_name: string | null;
+          last_name: string | null;
+          airline: string;
+          position: string;
+          avatar_url: string | null;
+        }>;
       };
     };
   };
