@@ -4,20 +4,48 @@ import { useAuth } from '@/contexts/AuthProvider';
 import { AvatarUpload } from '@/components/profile/AvatarUpload';
 import { NationalityUpdate } from '@/components/profile/NationalityUpdate';
 import { PositionUpdate } from '@/components/profile/PositionUpdate';
+import { UsernameUpdate } from '@/components/profile/UsernameUpdate';
+import { NameUpdate } from '@/components/profile/NameUpdate';
+import { PasswordUpdate } from '@/components/profile/PasswordUpdate';
+import { DeleteAccountSection } from '@/components/profile/DeleteAccountSection';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { UserCircle, Info, Settings, Menu } from 'lucide-react';
+import { UserCircle, Info, Settings, Menu, Lock, AlertTriangle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { setupAvatarsBucket } from '@/lib/setupStorage';
+import { getProfile } from '@/lib/db';
 import { useMobileNavigation } from '@/contexts/MobileNavigationProvider';
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const [avatarUpdated, setAvatarUpdated] = useState(false);
   const [bucketError, setBucketError] = useState<string | null>(null);
+  const [profileEmail, setProfileEmail] = useState<string>('');
+  const [profileAirline, setProfileAirline] = useState<string>('');
 
   // Get mobile navigation context
   const { isMobile, toggleSidebar, isSidebarOpen } = useMobileNavigation();
+
+  // Load profile data from database (source of truth)
+  useEffect(() => {
+    const loadProfileData = async () => {
+      if (user?.id) {
+        try {
+          const { data: profile, error } = await getProfile(user.id);
+          if (profile && !error) {
+            setProfileEmail(profile.email || '');
+            setProfileAirline(profile.airline || '');
+          }
+        } catch {
+          // Fallback to auth data if DB fails
+          setProfileEmail(user?.email || '');
+          setProfileAirline(user?.user_metadata?.airline || '');
+        }
+      }
+    };
+
+    loadProfileData();
+  }, [user?.id, user?.email, user?.user_metadata?.airline]);
 
   // Check if avatars bucket exists
   useEffect(() => {
@@ -121,25 +149,23 @@ export default function ProfilePage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-6">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">First Name</p>
-                <p className="font-medium">{user?.user_metadata?.first_name || 'N/A'}</p>
+                <UsernameUpdate />
               </div>
 
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Last Name</p>
-                <p className="font-medium">{user?.user_metadata?.last_name || 'N/A'}</p>
-              </div>
+              <NameUpdate />
 
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Email</p>
-                <p className="font-medium">{user?.email || 'N/A'}</p>
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Email</p>
+                  <p className="font-medium">{profileEmail || 'N/A'}</p>
+                </div>
 
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Airline</p>
-                <p className="font-medium">{user?.user_metadata?.airline || 'N/A'}</p>
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Airline</p>
+                  <p className="font-medium">{profileAirline || 'N/A'}</p>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -163,6 +189,36 @@ export default function ProfilePage() {
                 <NationalityUpdate />
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Security Card */}
+        <Card className="bg-white rounded-3xl !border-0 !shadow-none">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2" style={{ color: '#3A3780' }}>
+              <Lock className="h-5 w-5 text-primary" />
+              Security
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <PasswordUpdate />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Danger Zone - Delete Account */}
+        <Card className="bg-white rounded-3xl !border-0 !shadow-none">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Danger Zone
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DeleteAccountSection />
           </CardContent>
         </Card>
       </div>

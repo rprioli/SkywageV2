@@ -10,14 +10,24 @@ import { supabase, Database } from '@/lib/supabase';
 type FriendshipRow = Database['public']['Tables']['friendships']['Row'];
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 
+// Public profile data returned by RPC
+export interface PublicProfile {
+  id: string;
+  username: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  airline: string;
+  position: 'CCM' | 'SCCM';
+  avatar_url: string | null;
+}
+
 // Friend data with profile information
 export interface FriendWithProfile {
   friendshipId: string;
   userId: string;
-  email: string;
+  username: string;
   airline: string;
   position: 'CCM' | 'SCCM';
-  nationality?: string;
   firstName?: string;
   lastName?: string;
   avatarUrl?: string;
@@ -30,10 +40,9 @@ export interface FriendWithProfile {
 export interface PendingRequest {
   friendshipId: string;
   userId: string;
-  email: string;
+  username: string;
   airline: string;
   position: 'CCM' | 'SCCM';
-  nationality?: string;
   firstName?: string;
   lastName?: string;
   avatarUrl?: string;
@@ -42,24 +51,47 @@ export interface PendingRequest {
 }
 
 /**
- * Find a user by email
+ * Find a user by username using SECURITY DEFINER RPC
  */
-export async function findUserByEmail(
-  email: string
-): Promise<{ data: ProfileRow | null; error: string | null }> {
+export async function findUserByUsername(
+  username: string
+): Promise<{ data: PublicProfile | null; error: string | null }> {
   try {
     const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .ilike('email', email)
-      .maybeSingle();
+      .rpc('find_profile_by_username', { p_username: username.toLowerCase() });
 
     if (error) {
       return { data: null, error: error.message };
     }
 
-    // `maybeSingle` returns `data: null, error: null` when no rows are found
-    return { data: data ?? null, error: null };
+    // RPC returns an array, we want the first (and only) result
+    const profile = Array.isArray(data) && data.length > 0 ? data[0] : null;
+    
+    return { data: profile, error: null };
+  } catch (error) {
+    return { data: null, error: (error as Error).message };
+  }
+}
+
+/**
+ * Get public profiles by IDs using SECURITY DEFINER RPC
+ */
+async function getPublicProfilesByIds(
+  userIds: string[]
+): Promise<{ data: PublicProfile[] | null; error: string | null }> {
+  try {
+    if (userIds.length === 0) {
+      return { data: [], error: null };
+    }
+
+    const { data, error } = await supabase
+      .rpc('get_profiles_public_by_ids', { p_ids: userIds });
+
+    if (error) {
+      return { data: null, error: error.message };
+    }
+
+    return { data: data || [], error: null };
   } catch (error) {
     return { data: null, error: (error as Error).message };
   }
@@ -100,14 +132,11 @@ export async function getFriendsForUser(
         : friendship.requester_id
     );
 
-    // Fetch profiles for all friends
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('*')
-      .in('id', friendUserIds);
+    // Fetch public profiles for all friends via RPC
+    const { data: profiles, error: profilesError } = await getPublicProfilesByIds(friendUserIds);
 
     if (profilesError) {
-      return { data: null, error: profilesError.message };
+      return { data: null, error: profilesError };
     }
 
     // Map friendships to FriendWithProfile
@@ -121,13 +150,12 @@ export async function getFriendsForUser(
       return {
         friendshipId: friendship.id,
         userId: friendUserId,
-        email: profile?.email || '',
+        username: profile?.username || 'unknown',
         airline: profile?.airline || '',
         position: profile?.position || 'CCM',
-        nationality: profile?.nationality,
-        firstName: profile?.first_name,
-        lastName: profile?.last_name,
-        avatarUrl: profile?.avatar_url,
+        firstName: profile?.first_name || undefined,
+        lastName: profile?.last_name || undefined,
+        avatarUrl: profile?.avatar_url || undefined,
         status: friendship.status as 'pending' | 'accepted' | 'rejected',
         createdAt: friendship.created_at,
         respondedAt: friendship.responded_at,
@@ -177,14 +205,11 @@ export async function getPendingFriendRequests(
       ...receivedRequests.map((f) => f.requester_id),
     ];
 
-    // Fetch profiles
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('*')
-      .in('id', userIds);
+    // Fetch public profiles via RPC
+    const { data: profiles, error: profilesError } = await getPublicProfilesByIds(userIds);
 
     if (profilesError) {
-      return { data: null, error: profilesError.message };
+      return { data: null, error: profilesError };
     }
 
     // Map sent requests
@@ -193,13 +218,12 @@ export async function getPendingFriendRequests(
       return {
         friendshipId: friendship.id,
         userId: friendship.receiver_id,
-        email: profile?.email || '',
+        username: profile?.username || 'unknown',
         airline: profile?.airline || '',
         position: profile?.position || 'CCM',
-        nationality: profile?.nationality,
-        firstName: profile?.first_name,
-        lastName: profile?.last_name,
-        avatarUrl: profile?.avatar_url,
+        firstName: profile?.first_name || undefined,
+        lastName: profile?.last_name || undefined,
+        avatarUrl: profile?.avatar_url || undefined,
         createdAt: friendship.created_at,
         type: 'sent' as const,
       };
@@ -211,13 +235,12 @@ export async function getPendingFriendRequests(
       return {
         friendshipId: friendship.id,
         userId: friendship.requester_id,
-        email: profile?.email || '',
+        username: profile?.username || 'unknown',
         airline: profile?.airline || '',
         position: profile?.position || 'CCM',
-        nationality: profile?.nationality,
-        firstName: profile?.first_name,
-        lastName: profile?.last_name,
-        avatarUrl: profile?.avatar_url,
+        firstName: profile?.first_name || undefined,
+        lastName: profile?.last_name || undefined,
+        avatarUrl: profile?.avatar_url || undefined,
         createdAt: friendship.created_at,
         type: 'received' as const,
       };
@@ -230,22 +253,22 @@ export async function getPendingFriendRequests(
 }
 
 /**
- * Send a friend request
+ * Send a friend request by username
  */
 export async function sendFriendRequest(
   requesterId: string,
-  receiverEmail: string
+  receiverUsername: string
 ): Promise<{ data: FriendshipRow | null; error: string | null }> {
   try {
-    // Find receiver by email
-    const { data: receiver, error: findError } = await findUserByEmail(receiverEmail);
+    // Find receiver by username using RPC
+    const { data: receiver, error: findError } = await findUserByUsername(receiverUsername);
 
     if (findError) {
       return { data: null, error: findError };
     }
 
     if (!receiver) {
-      return { data: null, error: 'User not found with that email' };
+      return { data: null, error: 'User not found with that username' };
     }
 
     // Check if requester is trying to add themselves
@@ -414,7 +437,7 @@ export async function getPendingRequestsCount(
 
 /**
  * Get display name for a friend
- * Returns "First Last" if available, otherwise falls back to email
+ * Returns "First Last" if available, otherwise falls back to username
  */
 export function getFriendDisplayName(friend: FriendWithProfile | PendingRequest): string {
   if (friend.firstName && friend.lastName) {
@@ -426,12 +449,12 @@ export function getFriendDisplayName(friend: FriendWithProfile | PendingRequest)
   if (friend.lastName) {
     return friend.lastName;
   }
-  return friend.email;
+  return friend.username;
 }
 
 /**
  * Get initial letter for a friend's avatar
- * Returns first letter of first name, or first letter of email if name not available
+ * Returns first letter of first name, or first letter of username if name not available
  */
 export function getFriendInitial(friend: FriendWithProfile | PendingRequest): string {
   if (friend.firstName) {
@@ -440,7 +463,7 @@ export function getFriendInitial(friend: FriendWithProfile | PendingRequest): st
   if (friend.lastName) {
     return friend.lastName.charAt(0).toUpperCase();
   }
-  return friend.email.charAt(0).toUpperCase();
+  return friend.username.charAt(0).toUpperCase();
 }
 
 /**

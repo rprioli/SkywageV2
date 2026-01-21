@@ -1,7 +1,7 @@
 /**
  * API Route: Send Friend Request
  * POST /api/friends/send-request
- * Handles sending friend requests by email
+ * Handles sending friend requests by username
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -23,26 +23,26 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { email } = body;
+    const { username } = body;
 
-    if (!email || typeof email !== 'string') {
+    if (!username || typeof username !== 'string') {
       return NextResponse.json(
-        { error: 'Email is required' },
+        { error: 'Username is required' },
         { status: 400 }
       );
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    // Validate username format (3-20 chars, lowercase letters/numbers/underscore)
+    const usernameRegex = /^[a-z0-9_]{3,20}$/;
+    if (!usernameRegex.test(username)) {
       return NextResponse.json(
-        { error: 'Invalid email format' },
+        { error: 'Invalid username format' },
         { status: 400 }
       );
     }
 
     // Send friend request
-    const { data, error } = await sendFriendRequest(user.id, email.trim().toLowerCase());
+    const { data, error } = await sendFriendRequest(user.id, username.trim().toLowerCase());
 
     if (error) {
       return NextResponse.json(

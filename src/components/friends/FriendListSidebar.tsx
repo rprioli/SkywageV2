@@ -25,7 +25,7 @@ interface FriendListSidebarProps {
     sent: PendingRequest[];
     received: PendingRequest[];
   };
-  onSendRequest: (email: string) => Promise<void>;
+  onSendRequest: (username: string) => Promise<void>;
   onAcceptRequest: (id: string) => Promise<void>;
   onRejectRequest: (id: string) => Promise<void>;
   sendingRequest: boolean;
@@ -43,7 +43,7 @@ export function FriendListSidebar({
   sendingRequest,
 }: FriendListSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [emailInput, setEmailInput] = useState('');
+  const [usernameInput, setUsernameInput] = useState('');
 
   // Client-side filtering based on search query
   const filteredFriends = useMemo(() => {
@@ -52,21 +52,21 @@ export function FriendListSidebar({
     const query = searchQuery.toLowerCase();
     return friends.filter((friend) => {
       const displayName = getFriendDisplayName(friend).toLowerCase();
-      const email = friend.email.toLowerCase();
+      const username = friend.username.toLowerCase();
       const airline = friend.airline.toLowerCase();
       
       return (
         displayName.includes(query) ||
-        email.includes(query) ||
+        username.includes(query) ||
         airline.includes(query)
       );
     });
   }, [friends, searchQuery]);
 
   const handleSendRequest = async () => {
-    if (!emailInput.trim()) return;
-    await onSendRequest(emailInput.trim());
-    setEmailInput('');
+    if (!usernameInput.trim()) return;
+    await onSendRequest(usernameInput.trim());
+    setUsernameInput('');
   };
 
   const hasPendingRequests = pendingRequests.received.length > 0 || pendingRequests.sent.length > 0;
@@ -81,21 +81,21 @@ export function FriendListSidebar({
         </h2>
         <div className="space-y-2">
           <Input
-            type="email"
-            placeholder="Email address"
-            value={emailInput}
-            onChange={(e) => setEmailInput(e.target.value)}
+            type="text"
+            placeholder="Username"
+            value={usernameInput}
+            onChange={(e) => setUsernameInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSendRequest()}
             disabled={sendingRequest}
             className="w-full rounded-xl h-10 py-2"
           />
           <Button
             onClick={handleSendRequest}
-            disabled={sendingRequest || !emailInput.trim()}
+            disabled={sendingRequest || !usernameInput.trim()}
             style={{ backgroundColor: '#4C49ED' }}
             className="w-full hover:opacity-90 whitespace-nowrap rounded-xl h-10"
           >
-            <Mail className="h-4 w-4 mr-2" />
+            <UserPlus className="h-4 w-4 mr-2" />
             Send Request
           </Button>
         </div>

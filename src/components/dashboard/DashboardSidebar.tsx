@@ -2,6 +2,7 @@
 
 import { useRef } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
+import { useProfile } from '@/contexts/ProfileProvider';
 import { useAuthentication } from '@/hooks/useAuthentication';
 import { useFriendsContext } from '@/contexts/FriendsProvider';
 import { Logo } from '@/components/ui/Logo';
@@ -23,6 +24,7 @@ const DEFAULT_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy
 
 export default function DashboardSidebar() {
   const { user } = useAuth();
+  const { profile } = useProfile();
   const { handleLogout, loading } = useAuthentication();
   const { pendingCount } = useFriendsContext();
   const pathname = usePathname();
@@ -101,9 +103,9 @@ export default function DashboardSidebar() {
         )}>
           <div className="absolute inset-0 rounded-full border-2 border-accent opacity-70 transition-all duration-300 group-hover:opacity-100"></div>
           <div className="w-full h-full rounded-full bg-white/20 overflow-hidden">
-            {/* Use a default avatar or user avatar if available */}
+            {/* Use avatar from profile (DB source of truth) with fallback to auth metadata */}
             <img
-              src={user?.user_metadata?.avatar_url || DEFAULT_AVATAR}
+              src={profile?.avatar_url || user?.user_metadata?.avatar_url || DEFAULT_AVATAR}
               alt="Profile"
               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
               onError={(e) => {
@@ -116,7 +118,7 @@ export default function DashboardSidebar() {
           "font-bold uppercase tracking-wide text-center",
           isMobile || isTablet ? "text-sm" : "text-base"
         )}>
-          {user?.user_metadata?.first_name} {user?.user_metadata?.last_name}
+          {profile?.first_name || user?.user_metadata?.first_name} {profile?.last_name || user?.user_metadata?.last_name}
         </h3>
         <p className="text-xs text-white/60 truncate max-w-full mt-1 text-center">
           {user?.email}

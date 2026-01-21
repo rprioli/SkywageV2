@@ -17,6 +17,7 @@ export function RegisterForm() {
     email: emailFromQuery,
     password: '',
     confirmPassword: '',
+    username: '',
     firstName: '',
     lastName: '',
     airline: 'Flydubai', // Default airline
@@ -29,6 +30,7 @@ export function RegisterForm() {
     email: '',
     password: '',
     confirmPassword: '',
+    username: '',
     firstName: '',
     lastName: '',
   });
@@ -67,6 +69,7 @@ export function RegisterForm() {
       email: '',
       password: '',
       confirmPassword: '',
+      username: '',
       firstName: '',
       lastName: '',
     };
@@ -88,6 +91,15 @@ export function RegisterForm() {
     // Confirm password validation
     if (formData.password !== formData.confirmPassword) {
       errors.confirmPassword = 'Passwords do not match';
+    }
+
+    // Username validation
+    if (!formData.username) {
+      errors.username = 'Username is required';
+    } else if (formData.username.length < 3 || formData.username.length > 20) {
+      errors.username = 'Username must be between 3 and 20 characters';
+    } else if (!/^[a-z0-9_]+$/.test(formData.username)) {
+      errors.username = 'Username can only contain lowercase letters, numbers, and underscores';
     }
 
     // Name validation
@@ -117,6 +129,7 @@ export function RegisterForm() {
         formData.lastName,
         formData.airline,
         formData.position,
+        formData.username,
         formData.nationality || undefined // Only pass nationality if it's not empty
       );
     }
@@ -187,6 +200,36 @@ export function RegisterForm() {
         />
         {validationErrors.confirmPassword && (
           <p className="text-destructive text-sm">{validationErrors.confirmPassword}</p>
+        )}
+      </div>
+
+      {/* Username */}
+      <div className="space-y-2">
+        <label htmlFor="username" className="block text-sm font-medium">
+          Username
+        </label>
+        <input
+          id="username"
+          name="username"
+          type="text"
+          value={formData.username}
+          onChange={(e) => {
+            // Enforce lowercase and format in real-time
+            const sanitized = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+            setFormData(prev => ({ ...prev, username: sanitized }));
+          }}
+          className={cn(
+            "w-full px-4 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-primary/50",
+            validationErrors.username ? "border-destructive" : "border-border"
+          )}
+          placeholder="username"
+          maxLength={20}
+        />
+        <p className="text-xs text-muted-foreground">
+          3-20 characters, lowercase letters, numbers, and underscores only
+        </p>
+        {validationErrors.username && (
+          <p className="text-destructive text-sm">{validationErrors.username}</p>
         )}
       </div>
 

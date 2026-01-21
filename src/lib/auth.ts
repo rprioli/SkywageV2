@@ -73,6 +73,7 @@ export async function signUp(
     last_name: string;
     airline: string;
     position: 'CCM' | 'SCCM';
+    username: string;
     nationality?: string;
   }
 ): Promise<{
