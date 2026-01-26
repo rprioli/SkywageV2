@@ -5,6 +5,8 @@ import { useAuth } from '@/contexts/AuthProvider';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { Input } from '@/components/ui/input';
 import { getProfile, updateProfile } from '@/lib/db';
+import { ProfileSettingsRow } from './ProfileSettingsRow';
+import { Button } from '@/components/ui/button';
 
 export function NameUpdate() {
   const { user, loading: authLoading } = useAuth();
@@ -107,91 +109,65 @@ export function NameUpdate() {
     setError(null);
   };
 
+  const fullName = [firstName, lastName].filter(Boolean).join(' ') || 'N/A';
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {isEditing ? (
-        <div className="col-span-1 md:col-span-2 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm text-muted-foreground block mb-1">First Name</label>
-              <Input
-                type="text"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                placeholder="First name"
-                className="w-full"
-              />
-            </div>
-            <div>
-              <label className="text-sm text-muted-foreground block mb-1">Last Name</label>
-              <Input
-                type="text"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                placeholder="Last name"
-                className="w-full"
-              />
-            </div>
+    <ProfileSettingsRow
+      label="Name"
+      value={authLoading ? 'Loading...' : fullName}
+      action={{
+        label: 'Edit',
+        onClick: () => setIsEditing(true),
+        disabled: authLoading
+      }}
+      isEditing={isEditing}
+    >
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md">
+          <div>
+            <label className="text-sm text-muted-foreground block mb-1">First Name</label>
+            <Input
+              type="text"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="First name"
+              className="w-full"
+            />
           </div>
-
-          <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              disabled={isUpdating}
-              className="px-3 py-1 text-sm bg-primary text-white rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50"
-            >
-              {isUpdating ? 'Saving...' : 'Save'}
-            </button>
-            <button
-              onClick={handleCancel}
-              disabled={isUpdating}
-              className="px-3 py-1 text-sm bg-muted text-foreground rounded-md hover:bg-muted/90 transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
+          <div>
+            <label className="text-sm text-muted-foreground block mb-1">Last Name</label>
+            <Input
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              placeholder="Last name"
+              className="w-full"
+            />
           </div>
-
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
         </div>
-      ) : (
-        <>
-          <div>
-            <p className="text-sm text-muted-foreground mb-1">First Name</p>
-            <div className="flex items-center gap-2">
-              <p className="font-medium">
-                {authLoading ? 'Loading...' : (firstName || 'N/A')}
-              </p>
-            </div>
-          </div>
 
-          <div>
-            <p className="text-sm text-muted-foreground mb-1">Last Name</p>
-            <div className="flex items-center gap-2">
-              <p className="font-medium">
-                {authLoading ? 'Loading...' : (lastName || 'N/A')}
-              </p>
-              <button
-                onClick={() => {
-                  setIsEditing(true);
-                  setUpdateSuccess(false);
-                  if (successTimeoutRef.current) {
-                    clearTimeout(successTimeoutRef.current);
-                  }
-                }}
-                className="text-xs text-primary hover:underline"
-                disabled={authLoading}
-              >
-                Change
-              </button>
-              {updateSuccess && (
-                <span className="text-xs text-accent">Updated successfully!</span>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-    </div>
+        {error && (
+          <p className="text-sm text-destructive">{error}</p>
+        )}
+
+        <div className="flex gap-2">
+          <Button
+            onClick={handleSave}
+            disabled={isUpdating}
+            size="sm"
+          >
+            {isUpdating ? 'Saving...' : 'Save'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isUpdating}
+            size="sm"
+          >
+            Cancel
+          </Button>
+        </div>
+      </div>
+    </ProfileSettingsRow>
   );
 }

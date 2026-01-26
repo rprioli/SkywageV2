@@ -6,6 +6,8 @@ import { CountrySelect } from '@/components/ui/CountrySelect';
 import { updateUserNationality } from '@/lib/userProfile';
 import { getProfile } from '@/lib/db';
 import { getCountryName } from '@/lib/countryUtils';
+import { ProfileSettingsRow } from './ProfileSettingsRow';
+import { Button } from '@/components/ui/button';
 
 export function NationalityUpdate() {
   const { user, loading: authLoading } = useAuth();
@@ -96,63 +98,48 @@ export function NationalityUpdate() {
   };
 
   return (
-    <div>
-      <p className="text-sm text-muted-foreground">Nationality</p>
-
-      {isEditing ? (
-        <div className="mt-1">
+    <ProfileSettingsRow
+      label="Nationality"
+      value={authLoading ? 'Loading...' : getCountryName(nationality)}
+      action={{
+        label: 'Edit',
+        onClick: () => setIsEditing(true),
+        disabled: authLoading
+      }}
+      isEditing={isEditing}
+    >
+      <div className="space-y-4">
+        <div className="max-w-md">
           <CountrySelect
             value={nationality}
             onValueChange={handleNationalityChange}
             placeholder="Select your nationality"
-            className="w-full mb-2"
+            className="w-full"
           />
-
-          <div className="flex gap-2 mt-2">
-            <button
-              onClick={handleSave}
-              disabled={isUpdating}
-              className="px-3 py-1 text-sm bg-primary text-white rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50"
-            >
-              {isUpdating ? 'Saving...' : 'Save'}
-            </button>
-            <button
-              onClick={handleCancel}
-              disabled={isUpdating}
-              className="px-3 py-1 text-sm bg-muted text-foreground rounded-md hover:bg-muted/90 transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-          </div>
-
-          {error && (
-            <p className="mt-2 text-sm text-destructive">{error}</p>
-          )}
         </div>
-      ) : (
-        <div className="flex items-center gap-2">
-          <p className="font-medium">
-            {authLoading ? 'Loading...' : getCountryName(nationality)}
-          </p>
-          <button
-            onClick={() => {
-              setIsEditing(true);
-              setUpdateSuccess(false);
-              if (successTimeoutRef.current) {
-                clearTimeout(successTimeoutRef.current);
-              }
-            }}
-            className="text-xs text-primary hover:underline"
-            disabled={authLoading}
+
+        {error && (
+          <p className="text-sm text-destructive">{error}</p>
+        )}
+
+        <div className="flex gap-2">
+          <Button
+            onClick={handleSave}
+            disabled={isUpdating}
+            size="sm"
           >
-            {nationality ? 'Change' : 'Add'}
-          </button>
-
-          {updateSuccess && (
-            <span className="text-xs text-accent">Updated successfully!</span>
-          )}
+            {isUpdating ? 'Saving...' : 'Save'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isUpdating}
+            size="sm"
+          >
+            Cancel
+          </Button>
         </div>
-      )}
-    </div>
+      </div>
+    </ProfileSettingsRow>
   );
 }
