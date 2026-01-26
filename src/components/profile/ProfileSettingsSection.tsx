@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface ProfileSettingsSectionProps {
   title: string;
@@ -13,11 +14,15 @@ export function ProfileSettingsSection({
   className,
 }: ProfileSettingsSectionProps) {
   return (
-    <section className={cn("mb-10", className)}>
-      <h2 className="text-2xl font-bold mb-4 text-[#3A3780]">{title}</h2>
-      <div className="divide-y divide-border border-t border-b border-border">
-        {children}
-      </div>
-    </section>
+    <Card className={cn("bg-white rounded-3xl !border-0 !shadow-none mb-6", className)}>
+      <CardHeader className="pb-4">
+        <CardTitle className="text-xl font-bold text-[#3A3780]">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="divide-y divide-border">
+          {children}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
