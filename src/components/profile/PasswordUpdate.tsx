@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { updatePassword } from '@/lib/auth';
+import { ProfileSettingsRow } from './ProfileSettingsRow';
+import { Button } from '@/components/ui/button';
 
 export function PasswordUpdate() {
   const [isEditing, setIsEditing] = useState(false);
@@ -81,18 +83,24 @@ export function PasswordUpdate() {
   };
 
   return (
-    <div>
-      <p className="text-sm text-muted-foreground">Password</p>
-
-      {isEditing ? (
-        <div className="mt-1 space-y-3">
+    <ProfileSettingsRow
+      label="Password"
+      value="••••••••"
+      action={{
+        label: 'Edit',
+        onClick: () => setIsEditing(true)
+      }}
+      isEditing={isEditing}
+    >
+      <div className="space-y-4">
+        <div className="max-w-md space-y-3">
           <div>
             <Input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="New password"
-              className="w-full mb-2"
+              className="w-full"
             />
           </div>
           <div>
@@ -101,52 +109,33 @@ export function PasswordUpdate() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Confirm new password"
-              className="w-full mb-2"
+              className="w-full"
             />
           </div>
-
-          <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              disabled={isUpdating}
-              className="px-3 py-1 text-sm bg-primary text-white rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50"
-            >
-              {isUpdating ? 'Saving...' : 'Save'}
-            </button>
-            <button
-              onClick={handleCancel}
-              disabled={isUpdating}
-              className="px-3 py-1 text-sm bg-muted text-foreground rounded-md hover:bg-muted/90 transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-          </div>
-
-          {error && (
-            <p className="text-sm text-destructive">{error}</p>
-          )}
         </div>
-      ) : (
-        <div className="flex items-center gap-2">
-          <p className="font-medium">••••••••</p>
-          <button
-            onClick={() => {
-              setIsEditing(true);
-              setUpdateSuccess(false);
-              if (successTimeoutRef.current) {
-                clearTimeout(successTimeoutRef.current);
-              }
-            }}
-            className="text-xs text-primary hover:underline"
+
+        {error && (
+          <p className="text-sm text-destructive">{error}</p>
+        )}
+
+        <div className="flex gap-2">
+          <Button
+            onClick={handleSave}
+            disabled={isUpdating}
+            size="sm"
           >
-            Change
-          </button>
-
-          {updateSuccess && (
-            <span className="text-xs text-accent">Password updated successfully!</span>
-          )}
+            {isUpdating ? 'Saving...' : 'Save'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isUpdating}
+            size="sm"
+          >
+            Cancel
+          </Button>
         </div>
-      )}
-    </div>
+      </div>
+    </ProfileSettingsRow>
   );
 }

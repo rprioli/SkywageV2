@@ -5,6 +5,8 @@ import { useAuth } from '@/contexts/AuthProvider';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { Input } from '@/components/ui/input';
 import { getProfile, updateProfile } from '@/lib/db';
+import { ProfileSettingsRow } from './ProfileSettingsRow';
+import { Button } from '@/components/ui/button';
 
 export function UsernameUpdate() {
   const { user, loading: authLoading } = useAuth();
@@ -120,68 +122,53 @@ export function UsernameUpdate() {
   };
 
   return (
-    <div>
-      <p className="text-sm text-muted-foreground">Username</p>
-
-      {isEditing ? (
-        <div className="mt-1">
+    <ProfileSettingsRow
+      label="Username"
+      value={authLoading ? 'Loading...' : (username || 'Not set')}
+      action={{
+        label: 'Edit',
+        onClick: () => setIsEditing(true),
+        disabled: authLoading
+      }}
+      isEditing={isEditing}
+    >
+      <div className="space-y-4">
+        <div>
           <Input
             type="text"
             value={username}
             onChange={(e) => handleUsernameChange(e.target.value)}
             placeholder="username"
-            className="w-full mb-2"
+            className="w-full max-w-md"
             maxLength={20}
           />
-          <p className="text-xs text-muted-foreground mb-2">
+          <p className="text-xs text-muted-foreground mt-1">
             3-20 characters, lowercase letters, numbers, and underscores only
           </p>
-
-          <div className="flex gap-2 mt-2">
-            <button
-              onClick={handleSave}
-              disabled={isUpdating}
-              className="px-3 py-1 text-sm bg-primary text-white rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50"
-            >
-              {isUpdating ? 'Saving...' : 'Save'}
-            </button>
-            <button
-              onClick={handleCancel}
-              disabled={isUpdating}
-              className="px-3 py-1 text-sm bg-muted text-foreground rounded-md hover:bg-muted/90 transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-          </div>
-
-          {error && (
-            <p className="mt-2 text-sm text-destructive">{error}</p>
-          )}
         </div>
-      ) : (
-        <div className="flex items-center gap-2">
-          <p className="font-medium">
-            {authLoading ? 'Loading...' : (username || 'Not set')}
-          </p>
-          <button
-            onClick={() => {
-              setIsEditing(true);
-              setUpdateSuccess(false);
-              if (successTimeoutRef.current) {
-                clearTimeout(successTimeoutRef.current);
-              }
-            }}
-            className="text-xs text-primary hover:underline"
-            disabled={authLoading}
+
+        {error && (
+          <p className="text-sm text-destructive">{error}</p>
+        )}
+
+        <div className="flex gap-2">
+          <Button
+            onClick={handleSave}
+            disabled={isUpdating}
+            size="sm"
           >
-            {username ? 'Change' : 'Set'}
-          </button>
-
-          {updateSuccess && (
-            <span className="text-xs text-accent">Updated successfully!</span>
-          )}
+            {isUpdating ? 'Saving...' : 'Save'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isUpdating}
+            size="sm"
+          >
+            Cancel
+          </Button>
         </div>
-      )}
-    </div>
+      </div>
+    </ProfileSettingsRow>
   );
 }

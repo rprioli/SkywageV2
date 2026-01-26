@@ -9,6 +9,8 @@ import { getPositionName } from '@/lib/positionUtils';
 import { recalculateMonthlyTotals } from '@/lib/salary-calculator/recalculation-engine';
 import { getAllMonthlyCalculations } from '@/lib/database/calculations';
 import { Position } from '@/types/salary-calculator';
+import { ProfileSettingsRow } from './ProfileSettingsRow';
+import { Button } from '@/components/ui/button';
 
 export function PositionUpdate() {
   const { user, loading: authLoading } = useAuth();
@@ -134,62 +136,47 @@ export function PositionUpdate() {
   };
 
   return (
-    <div>
-      <p className="text-sm text-muted-foreground">Position</p>
-
-      {isEditing ? (
-        <div className="mt-1">
+    <ProfileSettingsRow
+      label="Position"
+      value={authLoading ? 'Loading...' : getPositionName(position)}
+      action={{
+        label: 'Edit',
+        onClick: () => setIsEditing(true),
+        disabled: authLoading
+      }}
+      isEditing={isEditing}
+    >
+      <div className="space-y-4">
+        <div className="max-w-md">
           <PositionSelect
             value={position}
             onValueChange={handlePositionChange}
-            className="w-full mb-2"
+            className="w-full"
           />
-
-          <div className="flex gap-2 mt-2">
-            <button
-              onClick={handleSave}
-              disabled={isUpdating}
-              className="px-3 py-1 text-sm bg-primary text-white rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50"
-            >
-              {isUpdating ? 'Saving...' : 'Save'}
-            </button>
-            <button
-              onClick={handleCancel}
-              disabled={isUpdating}
-              className="px-3 py-1 text-sm bg-muted text-foreground rounded-md hover:bg-muted/90 transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-          </div>
-
-          {error && (
-            <p className="mt-2 text-sm text-destructive">{error}</p>
-          )}
         </div>
-      ) : (
-        <div className="flex items-center gap-2">
-          <p className="font-medium">
-            {authLoading ? 'Loading...' : getPositionName(position)}
-          </p>
-          <button
-            onClick={() => {
-              setIsEditing(true);
-              setUpdateSuccess(false);
-              if (successTimeoutRef.current) {
-                clearTimeout(successTimeoutRef.current);
-              }
-            }}
-            className="text-xs text-primary hover:underline"
-            disabled={authLoading}
+
+        {error && (
+          <p className="text-sm text-destructive">{error}</p>
+        )}
+
+        <div className="flex gap-2">
+          <Button
+            onClick={handleSave}
+            disabled={isUpdating}
+            size="sm"
           >
-            {position ? 'Change' : 'Add'}
-          </button>
-
-          {updateSuccess && (
-            <span className="text-xs text-accent">Updated successfully!</span>
-          )}
+            {isUpdating ? 'Saving...' : 'Save'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isUpdating}
+            size="sm"
+          >
+            Cancel
+          </Button>
         </div>
-      )}
-    </div>
+      </div>
+    </ProfileSettingsRow>
   );
 }
