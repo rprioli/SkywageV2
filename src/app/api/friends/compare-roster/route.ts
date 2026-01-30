@@ -2,6 +2,7 @@
  * API Route: Compare Roster with Friend
  * GET /api/friends/compare-roster?friendId={id}&month={month}&year={year}
  * Returns both users' rosters for comparison (all duty types including off days)
+ * Respects the friend's "hideRosterFromFriends" preference
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -11,6 +12,7 @@ import type { FlightDuty } from '@/types/salary-calculator';
 import { rowToFlightDuty } from '@/lib/database/flights';
 import { createServiceClient } from '@/lib/supabase-service';
 import { MIN_SUPPORTED_YEAR } from '@/lib/constants/dates';
+import { parsePreferences } from '@/lib/user-preferences';
 
 export async function GET(request: NextRequest) {
   try {
@@ -101,6 +103,23 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Check if the friend has hidden their roster
+    const { data: friendSettings } = await serviceSupabase
+      .from('user_settings')
+      .select('settings')
+      .eq('user_id', friendId)
+      .maybeSingle();
+
+    // NOTE:
+    // Our hand-written `Database` types can cause Supabase select() inference to become `never`
+    // during production type-checking (Netlify). We intentionally narrow via `unknown` here
+    // to keep this route type-safe without using `any`.
+    type FriendSettingsRow = { settings: Record<string, unknown> } | null;
+    const friendSettingsRow = friendSettings as unknown as FriendSettingsRow;
+
+    const friendPreferences = parsePreferences(friendSettingsRow?.settings);
+    const friendRosterHidden = friendPreferences.hideRosterFromFriends;
+
     // Fetch both users' rosters in parallel
     const [myRosterResult, friendRosterResult] = await Promise.all([
       serviceSupabase
@@ -151,7 +170,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         myRoster: sanitizeRoster(myRosterResult.data || []),
-        friendRoster: sanitizeRoster(friendRosterResult.data || []),
+        // Return empty roster if friend has hidden it, but include flag for UI
+        friendRoster: friendRosterHidden ? [] : sanitizeRoster(friendRosterResult.data || []),
+        friendRosterHidden,
         month,
         year,
       },
