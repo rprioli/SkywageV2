@@ -13,7 +13,7 @@ import { useMobileNavigation, useClickOutside } from '@/contexts/MobileNavigatio
 import {
   LayoutDashboard,
   BarChart,
-  User,
+  Settings,
   Users,
   LogOut,
   X
@@ -38,7 +38,7 @@ export default function DashboardSidebar() {
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Statistics', href: '/statistics', icon: BarChart },
     { name: 'Friends', href: '/friends', icon: Users, badge: pendingCount },
-    { name: 'Profile', href: '/profile', icon: User },
+    { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
   // Handle navigation link clicks on mobile - close sidebar
