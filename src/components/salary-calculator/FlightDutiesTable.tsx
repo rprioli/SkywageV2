@@ -46,6 +46,8 @@ interface FlightDutiesTableProps {
   userId?: string;
   position?: Position;
   onEditComplete?: () => void;
+  /** Externally controlled show off days state (from user preferences). If undefined, uses internal toggle. */
+  showOffDaysExternal?: boolean;
 }
 
 export function FlightDutiesTable({
@@ -59,12 +61,9 @@ export function FlightDutiesTable({
   useNewCardDesign = FEATURE_FLAGS.NEW_FLIGHT_CARDS,
   userId,
   position,
-  onEditComplete
+  onEditComplete,
+  showOffDaysExternal
 }: FlightDutiesTableProps) {
-
-
-
-
   // Bulk selection state
   const [selectedFlights, setSelectedFlights] = useState<Set<string>>(new Set());
   const [bulkMode, setBulkMode] = useState(false);
@@ -73,8 +72,11 @@ export function FlightDutiesTable({
   const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
   const [deleteAllProcessing, setDeleteAllProcessing] = useState(false);
 
-  // Toggle state for showing off days (off, rest, annual_leave) - default to Off
-  const [showOffDays, setShowOffDays] = useState(false);
+  // Toggle state for showing off days (off, rest, annual_leave)
+  // Use external control if provided (from user preferences), otherwise use local state
+  const [showOffDaysInternal, setShowOffDaysInternal] = useState(false);
+  const isExternallyControlled = showOffDaysExternal !== undefined;
+  const showOffDays = isExternallyControlled ? showOffDaysExternal : showOffDaysInternal;
 
 
 
@@ -214,21 +216,23 @@ export function FlightDutiesTable({
               )}
             </div>
             <div className="flex items-center space-x-3">
-              {/* Toggle for showing off days */}
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="show-off-days"
-                  checked={showOffDays}
-                  onCheckedChange={setShowOffDays}
-                  aria-label="Show off days"
-                />
-                <Label 
-                  htmlFor="show-off-days" 
-                  className="text-sm text-gray-600 cursor-pointer hidden sm:inline"
-                >
-                  Off Days
-                </Label>
-              </div>
+              {/* Toggle for showing off days - only show when not externally controlled */}
+              {!isExternallyControlled && (
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="show-off-days"
+                    checked={showOffDays}
+                    onCheckedChange={setShowOffDaysInternal}
+                    aria-label="Show off days"
+                  />
+                  <Label 
+                    htmlFor="show-off-days" 
+                    className="text-sm text-gray-600 cursor-pointer hidden sm:inline"
+                  >
+                    Off Days
+                  </Label>
+                </div>
+              )}
 
               {/* Three-dot menu for actions */}
               <DropdownMenu>

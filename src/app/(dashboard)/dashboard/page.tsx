@@ -36,6 +36,7 @@ import { MonthSelector } from '@/components/dashboard/MonthSelector';
 import { MIN_SUPPORTED_YEAR } from '@/lib/constants/dates';
 import { RosterUploadSection } from '@/components/dashboard/RosterUploadSection';
 import { ManualEntrySection } from '@/components/dashboard/ManualEntrySection';
+import { loadUserPreferences, UserPreferences, DEFAULT_PREFERENCES } from '@/lib/user-preferences';
 
 
 
@@ -65,6 +66,9 @@ export default function DashboardPage() {
   const [userPosition, setUserPosition] = useState<Position>('CCM');
   const [userPositionLoading, setUserPositionLoading] = useState(true);
 
+  // User preferences state
+  const [userPreferences, setUserPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
+
   // Load user position from database profile (source of truth)
   useEffect(() => {
     const loadUserPosition = async () => {
@@ -90,6 +94,18 @@ export default function DashboardPage() {
 
     loadUserPosition();
   }, [user?.id, user?.user_metadata?.position]);
+
+  // Load user preferences
+  useEffect(() => {
+    const loadPrefs = async () => {
+      if (!user?.id) return;
+
+      const { preferences } = await loadUserPreferences(user.id);
+      setUserPreferences(preferences);
+    };
+
+    loadPrefs();
+  }, [user?.id]);
 
   // Use custom hooks for data fetching
   const {
@@ -534,6 +550,7 @@ export default function DashboardPage() {
             userId={user?.id || ''}
             loading={flightDutiesLoading}
             onRecalculationComplete={handleRecalculationComplete}
+            showOffDays={!userPreferences.hideDaysOffOnDashboard}
           />
         ) : (
           <Card className="bg-white rounded-3xl !border-0 !shadow-none overflow-hidden">

@@ -33,6 +33,8 @@ interface FlightDutiesManagerProps {
   loading?: boolean;
   onFlightDeleted?: (deletedFlightId: string) => void;
   onRecalculationComplete?: () => void;
+  /** Externally controlled show off days state (from user preferences) */
+  showOffDays?: boolean;
 }
 
 export function FlightDutiesManager({
@@ -42,7 +44,8 @@ export function FlightDutiesManager({
   userId,
   loading = false,
   onFlightDeleted,
-  onRecalculationComplete
+  onRecalculationComplete,
+  showOffDays
 }: FlightDutiesManagerProps) {
   const { salaryCalculator } = useToast();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -240,6 +243,7 @@ export function FlightDutiesManager({
         userId={userId}
         position={position}
         onEditComplete={onRecalculationComplete}
+        showOffDaysExternal={showOffDays}
       />
 
       {/* Delete Confirmation Dialog */}

@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, X, Search, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Search, Calendar, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { FlightDuty } from '@/types/salary-calculator';
@@ -26,6 +26,7 @@ interface RosterComparisonProps {
 interface RosterData {
   myRoster: FlightDuty[];
   friendRoster: FlightDuty[];
+  friendRosterHidden: boolean;
   month: number;
   year: number;
 }
@@ -116,6 +117,7 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
       setRosterData({
         myRoster,
         friendRoster,
+        friendRosterHidden: rawData.friendRosterHidden || false,
         month: rawData.month,
         year: rawData.year,
       });
@@ -274,6 +276,21 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
         {error && (
           <div className="mx-2 sm:mx-4 my-4 rounded-2xl bg-red-50 p-4 text-responsive-sm text-red-700">
             {error}
+          </div>
+        )}
+
+        {/* Friend has hidden their roster */}
+        {!loading && !error && rosterData?.friendRosterHidden && (
+          <div className="mx-2 sm:mx-4 my-4 rounded-2xl bg-amber-50 border border-amber-200 p-4 flex items-start gap-3">
+            <EyeOff className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-responsive-sm font-medium text-amber-800">
+                {friendDisplayName} has hidden their roster
+              </p>
+              <p className="text-responsive-xs text-amber-700 mt-1">
+                This user has enabled privacy settings that hide their roster from friends.
+              </p>
+            </div>
           </div>
         )}
 
