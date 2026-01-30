@@ -25,6 +25,11 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   hideDaysOffOnDashboard: false,
 };
 
+const defaultPreferencesSettingsRecord: Record<string, unknown> = {
+  hideRosterFromFriends: DEFAULT_PREFERENCES.hideRosterFromFriends,
+  hideDaysOffOnDashboard: DEFAULT_PREFERENCES.hideDaysOffOnDashboard,
+};
+
 /**
  * Parse raw settings JSON into typed UserPreferences
  * Safely handles missing/malformed values by falling back to defaults
@@ -59,7 +64,7 @@ export const loadUserPreferences = async (userId: string): Promise<{
     if (error?.code === 'PGRST116' || !data) {
       const { data: newData, error: createError } = await createUserSettings({
         user_id: userId,
-        settings: DEFAULT_PREFERENCES as Record<string, unknown>,
+        settings: defaultPreferencesSettingsRecord,
       });
 
       if (createError) {

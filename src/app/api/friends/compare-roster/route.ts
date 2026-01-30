@@ -110,7 +110,14 @@ export async function GET(request: NextRequest) {
       .eq('user_id', friendId)
       .maybeSingle();
 
-    const friendPreferences = parsePreferences(friendSettings?.settings as Record<string, unknown> | null);
+    // NOTE:
+    // Our hand-written `Database` types can cause Supabase select() inference to become `never`
+    // during production type-checking (Netlify). We intentionally narrow via `unknown` here
+    // to keep this route type-safe without using `any`.
+    type FriendSettingsRow = { settings: Record<string, unknown> } | null;
+    const friendSettingsRow = friendSettings as unknown as FriendSettingsRow;
+
+    const friendPreferences = parsePreferences(friendSettingsRow?.settings);
     const friendRosterHidden = friendPreferences.hideRosterFromFriends;
 
     // Fetch both users' rosters in parallel
