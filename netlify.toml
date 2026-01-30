@@ -8,7 +8,5 @@
 
 # Netlify Next.js plugin for optimal deployment
 [[plugins]]
-  # Pin to a newer plugin/runtime that supports import attributes (`with`)
-  # in Netlify Edge Functions bundling (Deno 2+), avoiding deprecated `assert` syntax.
-  package = "@netlify/plugin-nextjs@5.15.5"
+  package = "@netlify/plugin-nextjs"
 
