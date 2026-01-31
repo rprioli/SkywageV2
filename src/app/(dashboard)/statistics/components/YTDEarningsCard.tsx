@@ -35,7 +35,7 @@ export function YTDEarningsCard({
       <Card className="bg-white rounded-3xl !border-0 !shadow-none">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2" style={{ color: '#3A3780' }}>
+            <CardTitle className="flex items-center gap-2 text-brand-ink">
               <TrendingUp className="h-5 w-5 text-primary" />
               Year-to-Date Earnings
             </CardTitle>
@@ -83,7 +83,7 @@ export function YTDEarningsCard({
     <Card className="bg-white rounded-3xl !border-0 !shadow-none">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2" style={{ color: '#3A3780' }}>
+          <CardTitle className="flex items-center gap-2 text-brand-ink">
             <TrendingUp className="h-5 w-5 text-primary" />
             Year-to-Date Earnings
           </CardTitle>
@@ -98,7 +98,7 @@ export function YTDEarningsCard({
       <CardContent className="space-y-6">
         {/* YTD Total with Comparison */}
         <div className="text-center">
-          <div className="text-3xl font-bold mb-2" style={{ color: '#3A3780' }}>
+          <div className="text-3xl font-bold mb-2 text-brand-ink">
             {formatCurrency(data.totalEarnings)}
           </div>
           <div className="text-sm text-muted-foreground mb-3">
@@ -162,7 +162,7 @@ export function YTDEarningsCard({
         <div className="grid grid-cols-2 gap-3 md:gap-4">
           {/* Fixed Earnings */}
           <div className="bg-white rounded-2xl p-3 md:p-4 text-center border border-gray-100">
-            <div className="text-sm md:text-lg font-bold text-[#3A3780] mb-1 overflow-hidden text-ellipsis">
+            <div className="text-sm md:text-lg font-bold text-brand-ink mb-1 overflow-hidden text-ellipsis">
               {formatCurrency(data.fixedEarnings)}
             </div>
             <div className="text-sm md:text-xs text-gray-500 mb-2">Fixed Pay</div>

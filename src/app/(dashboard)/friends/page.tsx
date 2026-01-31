@@ -79,7 +79,7 @@ export default function FriendsPage() {
       <div className="space-y-6 px-6 pt-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-responsive-3xl font-bold space-responsive-sm" style={{ color: '#3A3780' }}>
+            <h1 className="text-responsive-3xl font-bold space-responsive-sm text-brand-ink">
               Friends
             </h1>
             <p className="text-responsive-base text-primary font-bold">
@@ -155,7 +155,7 @@ export default function FriendsPage() {
                   <div className="w-20 h-20 md:w-24 md:h-24 mx-auto mb-6 rounded-full bg-white shadow-lg flex items-center justify-center border border-gray-50">
                     <Users className="h-10 w-10 md:h-12 md:w-12 text-slate-400" />
                   </div>
-                  <h3 className="text-2xl md:text-3xl font-bold mb-3 tracking-tight" style={{ color: '#3A3780' }}>
+                  <h3 className="text-2xl md:text-3xl font-bold mb-3 tracking-tight text-brand-ink">
                     Select a Friend
                   </h3>
                   <p className="text-slate-500 max-w-sm mx-auto text-base md:text-lg leading-relaxed font-medium">

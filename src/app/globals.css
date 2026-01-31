@@ -37,6 +37,7 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-brand-ink: var(--skywage-brand-ink);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -46,6 +47,7 @@
 :root {
   /* Brand Colors */
   --skywage-primary: #4C49ED; /* Purple */
+  --skywage-brand-ink: #3A3780; /* Dark Brand Ink */
   --skywage-accent: #6DDC91;  /* Green */
   --skywage-background: #FFFFFF; /* White */
 
@@ -101,6 +103,7 @@
 .dark {
   /* Brand Colors - slightly adjusted for dark mode */
   --skywage-primary: #5D5AFF; /* Slightly lighter purple for dark mode */
+  --skywage-brand-ink: #E0E0FF; /* Light Brand Ink for dark mode */
   --skywage-accent: #7DEEA0;  /* Slightly lighter green for dark mode */
   --skywage-background: #121212; /* Dark background */
 
@@ -165,6 +168,17 @@
   .animate-fade-in {
     animation: fadeIn 0.5s ease-out forwards;
     opacity: 0;
+  }
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
   }
 
   /* Mobile navigation utilities */

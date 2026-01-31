@@ -38,7 +38,7 @@ const PreferenceRow = ({
       <div className="flex-1 min-w-0 mr-4">
         <Label 
           htmlFor={id}
-          className="text-base font-bold text-[#3A3780] cursor-pointer"
+          className="text-base font-bold text-brand-ink cursor-pointer"
         >
           {label}
         </Label>
@@ -76,7 +76,9 @@ export const PreferencesTab = () => {
         return;
       }
 
-      setLoading(true);
+      // Don't set loading to true here to avoid spinner on initial mount if data is fast
+      // or if we want to show skeleton/default state instead
+      // setLoading(true); 
       setError(null);
 
       const { preferences: loadedPrefs, error: loadError } = await loadUserPreferences(user.id);
@@ -113,14 +115,15 @@ export const PreferencesTab = () => {
     }
   }, [user?.id, preferences]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-[#4C49ED]" />
-        <span className="ml-2 text-muted-foreground">Loading preferences...</span>
-      </div>
-    );
-  }
+  // Removed explicit loading spinner to improve UX
+  // if (loading) {
+  //   return (
+  //     <div className="flex items-center justify-center py-12">
+  //       <Loader2 className="h-6 w-6 animate-spin text-[#4C49ED]" />
+  //       <span className="ml-2 text-muted-foreground">Loading preferences...</span>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="space-y-6">

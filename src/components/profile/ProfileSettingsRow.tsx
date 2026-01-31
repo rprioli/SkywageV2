@@ -29,7 +29,7 @@ export function ProfileSettingsRow({
     <div className={cn("py-5", className)}>
       <div className="flex items-center justify-between">
         <div className="flex-1 min-w-0 mr-4">
-          <p className="text-base font-bold text-[#3A3780]">{label}</p>
+          <p className="text-base font-bold text-brand-ink">{label}</p>
           {!isEditing && value && (
             <div className="mt-1 text-sm text-muted-foreground truncate">
               {value}
@@ -47,7 +47,7 @@ export function ProfileSettingsRow({
               "font-bold h-auto px-2 py-1", 
               action.variant === 'destructive' 
                 ? "text-destructive hover:text-destructive/90" 
-                : "text-[#3A3780] hover:text-[#3A3780]/90",
+                : "text-brand-ink hover:text-brand-ink/90",
               action.className
             )}
           >
