@@ -44,7 +44,7 @@ export const ProfileTab = () => {
   const email = profile?.email || user?.email || 'N/A';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Storage Error Banner */}
       {bucketError && (
         <div className="p-4 border border-destructive/50 rounded-md bg-destructive/10 flex items-start gap-3">
@@ -67,7 +67,7 @@ export const ProfileTab = () => {
       />
 
       {/* Settings Sections Grid */}
-      <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 gap-4">
         <ProfileSettingsSection title="Personal details">
           <NameUpdate />
           <UsernameUpdate />

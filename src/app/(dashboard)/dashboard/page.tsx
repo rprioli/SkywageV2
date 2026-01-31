@@ -407,7 +407,7 @@ export default function DashboardPage() {
         {/* Header with integrated hamburger menu on mobile */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-responsive-3xl font-bold space-responsive-sm" style={{ color: '#3A3780' }}>
+            <h1 className="text-responsive-3xl font-bold space-responsive-sm text-brand-ink">
               {getTimeBasedGreeting()}, {profile?.first_name || user?.user_metadata?.first_name || 'User'}
             </h1>
             <p className="text-responsive-base text-primary font-bold">
@@ -480,11 +480,11 @@ export default function DashboardPage() {
                 </div>
                 <div className="min-w-0 flex-1 text-center md:text-left overflow-hidden">
                   {/* Mobile: Compact format */}
-                  <div className="md:hidden text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: '#3A3780' }}>
+                  <div className="md:hidden text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis text-brand-ink">
                     {calculationsLoading || isMonthSwitching ? '...' : `${Math.floor(selectedData.dutyHours)}hr`}
                   </div>
                   {/* Desktop: Full format */}
-                  <div className="hidden md:block text-responsive-3xl font-bold" style={{ color: '#3A3780' }}>
+                  <div className="hidden md:block text-responsive-3xl font-bold text-brand-ink">
                     {calculationsLoading || isMonthSwitching ? '...' : `${Math.floor(selectedData.dutyHours)}`}
                   </div>
                   <div className="text-[10px] md:text-responsive-sm whitespace-nowrap" style={{ color: '#4C49ED' }}>Flight Hours</div>
@@ -557,7 +557,7 @@ export default function DashboardPage() {
             <CardContent className="card-responsive-padding">
               <div className="text-center py-6 md:py-8" role="status" aria-label="No flight duties available">
                 <Plane className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 md:mb-6 text-gray-400" />
-                <h3 className="text-responsive-2xl font-bold space-responsive-md tracking-tight" style={{ color: '#3A3780' }}>
+                <h3 className="text-responsive-2xl font-bold space-responsive-md tracking-tight text-brand-ink">
                   No Flight Duties Yet
                 </h3>
                 <p className="text-responsive-sm text-gray-500 max-w-sm mx-auto leading-relaxed">

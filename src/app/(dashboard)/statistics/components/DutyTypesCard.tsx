@@ -65,7 +65,7 @@ export function DutyTypesCard({ data, loading = false }: DutyTypesCardProps) {
     return (
       <Card className="bg-white rounded-3xl !border-0 !shadow-none">
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2" style={{ color: '#3A3780' }}>
+          <CardTitle className="flex items-center gap-2 text-brand-ink">
             <PieChart className="h-5 w-5 text-primary" />
             Duty Types Analysis
           </CardTitle>
@@ -89,7 +89,7 @@ export function DutyTypesCard({ data, loading = false }: DutyTypesCardProps) {
     return (
       <Card className="bg-white rounded-3xl !border-0 !shadow-none">
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2" style={{ color: '#3A3780' }}>
+          <CardTitle className="flex items-center gap-2 text-brand-ink">
             <PieChart className="h-5 w-5 text-primary" />
             Duty Types Analysis
           </CardTitle>
@@ -140,7 +140,7 @@ export function DutyTypesCard({ data, loading = false }: DutyTypesCardProps) {
   return (
     <Card className="bg-white rounded-3xl !border-0 !shadow-none">
       <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2" style={{ color: '#3A3780' }}>
+        <CardTitle className="flex items-center gap-2 text-brand-ink">
           <PieChart className="h-5 w-5 text-primary" />
           Duty Types Analysis
         </CardTitle>
@@ -174,7 +174,7 @@ export function DutyTypesCard({ data, loading = false }: DutyTypesCardProps) {
 
         {/* Duty Type Breakdown */}
         <div className="space-y-4">
-          <h4 className="text-sm font-semibold text-[#3A3780]">Duty Distribution</h4>
+          <h4 className="text-sm font-semibold text-brand-ink">Duty Distribution</h4>
           {data.dutyTypeBreakdown.map((duty) => {
             const Icon = DUTY_TYPE_ICONS[duty.dutyType] ?? Plane;
             const color = DUTY_TYPE_COLORS[duty.dutyType] ?? CHART_COLORS.neutral;

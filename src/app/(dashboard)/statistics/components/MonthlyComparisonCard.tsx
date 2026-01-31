@@ -52,7 +52,7 @@ const HighestPayingDutyRow = ({
       <div className="flex flex-col gap-1.5">
         {/* Row 1: Destination */}
         <div className="flex items-center gap-3">
-          <div className="text-base font-bold truncate" style={{ color: '#3A3780' }}>
+          <div className="text-base font-bold truncate text-brand-ink">
             {getDestinations(duty.routing)}
           </div>
         </div>
@@ -84,7 +84,7 @@ export function MonthlyComparisonCard({ data, topDutyRankings, loading = false }
     return (
       <Card className="bg-white rounded-3xl !border-0 !shadow-none">
         <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2" style={{ color: '#3A3780' }}>
+          <CardTitle className="flex items-center gap-2 text-brand-ink">
             <Calendar className="h-5 w-5 text-primary" />
             Monthly Comparisons
           </CardTitle>
@@ -105,7 +105,7 @@ export function MonthlyComparisonCard({ data, topDutyRankings, loading = false }
   return (
     <Card className="bg-white rounded-3xl !border-0 !shadow-none">
       <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2" style={{ color: '#3A3780' }}>
+        <CardTitle className="flex items-center gap-2 text-brand-ink">
           <Calendar className="h-5 w-5 text-primary" />
           Monthly Comparisons
         </CardTitle>
@@ -142,7 +142,7 @@ export function MonthlyComparisonCard({ data, topDutyRankings, loading = false }
 
         {/* Top 5 Highest Paying Duties */}
         <div>
-          <h4 className="text-sm font-semibold text-[#3A3780] mb-4">
+          <h4 className="text-sm font-semibold text-brand-ink mb-4">
             Highest Paying Duties
           </h4>
           
@@ -150,7 +150,7 @@ export function MonthlyComparisonCard({ data, topDutyRankings, loading = false }
             {/* Turnarounds Column */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-sm font-semibold text-[#3A3780]">Turnarounds</span>
+                <span className="text-sm font-semibold text-brand-ink">Turnarounds</span>
               </div>
               
               {topDutyRankings.turnarounds.length > 0 ? (
@@ -172,7 +172,7 @@ export function MonthlyComparisonCard({ data, topDutyRankings, loading = false }
             {/* Layovers Column */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-sm font-semibold text-[#3A3780]">Layovers</span>
+                <span className="text-sm font-semibold text-brand-ink">Layovers</span>
               </div>
               
               {topDutyRankings.layovers.length > 0 ? (

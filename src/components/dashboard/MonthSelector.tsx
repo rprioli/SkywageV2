@@ -123,9 +123,8 @@ export const MonthSelector = memo<MonthSelectorProps>(({
         {/* Header with Year Selector */}
         <div className="flex items-start justify-between mb-4 md:mb-5">
           <div className="min-w-0 flex-1">
-            <h2 className="text-responsive-2xl font-bold space-responsive-md" style={{ color: '#3A3780' }}>Overview</h2>
-            <div className="text-responsive-5xl font-bold space-responsive-sm" style={{
-              color: '#3A3780',
+            <h2 className="text-responsive-2xl font-bold space-responsive-md text-brand-ink">Overview</h2>
+            <div className="text-responsive-5xl font-bold space-responsive-sm text-brand-ink" style={{
               transition: 'opacity 0.2s ease-in-out'
             }}>
               {loading ? '...' : formatCurrency(selectedData.totalSalary)}

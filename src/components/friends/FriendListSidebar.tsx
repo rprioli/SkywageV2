@@ -75,7 +75,7 @@ export function FriendListSidebar({
     <div className="h-full flex flex-col bg-white">
       {/* Add Friend Section */}
       <div className="card-responsive-padding pb-3 space-y-3">
-        <h2 className="flex items-center gap-2 text-responsive-base font-bold" style={{ color: '#3A3780' }}>
+        <h2 className="flex items-center gap-2 text-responsive-base font-bold text-brand-ink">
           <UserPlus className="h-5 w-5" style={{ color: '#4C49ED' }} />
           Add Friend
         </h2>
@@ -349,7 +349,7 @@ function EmptyState() {
   return (
     <div className="px-4 py-8 text-center">
       <Users className="h-8 w-8 mx-auto mb-3 text-gray-400" />
-      <p className="text-sm font-bold" style={{ color: '#3A3780' }}>No friends yet</p>
+      <p className="text-sm font-bold text-brand-ink">No friends yet</p>
       <p className="text-xs text-gray-500 mt-1">
         Add friends to see them here
       </p>
@@ -364,7 +364,7 @@ function EmptySearchState({ query }: { query: string }) {
   return (
     <div className="px-4 py-8 text-center">
       <Search className="h-8 w-8 mx-auto mb-3 text-gray-400" />
-      <p className="text-sm font-bold" style={{ color: '#3A3780' }}>No results</p>
+      <p className="text-sm font-bold text-brand-ink">No results</p>
       <p className="text-xs text-gray-500 mt-1">
         No friends matching "{query}"
       </p>

@@ -60,7 +60,7 @@ export default function StatisticsPage() {
           <Card className="bg-white rounded-3xl !border-0 !shadow-none">
             <CardContent className="card-responsive-padding text-center">
               <BarChart3 className="h-16 w-16 mx-auto mb-4 opacity-50 text-gray-400" />
-              <h3 className="text-responsive-xl font-bold mb-2 text-[#3A3780]">No Statistics Available</h3>
+              <h3 className="text-responsive-xl font-bold mb-2 text-brand-ink">No Statistics Available</h3>
               <p className="text-responsive-base text-gray-600">
                 Upload your roster files or add flights manually to see statistics here
               </p>

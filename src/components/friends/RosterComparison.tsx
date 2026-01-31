@@ -204,7 +204,7 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="min-w-[140px] text-center text-responsive-base font-bold" style={{ color: '#3A3780' }}>
+          <span className="min-w-[140px] text-center text-responsive-base font-bold text-brand-ink">
             {gridData?.monthName || ''} {selectedYear}
           </span>
           <Button
@@ -301,7 +301,7 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
         {!loading && !error && gridData && gridData.userDutyCount === 0 && gridData.friendDutyCount === 0 && (
           <div className="px-4 py-8 md:py-12 text-center">
             <Calendar className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 text-gray-400" />
-            <p className="text-responsive-base font-bold" style={{ color: '#3A3780' }}>No roster data</p>
+            <p className="text-responsive-base font-bold text-brand-ink">No roster data</p>
             <p className="text-responsive-sm text-gray-500 mt-1">
               No duties found for this month
             </p>

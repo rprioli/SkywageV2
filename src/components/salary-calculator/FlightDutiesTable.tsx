@@ -187,7 +187,7 @@ export function FlightDutiesTable({
     return (
       <Card className="border-0 shadow-none bg-transparent">
         <CardHeader className="pb-2 px-2 md:px-4">
-          <h2 className="text-responsive-2xl font-bold" style={{ color: '#3A3780' }}>Flight Duties</h2>
+          <h2 className="text-responsive-2xl font-bold text-brand-ink">Flight Duties</h2>
         </CardHeader>
         <CardContent className="pt-2 pb-8 px-2 md:px-4">
           <EmptyState />
@@ -208,7 +208,7 @@ export function FlightDutiesTable({
           {/* Header Row */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h2 className="text-responsive-2xl font-bold" style={{ color: '#3A3780' }}>Flight Duties</h2>
+              <h2 className="text-responsive-2xl font-bold text-brand-ink">Flight Duties</h2>
               {bulkMode && isSomeSelected && (
                 <Badge variant="default" className="px-3 py-1 text-sm font-medium bg-primary">
                   {selectedFlights.size} selected

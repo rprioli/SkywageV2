@@ -11,7 +11,7 @@ export function LoadingSkeleton() {
   return (
     <Card className="border-0 shadow-none bg-transparent">
       <CardHeader className="pb-4 px-2 md:px-4">
-        <h2 className="text-responsive-2xl font-bold" style={{ color: '#3A3780' }}>Flight Duties</h2>
+        <h2 className="text-responsive-2xl font-bold text-brand-ink">Flight Duties</h2>
       </CardHeader>
       <CardContent className="px-2 md:px-4">
         <div className="space-y-6">
