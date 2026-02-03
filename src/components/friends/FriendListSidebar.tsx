@@ -10,7 +10,7 @@
 import { useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Users, UserPlus, X } from 'lucide-react';
+import { Check, Search, Users, UserPlus, X } from 'lucide-react';
 import { FriendWithProfile, PendingRequest, getAvatarColor } from '@/lib/database/friends';
 import { getFriendDisplayName, getFriendInitial } from '@/lib/database/friends';
 import { cn } from '@/lib/utils';

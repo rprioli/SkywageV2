@@ -148,8 +148,15 @@ export async function GET(request: NextRequest) {
     }
 
     // Extract the friend IDs that have valid friendships
+    // NOTE:
+    // Our hand-written `Database` types can cause Supabase select() inference to become `never`
+    // during production type-checking (Netlify). We intentionally narrow via `unknown` here
+    // to keep this route type-safe without using `any`.
+    type FriendshipRow = { id: string; requester_id: string; receiver_id: string };
+    const friendshipsTyped = (friendships ?? []) as unknown as FriendshipRow[];
+
     const validFriendIds = new Set<string>();
-    for (const friendship of friendships || []) {
+    for (const friendship of friendshipsTyped) {
       // Determine which ID is the friend (not the current user)
       const friendId =
         friendship.requester_id === user.id
