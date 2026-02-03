@@ -12,7 +12,7 @@ export default function Home() {
         <div className="w-full max-w-md mx-auto">
           {/* Centered Logo */}
           <div className="flex justify-center mb-8">
-            <Logo variant="color" width={180} height={48} />
+            <Logo variant="color" width={290} height={68} />
           </div>
 
           {/* Login Header */}

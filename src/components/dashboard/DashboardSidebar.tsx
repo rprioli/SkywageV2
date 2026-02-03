@@ -69,7 +69,7 @@ export default function DashboardSidebar() {
     >
       {/* Mobile Close Button */}
       {(isMobile || isTablet) && (
-        <div className="flex justify-end p-4">
+        <div className="flex justify-end px-4 pt-4 pb-0">
           <button
             onClick={closeSidebar}
             className="p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -83,19 +83,19 @@ export default function DashboardSidebar() {
       {/* Logo */}
       <div className={cn(
         "flex justify-center",
-        isMobile || isTablet ? "py-4 px-6" : "py-8 px-6"
+        isMobile || isTablet ? "pt-0 pb-4 px-6" : "pt-12 pb-4 px-6"
       )}>
         <Logo
           variant="white"
-          width={isMobile || isTablet ? 140 : 170}
-          height={isMobile || isTablet ? 37 : 45}
+          width={isMobile || isTablet ? 170 : 200}
+          height={isMobile || isTablet ? 45 : 47}
         />
       </div>
 
       {/* Profile section */}
       <div className={cn(
         "flex flex-col items-center border-b border-white/10",
-        isMobile || isTablet ? "px-6 py-4" : "px-8 py-6"
+        isMobile || isTablet ? "px-6 pt-2 pb-6" : "px-8 pt-2 pb-6"
       )}>
         <div className={cn(
           "relative mb-4 group",

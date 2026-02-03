@@ -40,8 +40,10 @@ export const BRAND = {
 
   // Logo paths
   logo: {
-    color: '/images/logo_maincolor.png',
-    white: '/images/logo__white.png',
+    // Prefer SVG for crisp scaling at any size
+    color: '/images/logo_purple.svg',
+    white: '/images/logo_white.svg',
+    black: '/images/logo_black.svg',
     favicon: '/favicon.ico',
   },
 
