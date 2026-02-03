@@ -52,6 +52,7 @@ export interface DutyTileData {
 
 /**
  * A day with its mapped duties for both user and friend
+ * @deprecated Use MultiDayWithDuties for multi-friend comparison
  */
 export interface DayWithDuties {
   day: CalendarDay;
@@ -61,6 +62,7 @@ export interface DayWithDuties {
 
 /**
  * Result of mapping duties to a month grid
+ * @deprecated Use MultiMonthGridData for multi-friend comparison
  */
 export interface MonthGridData {
   year: number;
@@ -69,6 +71,55 @@ export interface MonthGridData {
   days: DayWithDuties[];
   userDutyCount: number;
   friendDutyCount: number;
+}
+
+// ============================================================================
+// Multi-Friend Comparison Types (Phase 4b)
+// ============================================================================
+
+/**
+ * Represents one person's duty for a specific day with pre-calculated position
+ */
+export interface PersonDutyData {
+  personId: string;
+  duty: DutyTileData | null;
+  groupPosition: TilePosition;
+}
+
+/**
+ * A day with duties for all compared people (multi-friend version)
+ */
+export interface MultiDayWithDuties {
+  day: CalendarDay;
+  /** Array of duties: index 0 = user, index 1+ = friends (in selection order) */
+  duties: PersonDutyData[];
+}
+
+/**
+ * Metadata about a person being compared (user or friend)
+ */
+export interface ComparedPerson {
+  id: string;
+  displayName: string;
+  initial: string;
+  avatarUrl?: string;
+  isUser: boolean;
+  /** True if this friend has hidden their roster from friends */
+  rosterHidden?: boolean;
+}
+
+/**
+ * Result of mapping duties to a multi-friend month grid
+ */
+export interface MultiMonthGridData {
+  year: number;
+  month: number;
+  monthName: string;
+  days: MultiDayWithDuties[];
+  /** Ordered list of people: [user, friend1, friend2, ...] */
+  people: ComparedPerson[];
+  /** Map of personId -> duty count for the month */
+  dutyCounts: Record<string, number>;
 }
 
 /**

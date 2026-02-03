@@ -19,6 +19,11 @@ import {
   getDutyTileType,
   getDestinationAirport,
   getDisplayFlightNumber,
+  // Multi-friend types
+  PersonDutyData,
+  MultiDayWithDuties,
+  ComparedPerson,
+  MultiMonthGridData,
 } from './types';
 import { generateMonthDays, formatDateKey, getMonthName } from './dayUtils';
 
@@ -310,5 +315,185 @@ export function getDutyDisplayInfo(tile: DutyTileData): {
         showHouse: false,
       };
   }
+}
+
+// ============================================================================
+// Multi-Friend Comparison Functions (Phase 4b)
+// ============================================================================
+
+/**
+ * Connection category for determining which tiles should connect without gaps
+ */
+type ConnectionCategory = 'work' | 'off' | 'rest' | 'annual_leave' | 'empty';
+
+/**
+ * Get the connection category for a duty
+ */
+function getConnectionCategory(duty: DutyTileData | null): ConnectionCategory {
+  if (!duty) return 'empty';
+  
+  switch (duty.dutyType) {
+    case 'turnaround':
+    case 'layover':
+    case 'asby':
+    case 'sby':
+    case 'recurrent':
+    case 'business_promotion':
+      return 'work';
+    case 'off':
+      return 'off';
+    case 'rest':
+      return 'rest';
+    case 'annual_leave':
+      return 'annual_leave';
+    default:
+      return 'empty';
+  }
+}
+
+/**
+ * Check if a category can connect (rest and empty never connect)
+ */
+function canConnect(category: ConnectionCategory): boolean {
+  return category !== 'rest' && category !== 'empty';
+}
+
+/**
+ * Calculate the position of a duty within a consecutive group
+ */
+function calculatePositionForDuty(
+  current: DutyTileData | null,
+  prev: DutyTileData | null,
+  next: DutyTileData | null
+): TilePosition {
+  const currentCategory = getConnectionCategory(current);
+  
+  if (!canConnect(currentCategory)) {
+    return 'single';
+  }
+  
+  const prevCategory = getConnectionCategory(prev);
+  const nextCategory = getConnectionCategory(next);
+  
+  const connectsToPrev = canConnect(prevCategory) && currentCategory === prevCategory;
+  const connectsToNext = canConnect(nextCategory) && currentCategory === nextCategory;
+  
+  if (current?.isMultiDay) {
+    const nativePosition = current.position || 'single';
+    
+    switch (nativePosition) {
+      case 'start':
+        return connectsToPrev ? 'middle' : 'start';
+      case 'end':
+        return connectsToNext ? 'middle' : 'end';
+      case 'middle':
+        return 'middle';
+      default:
+        if (connectsToPrev && connectsToNext) return 'middle';
+        if (connectsToPrev) return 'end';
+        if (connectsToNext) return 'start';
+        return 'single';
+    }
+  }
+  
+  if (connectsToPrev && connectsToNext) return 'middle';
+  if (connectsToPrev && !connectsToNext) return 'end';
+  if (!connectsToPrev && connectsToNext) return 'start';
+  
+  return 'single';
+}
+
+/**
+ * Calculate group positions for a single person's duties across all days
+ * @param duties - Map of dateKey -> DutyTileData for this person
+ * @param days - Array of CalendarDay for the month
+ * @returns Array of TilePosition for each day (same order as days)
+ */
+function calculatePersonGroupPositions(
+  duties: Map<string, DutyTileData>,
+  days: CalendarDay[]
+): TilePosition[] {
+  return days.map((day, index) => {
+    const dateKey = formatDateKey(day.date);
+    const current = duties.get(dateKey) || null;
+    
+    const prevDay = index > 0 ? days[index - 1] : null;
+    const nextDay = index < days.length - 1 ? days[index + 1] : null;
+    
+    const prev = prevDay ? duties.get(formatDateKey(prevDay.date)) || null : null;
+    const next = nextDay ? duties.get(formatDateKey(nextDay.date)) || null : null;
+    
+    return calculatePositionForDuty(current, prev, next);
+  });
+}
+
+/**
+ * Create a multi-friend month grid with all duties and pre-calculated positions
+ * @param year - Year (e.g., 2026)
+ * @param month - Month (1-12)
+ * @param people - Array of ComparedPerson (user first, then friends)
+ * @param rostersByPersonId - Map of personId -> FlightDuty[] for each person
+ * @returns MultiMonthGridData with all days, people, and mapped duties
+ */
+export function createMultiMonthGrid(
+  year: number,
+  month: number,
+  people: ComparedPerson[],
+  rostersByPersonId: Record<string, FlightDuty[]>
+): MultiMonthGridData {
+  // Generate all days for the month
+  const days = generateMonthDays(year, month);
+  
+  // Build duty tile maps for each person
+  const tileMapsByPersonId: Record<string, Map<string, DutyTileData>> = {};
+  for (const person of people) {
+    const duties = rostersByPersonId[person.id] || [];
+    tileMapsByPersonId[person.id] = mapDutiesPerDay(duties, days);
+  }
+  
+  // Calculate group positions for each person
+  const positionsByPersonId: Record<string, TilePosition[]> = {};
+  for (const person of people) {
+    positionsByPersonId[person.id] = calculatePersonGroupPositions(
+      tileMapsByPersonId[person.id],
+      days
+    );
+  }
+  
+  // Build the combined days array with all person duties
+  const daysWithDuties: MultiDayWithDuties[] = days.map((day, dayIndex) => {
+    const dateKey = formatDateKey(day.date);
+    
+    const duties: PersonDutyData[] = people.map((person) => ({
+      personId: person.id,
+      duty: tileMapsByPersonId[person.id].get(dateKey) || null,
+      groupPosition: positionsByPersonId[person.id][dayIndex],
+    }));
+    
+    return {
+      day,
+      duties,
+    };
+  });
+  
+  // Count duties for each person
+  const dutyCounts: Record<string, number> = {};
+  for (const person of people) {
+    let count = 0;
+    const tileMap = tileMapsByPersonId[person.id];
+    tileMap.forEach((tile) => {
+      if (tile) count++;
+    });
+    dutyCounts[person.id] = count;
+  }
+  
+  return {
+    year,
+    month,
+    monthName: getMonthName(month),
+    days: daysWithDuties,
+    people,
+    dutyCounts,
+  };
 }
 

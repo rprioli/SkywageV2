@@ -4,6 +4,7 @@
  * Friends Page
  * Allows users to manage their friends, send/accept requests
  * Phase 4 - Design alignment with Dashboard page
+ * Phase 4b - Multi-friend comparison support
  */
 
 import { useState } from 'react';
@@ -13,9 +14,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Menu, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { RosterComparison } from '@/components/friends/RosterComparison';
+import { useMultiFriendComparison } from '@/hooks/useMultiFriendComparison';
+import { MultiRosterComparison } from '@/components/friends/MultiRosterComparison';
 import { FriendListSidebar } from '@/components/friends/FriendListSidebar';
 import { FriendWithProfile } from '@/lib/database/friends';
+
+/** Maximum number of friends that can be compared at once */
+const MAX_SELECTED_FRIENDS = 5;
 
 export default function FriendsPage() {
   const {
@@ -31,7 +36,45 @@ export default function FriendsPage() {
   const { showSuccess, showError } = useToast();
 
   const [sendingRequest, setSendingRequest] = useState(false);
-  const [selectedFriend, setSelectedFriend] = useState<FriendWithProfile | null>(null);
+  
+  // Multi-friend selection state
+  const [selectedFriends, setSelectedFriends] = useState<FriendWithProfile[]>([]);
+
+  // Multi-friend comparison data fetching
+  const {
+    gridData,
+    loading: comparisonLoading,
+    error: comparisonError,
+    month,
+    year,
+    goToPreviousMonth,
+    goToNextMonth,
+  } = useMultiFriendComparison(selectedFriends);
+
+  /**
+   * Toggle friend selection for comparison
+   * Adds friend if not selected, removes if already selected
+   * Shows error if trying to add when max is reached
+   */
+  const handleToggleFriend = (friend: FriendWithProfile) => {
+    setSelectedFriends((prev) => {
+      const isSelected = prev.some((f) => f.userId === friend.userId);
+      
+      if (isSelected) {
+        // Remove from selection
+        return prev.filter((f) => f.userId !== friend.userId);
+      }
+      
+      // Check if max is reached before adding
+      if (prev.length >= MAX_SELECTED_FRIENDS) {
+        showError(`Maximum ${MAX_SELECTED_FRIENDS} friends can be compared at once`);
+        return prev;
+      }
+      
+      // Add to selection
+      return [...prev, friend];
+    });
+  };
 
   /**
    * Handle sending a friend request
@@ -126,8 +169,9 @@ export default function FriendsPage() {
               <FriendListSidebar
                 friends={friends}
                 loading={loading}
-                selectedFriendId={selectedFriend?.userId || null}
-                onSelectFriend={(friend) => setSelectedFriend(friend)}
+                selectedFriendIds={selectedFriends.map((f) => f.userId)}
+                onToggleFriend={handleToggleFriend}
+                onClearSelection={() => setSelectedFriends([])}
                 pendingRequests={pendingRequests}
                 onSendRequest={handleSendRequest}
                 onAcceptRequest={handleAccept}
@@ -139,11 +183,16 @@ export default function FriendsPage() {
 
           {/* Right Column: Roster Comparison Canvas */}
           <div className="lg:col-span-8 xl:col-span-9 h-full">
-            {selectedFriend ? (
+            {selectedFriends.length > 0 ? (
               <Card className="bg-white rounded-3xl !border-0 !shadow-none overflow-hidden h-full">
-                <RosterComparison
-                  friend={selectedFriend}
-                  onClose={() => setSelectedFriend(null)}
+                <MultiRosterComparison
+                  gridData={gridData}
+                  loading={comparisonLoading}
+                  error={comparisonError}
+                  month={month}
+                  year={year}
+                  onPreviousMonth={goToPreviousMonth}
+                  onNextMonth={goToNextMonth}
                 />
               </Card>
             ) : (
@@ -156,10 +205,10 @@ export default function FriendsPage() {
                     <Users className="h-10 w-10 md:h-12 md:w-12 text-slate-400" />
                   </div>
                   <h3 className="text-2xl md:text-3xl font-bold mb-3 tracking-tight text-brand-ink">
-                    Select a Friend
+                    Select Friends to Compare
                   </h3>
                   <p className="text-slate-500 max-w-sm mx-auto text-base md:text-lg leading-relaxed font-medium">
-                    Choose a friend from the list to view and compare your rosters side by side
+                    Click on friends from the list to select them for roster comparison (up to {MAX_SELECTED_FRIENDS} friends)
                   </p>
                 </CardContent>
               </Card>

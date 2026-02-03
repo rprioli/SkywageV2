@@ -2,23 +2,31 @@
 
 /**
  * Friend List Sidebar Component
- * Displays friends list with avatars, search, and selection
+ * Displays friends list with avatars, search, and multi-selection
  * Phase 4 - Design alignment with Dashboard page
+ * Phase 4b - Multi-friend comparison support
  */
 
 import { useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Users, UserPlus, Mail, Check, X } from 'lucide-react';
+import { Search, Users, UserPlus, X } from 'lucide-react';
 import { FriendWithProfile, PendingRequest, getAvatarColor } from '@/lib/database/friends';
 import { getFriendDisplayName, getFriendInitial } from '@/lib/database/friends';
 import { cn } from '@/lib/utils';
 
+/** Maximum number of friends that can be compared at once */
+const MAX_SELECTED_FRIENDS = 5;
+
 interface FriendListSidebarProps {
   friends: FriendWithProfile[];
   loading: boolean;
-  selectedFriendId: string | null;
-  onSelectFriend: (friend: FriendWithProfile) => void;
+  /** Array of selected friend user IDs for multi-selection */
+  selectedFriendIds: string[];
+  /** Toggle friend selection (add or remove from comparison) */
+  onToggleFriend: (friend: FriendWithProfile) => void;
+  /** Clear all selected friends (optional) */
+  onClearSelection?: () => void;
   
   // Add Friend & Pending Requests Props
   pendingRequests: {
@@ -34,8 +42,9 @@ interface FriendListSidebarProps {
 export function FriendListSidebar({
   friends,
   loading,
-  selectedFriendId,
-  onSelectFriend,
+  selectedFriendIds,
+  onToggleFriend,
+  onClearSelection,
   pendingRequests,
   onSendRequest,
   onAcceptRequest,
@@ -205,9 +214,28 @@ export function FriendListSidebar({
 
       {/* Friends List Header */}
       <div className="card-responsive-padding py-3 space-y-3">
-        <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-          Your Friends
-        </h2>
+        <div className="flex items-center justify-between h-6">
+          <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+            Your Friends
+          </h2>
+          {/* Selection count badge and clear button */}
+          {selectedFriendIds.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-[#4C49ED] bg-[#4C49ED]/10 px-2 py-0.5 rounded-full">
+                {selectedFriendIds.length}/{MAX_SELECTED_FRIENDS}
+              </span>
+              {onClearSelection && (
+                <button
+                  onClick={onClearSelection}
+                  className="text-xs font-medium text-gray-500 hover:text-red-500 transition-colors"
+                  aria-label="Clear all selected friends"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
+        </div>
         
         {/* Search Input */}
         <div className="relative">
@@ -238,8 +266,9 @@ export function FriendListSidebar({
               <FriendListItem
                 key={friend.friendshipId}
                 friend={friend}
-                isActive={friend.userId === selectedFriendId}
-                onClick={() => onSelectFriend(friend)}
+                isSelected={selectedFriendIds.includes(friend.userId)}
+                isMaxReached={selectedFriendIds.length >= MAX_SELECTED_FRIENDS}
+                onClick={() => onToggleFriend(friend)}
               />
             ))}
           </div>
@@ -250,32 +279,40 @@ export function FriendListSidebar({
 }
 
 /**
- * Individual Friend List Item
+ * Individual Friend List Item with multi-selection support
  */
 interface FriendListItemProps {
   friend: FriendWithProfile;
-  isActive: boolean;
+  isSelected: boolean;
+  isMaxReached: boolean;
   onClick: () => void;
 }
 
-function FriendListItem({ friend, isActive, onClick }: FriendListItemProps) {
+function FriendListItem({ friend, isSelected, isMaxReached, onClick }: FriendListItemProps) {
   const displayName = getFriendDisplayName(friend);
   const initial = getFriendInitial(friend);
   const avatarColor = getAvatarColor(friend.userId);
 
+  // Disable clicking if max is reached and this friend is not already selected
+  const isDisabled = !isSelected && isMaxReached;
+
   return (
     <button
       onClick={onClick}
+      disabled={isDisabled}
       className={cn(
         'w-full px-3 md:px-4 py-3 flex items-center gap-3 rounded-2xl transition-all duration-200',
         'focus:outline-none',
-        isActive 
+        isSelected 
           ? 'bg-[#4C49ED]/10' 
-          : 'hover:bg-gray-50/80 active:bg-gray-100'
+          : 'hover:bg-gray-50/80 active:bg-gray-100',
+        isDisabled && 'opacity-50 cursor-not-allowed hover:bg-transparent'
       )}
+      aria-pressed={isSelected}
+      aria-label={`${isSelected ? 'Deselect' : 'Select'} ${displayName} for comparison`}
     >
-      {/* Avatar or Initial */}
-      <div className="flex-shrink-0">
+      {/* Avatar or Initial with selection indicator */}
+      <div className="flex-shrink-0 relative">
         {friend.avatarUrl ? (
           <img
             src={friend.avatarUrl}
@@ -310,7 +347,7 @@ function FriendListItem({ friend, isActive, onClick }: FriendListItemProps) {
         <p
           className={cn(
             'font-medium truncate text-responsive-sm',
-            isActive ? 'text-[#4C49ED]' : 'text-gray-900'
+            isSelected ? 'text-[#4C49ED]' : 'text-gray-900'
           )}
         >
           {displayName}
