@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthProvider";
 import { Toaster } from "@/components/ui/sonner";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Skywage - Airline Salary Calculator",
@@ -19,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className="antialiased"
+        className={`${inter.className} antialiased`}
       >
         <AuthProvider>
           {children}
