@@ -293,6 +293,7 @@ function PersonRow({
   
   // Get first name only (full first name, no truncation)
   const firstName = isUserRow ? 'You' : person.displayName.split(' ')[0];
+  const avatarSrc = isUserRow ? userAvatarUrl : person.avatarUrl;
 
   /**
    * Reduce horizontal gaps so consecutive same-category tiles can visually connect.
@@ -337,10 +338,10 @@ function PersonRow({
       >
         {/* Avatar */}
         <div className="flex-shrink-0">
-          {userAvatarUrl && (isUserRow || person.avatarUrl) ? (
+          {typeof avatarSrc === 'string' && avatarSrc.length > 0 ? (
             <div className="w-10 h-10 rounded-full overflow-hidden relative shadow-sm">
               <Image
-                src={isUserRow ? userAvatarUrl : person.avatarUrl}
+                src={avatarSrc}
                 alt={person.displayName}
                 fill
                 sizes="40px"
