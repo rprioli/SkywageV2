@@ -496,4 +496,3 @@ export function createMultiMonthGrid(
     dutyCounts,
   };
 }
-
