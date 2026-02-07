@@ -8,13 +8,13 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  ResponsiveModal,
+  ResponsiveModalContent,
+  ResponsiveModalDescription,
+  ResponsiveModalFooter,
+  ResponsiveModalHeader,
+  ResponsiveModalTitle,
+} from '@/components/ui/responsive-modal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -219,17 +219,17 @@ export function EditTimesDialog({
   return (
     <>
       {/* Main Edit Dialog */}
-      <Dialog open={isOpen && !showConfirmation} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="modal-md modal-form-compact">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      <ResponsiveModal open={isOpen && !showConfirmation} onOpenChange={(open) => !open && onClose()}>
+        <ResponsiveModalContent className="modal-md modal-form-compact">
+          <ResponsiveModalHeader>
+            <ResponsiveModalTitle className="flex items-center gap-2">
               <Plane className="h-5 w-5 text-primary" />
               Edit Flight Times
-            </DialogTitle>
-            <DialogDescription>
+            </ResponsiveModalTitle>
+            <ResponsiveModalDescription>
               {flightDuty.flightNumbers.join(', ')} • {flightDuty.dutyType.toUpperCase()}
-            </DialogDescription>
-          </DialogHeader>
+            </ResponsiveModalDescription>
+          </ResponsiveModalHeader>
 
           <div className="space-y-4">
             {/* Reporting Time */}
@@ -280,16 +280,16 @@ export function EditTimesDialog({
             )}
           </div>
 
-          <DialogFooter>
+          <ResponsiveModalFooter>
             <Button variant="outline" onClick={handleCancel} disabled={loading}>
               Cancel
             </Button>
             <Button onClick={handleSaveClick} disabled={loading}>
               Save Changes
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </ResponsiveModalFooter>
+        </ResponsiveModalContent>
+      </ResponsiveModal>
 
       {/* Confirmation Dialog */}
       <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>

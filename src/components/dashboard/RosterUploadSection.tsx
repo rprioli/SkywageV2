@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, memo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ResponsiveModal, ResponsiveModalContent, ResponsiveModalDescription, ResponsiveModalHeader, ResponsiveModalTitle } from '@/components/ui/responsive-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload } from 'lucide-react';
 import { Position } from '@/types/salary-calculator';
@@ -269,19 +269,19 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
       </Button>
 
       {/* Upload Roster Modal */}
-      <Dialog open={uploadModalOpen} onOpenChange={handleUploadModalClose}>
-        <DialogContent className="modal-xl modal-touch-friendly max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="pr-10">
-            <DialogTitle className="flex items-center gap-2 justify-center sm:justify-start">
+      <ResponsiveModal open={uploadModalOpen} onOpenChange={handleUploadModalClose}>
+        <ResponsiveModalContent className="modal-xl modal-touch-friendly max-h-[90vh] overflow-y-auto">
+          <ResponsiveModalHeader className="pr-10">
+            <ResponsiveModalTitle className="flex items-center gap-2 justify-center sm:justify-start">
               <Upload className="h-5 w-5 text-primary" />
               Upload Roster
-            </DialogTitle>
+            </ResponsiveModalTitle>
             {uploadState === 'month' && (
-              <DialogDescription>
+              <ResponsiveModalDescription>
                 Select the month for your roster upload
-              </DialogDescription>
+              </ResponsiveModalDescription>
             )}
-          </DialogHeader>
+          </ResponsiveModalHeader>
 
           <div className="space-y-6">
             {/* Hidden file input (kept mounted so the auto-triggered native picker always works) */}
@@ -334,8 +334,8 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
               <ProcessingStatus status={processingStatus} />
             )}
           </div>
-        </DialogContent>
-      </Dialog>
+        </ResponsiveModalContent>
+      </ResponsiveModal>
 
       {/* Roster Replacement Confirmation Dialog */}
       {existingDataCheck && selectedUploadMonth !== null && (

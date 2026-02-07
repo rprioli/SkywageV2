@@ -398,12 +398,12 @@ export default function DashboardPage() {
   };
 
   // Get mobile navigation context
-  const { isMobile, toggleSidebar, isSidebarOpen } = useMobileNavigation();
+  const { isMobile, isDesktop, toggleSidebar, isSidebarOpen } = useMobileNavigation();
 
   return (
     <div className="space-y-4">
       {/* Header and Action Buttons - Grouped with consistent spacing */}
-      <div className="space-y-6 px-6 pt-6">
+      <div className="space-y-6 pt-2">
         {/* Header with integrated hamburger menu on mobile */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -415,8 +415,8 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* Hamburger Menu - Mobile Only */}
-          {isMobile && (
+          {/* Hamburger Menu - Mobile/Tablet Only */}
+          {!isDesktop && (
             <Button
               variant="ghost"
               size="sm"
@@ -453,7 +453,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Top Section - Monthly Overview + Side Cards */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6 responsive-container">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
         {/* Monthly Overview - Large Card (2/3 width on desktop) */}
         <div className="xl:col-span-2">
           <MonthSelector
@@ -470,24 +470,25 @@ export default function DashboardPage() {
         </div>
 
         {/* Side Cards - Responsive stacking: 3 cols on mobile, 2 cols on tablet, 1 col on desktop */}
-        <div className="grid grid-cols-3 sm:grid-cols-2 xl:grid-cols-1 gap-2 md:gap-6">
+        <div className="@container">
+          <div className="grid grid-cols-3 sm:grid-cols-2 xl:grid-cols-1 gap-2 @md:gap-6">
           {/* Flight Hours Card - Purple (Primary Brand Color) */}
           <Card className="bg-white rounded-3xl !border-0 !shadow-none">
-            <CardContent className="p-2 md:p-6">
-              <div className="flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-4">
-                <div className="w-9 h-9 md:w-16 md:h-16 rounded-xl md:rounded-2xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(76, 73, 237, 0.15)' }}>
-                  <Clock className="h-4 w-4 md:h-8 md:w-8" style={{ color: '#4C49ED' }} />
+            <CardContent className="p-2 @md:p-6">
+              <div className="flex flex-col @md:flex-row items-center @md:items-center gap-1.5 @md:gap-4">
+                <div className="w-9 h-9 @md:w-16 @md:h-16 rounded-xl @md:rounded-2xl flex items-center justify-center flex-shrink-0 bg-[rgba(76,73,237,0.15)]">
+                  <Clock className="h-4 w-4 @md:h-8 @md:w-8 text-[#4C49ED]" />
                 </div>
-                <div className="min-w-0 flex-1 text-center md:text-left overflow-hidden">
+                <div className="min-w-0 flex-1 text-center @md:text-left overflow-hidden">
                   {/* Mobile: Compact format */}
-                  <div className="md:hidden text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis text-brand-ink">
+                  <div className="@md:hidden text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis text-brand-ink">
                     {calculationsLoading || isMonthSwitching ? '...' : `${Math.floor(selectedData.dutyHours)}hr`}
                   </div>
                   {/* Desktop: Full format */}
-                  <div className="hidden md:block text-responsive-3xl font-bold text-brand-ink">
+                  <div className="hidden @md:block text-responsive-3xl font-bold text-brand-ink">
                     {calculationsLoading || isMonthSwitching ? '...' : `${Math.floor(selectedData.dutyHours)}`}
                   </div>
-                  <div className="text-[10px] md:text-responsive-sm whitespace-nowrap" style={{ color: '#4C49ED' }}>Flight Hours</div>
+                  <div className="text-[10px] @md:text-responsive-sm whitespace-nowrap text-[#4C49ED]">Flight Hours</div>
                 </div>
               </div>
             </CardContent>
@@ -496,21 +497,21 @@ export default function DashboardPage() {
 
           {/* Flight Pay Card - Green (Accent Brand Color) */}
           <Card className="bg-white rounded-3xl !border-0 !shadow-none">
-            <CardContent className="p-2 md:p-6">
-              <div className="flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-4">
-                <div className="w-9 h-9 md:w-16 md:h-16 rounded-xl md:rounded-2xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(109, 220, 145, 0.2)' }}>
-                  <Banknote className="h-4 w-4 md:h-8 md:w-8" style={{ color: '#6DDC91' }} />
+            <CardContent className="p-2 @md:p-6">
+              <div className="flex flex-col @md:flex-row items-center @md:items-center gap-1.5 @md:gap-4">
+                <div className="w-9 h-9 @md:w-16 @md:h-16 rounded-xl @md:rounded-2xl flex items-center justify-center flex-shrink-0 bg-[rgba(109,220,145,0.2)]">
+                  <Banknote className="h-4 w-4 @md:h-8 @md:w-8 text-[#6DDC91]" />
                 </div>
-                <div className="min-w-0 flex-1 text-center md:text-left overflow-hidden">
+                <div className="min-w-0 flex-1 text-center @md:text-left overflow-hidden">
                   {/* Mobile: Compact format */}
-                  <div className="md:hidden text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: '#059669' }}>
+                  <div className="@md:hidden text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis text-[#059669]">
                     AED {currentCalculation ? formatCurrencyCompact(currentCalculation.flightPay) : formatCurrencyCompact(0)}
                   </div>
                   {/* Desktop: Full format */}
-                  <div className="hidden md:block text-responsive-xl font-bold" style={{ color: '#059669' }}>
+                  <div className="hidden @md:block text-responsive-xl font-bold text-[#059669]">
                     {currentCalculation ? formatCurrency(currentCalculation.flightPay) : formatCurrency(0)}
                   </div>
-                  <div className="text-[10px] md:text-responsive-sm whitespace-nowrap" style={{ color: '#10b981' }}>Flight Pay</div>
+                  <div className="text-[10px] @md:text-responsive-sm whitespace-nowrap text-[#10b981]">Flight Pay</div>
                 </div>
               </div>
             </CardContent>
@@ -518,56 +519,55 @@ export default function DashboardPage() {
 
           {/* Per Diem Card - Teal (Complementary Color) */}
           <Card className="bg-white rounded-3xl !border-0 !shadow-none">
-            <CardContent className="p-2 md:p-6">
-              <div className="flex flex-col md:flex-row items-center md:items-center gap-1.5 md:gap-4">
-                <div className="w-9 h-9 md:w-16 md:h-16 rounded-xl md:rounded-2xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(20, 184, 166, 0.15)' }}>
-                  <UtensilsCrossed className="h-4 w-4 md:h-8 md:w-8" style={{ color: '#14b8a6' }} />
+            <CardContent className="p-2 @md:p-6">
+              <div className="flex flex-col @md:flex-row items-center @md:items-center gap-1.5 @md:gap-4">
+                <div className="w-9 h-9 @md:w-16 @md:h-16 rounded-xl @md:rounded-2xl flex items-center justify-center flex-shrink-0 bg-[rgba(20,184,166,0.15)]">
+                  <UtensilsCrossed className="h-4 w-4 @md:h-8 @md:w-8 text-[#14b8a6]" />
                 </div>
-                <div className="min-w-0 flex-1 text-center md:text-left overflow-hidden">
+                <div className="min-w-0 flex-1 text-center @md:text-left overflow-hidden">
                   {/* Mobile: Compact format */}
-                  <div className="md:hidden text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: '#0f766e' }}>
+                  <div className="@md:hidden text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis text-[#0f766e]">
                     AED {currentCalculation ? formatCurrencyCompact(currentCalculation.perDiemPay) : formatCurrencyCompact(0)}
                   </div>
                   {/* Desktop: Full format */}
-                  <div className="hidden md:block text-responsive-xl font-bold" style={{ color: '#0f766e' }}>
+                  <div className="hidden @md:block text-responsive-xl font-bold text-[#0f766e]">
                     {currentCalculation ? formatCurrency(currentCalculation.perDiemPay) : formatCurrency(0)}
                   </div>
-                  <div className="text-[10px] md:text-responsive-sm whitespace-nowrap" style={{ color: '#14b8a6' }}>Per Diem</div>
+                  <div className="text-[10px] @md:text-responsive-sm whitespace-nowrap text-[#14b8a6]">Per Diem</div>
                 </div>
               </div>
             </CardContent>
           </Card>
+          </div>
         </div>
       </div>
 
-      {/* Flight Duties Section - Full Width with minimal horizontal padding */}
-      <div className="px-2 md:px-4">
-        {flightDuties.length > 0 ? (
-          <FlightDutiesManager
-            flightDuties={flightDuties}
-            layoverRestPeriods={layoverRestPeriods}
-            position={userPosition as Position}
-            userId={user?.id || ''}
-            loading={flightDutiesLoading}
-            onRecalculationComplete={handleRecalculationComplete}
-            showOffDays={!userPreferences.hideDaysOffOnDashboard}
-          />
-        ) : (
-          <Card className="bg-white rounded-3xl !border-0 !shadow-none overflow-hidden">
-            <CardContent className="card-responsive-padding">
-              <div className="text-center py-6 md:py-8" role="status" aria-label="No flight duties available">
-                <Plane className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 md:mb-6 text-gray-400" />
-                <h3 className="text-responsive-2xl font-bold space-responsive-md tracking-tight text-brand-ink">
-                  No Flight Duties Yet
-                </h3>
-                <p className="text-responsive-sm text-gray-500 max-w-sm mx-auto leading-relaxed">
-                  Upload your roster file or add flights manually to see them here
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      {/* Flight Duties Section */}
+      {flightDuties.length > 0 ? (
+        <FlightDutiesManager
+          flightDuties={flightDuties}
+          layoverRestPeriods={layoverRestPeriods}
+          position={userPosition as Position}
+          userId={user?.id || ''}
+          loading={flightDutiesLoading}
+          onRecalculationComplete={handleRecalculationComplete}
+          showOffDays={!userPreferences.hideDaysOffOnDashboard}
+        />
+      ) : (
+        <Card className="bg-white rounded-3xl !border-0 !shadow-none overflow-hidden">
+          <CardContent className="card-responsive-padding">
+            <div className="text-center py-6 md:py-8" role="status" aria-label="No flight duties available">
+              <Plane className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 md:mb-6 text-gray-400" />
+              <h3 className="text-responsive-2xl font-bold space-responsive-md tracking-tight text-brand-ink">
+                No Flight Duties Yet
+              </h3>
+              <p className="text-responsive-sm text-gray-500 max-w-sm mx-auto leading-relaxed">
+                Upload your roster file or add flights manually to see them here
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Single Flight Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

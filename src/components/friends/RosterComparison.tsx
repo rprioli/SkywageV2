@@ -7,6 +7,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { ChevronLeft, ChevronRight, X, Search, Calendar, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -228,11 +229,15 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
           {/* User avatar column */}
           <div className="flex flex-col items-center">
             {(profile?.avatar_url || user?.user_metadata?.avatar_url) ? (
-              <img
-                src={profile?.avatar_url || user?.user_metadata?.avatar_url || ''}
-                alt="You"
-                className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover"
-              />
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full overflow-hidden relative">
+                <Image
+                  src={profile?.avatar_url || user?.user_metadata?.avatar_url || ''}
+                  alt="You"
+                  fill
+                  sizes="48px"
+                  className="object-cover"
+                />
+              </div>
             ) : (
               <div className={cn(
                 "h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center",
@@ -247,11 +252,15 @@ export function RosterComparison({ friend, onClose }: RosterComparisonProps) {
           {/* Friend avatar column */}
           <div className="flex flex-col items-center">
             {friend.avatarUrl ? (
-              <img
-                src={friend.avatarUrl}
-                alt={friendDisplayName}
-                className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover"
-              />
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full overflow-hidden relative">
+                <Image
+                  src={friend.avatarUrl}
+                  alt={friendDisplayName}
+                  fill
+                  sizes="48px"
+                  className="object-cover"
+                />
+              </div>
             ) : (
               <div className={cn(
                 "h-10 w-10 sm:h-12 sm:w-12 rounded-full flex items-center justify-center",

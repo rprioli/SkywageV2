@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthProvider';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { useAuthentication } from '@/hooks/useAuthentication';
@@ -85,18 +86,13 @@ export default function DashboardSidebar() {
       ref={sidebarRef}
       className={cn(
         "bg-primary text-white flex flex-col shadow-lg transition-all duration-300 z-50",
-        // Desktop: Fixed positioning, always visible
-        isDesktop && "fixed top-0 left-0 h-screen w-[280px] rounded-r-3xl",
-        // Tablet: Overlay sidebar (fixed positioning with slide animation)
-        isTablet && [
-          "fixed top-0 left-0 h-screen w-[240px] rounded-r-2xl",
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        ],
-        // Mobile: Overlay sidebar (fixed positioning with slide animation)
-        isMobile && [
-          "fixed top-0 left-0 h-screen w-[280px] rounded-r-3xl",
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        ]
+        "fixed top-0 left-0 h-dvh w-[280px] rounded-r-3xl",
+        // Mobile/Tablet: Hidden by default, shown when open
+        // Desktop (lg:): Always visible via CSS
+        isSidebarOpen ? "translate-x-0" : "-translate-x-full",
+        "lg:translate-x-0",  // CSS-driven visibility on desktop prevents FOUC
+        // Tablet: Narrower width
+        isTablet && "w-[240px] rounded-r-2xl"
       )}
     >
       {/* Mobile Close Button */}
@@ -115,7 +111,8 @@ export default function DashboardSidebar() {
       {/* Logo */}
       <div className={cn(
         "flex justify-center text-center",
-        isMobile || isTablet ? "pt-0 pb-8 px-6" : "pt-12 pb-10 px-6"
+        isMobile || isTablet ? "pt-0 pb-8 px-6" : "pt-12 pb-10 px-6",
+        "landscape:pb-4"
       )}>
         <Logo
           variant="white"
@@ -125,16 +122,18 @@ export default function DashboardSidebar() {
       </div>
 
       {/* Profile section */}
-      <div className="flex flex-col items-center mb-10 px-6">
+      <div className="flex flex-col items-center mb-10 landscape:mb-4 px-6">
         <div className={cn(
           "relative mb-3",
           isMobile || isTablet ? "w-16 h-16" : "w-20 h-20"
         )}>
-          <div className="w-full h-full rounded-full bg-white/20 overflow-hidden">
-            <img
+          <div className="w-full h-full rounded-full bg-white/20 overflow-hidden relative">
+            <Image
               src={profile?.avatar_url || user?.user_metadata?.avatar_url || DEFAULT_AVATAR}
               alt="Profile"
-              className="w-full h-full object-cover"
+              fill
+              sizes="80px"
+              className="object-cover"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = DEFAULT_AVATAR;
               }}
@@ -153,7 +152,7 @@ export default function DashboardSidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-6 space-y-8 overflow-y-auto scrollbar-hide">
+      <nav className="flex-1 min-h-0 px-6 space-y-8 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] scrollbar-hide">
         {/* Menu Section */}
         <div>
           <h4 className="mb-4 text-[10px] font-bold uppercase tracking-[0.15em] text-white/40">
@@ -182,7 +181,8 @@ export default function DashboardSidebar() {
       {/* Logout button */}
       <div className={cn(
         "mt-auto",
-        isMobile || isTablet ? "px-6 py-6" : "px-6 py-8"
+        isMobile || isTablet ? "px-6 py-6" : "px-6 py-8",
+        "landscape:py-4"
       )}>
         <button
           onClick={handleLogout}

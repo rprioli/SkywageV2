@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuthentication } from '@/hooks/useAuthentication';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
 import { CountrySelect } from '@/components/ui/CountrySelect';
 
 export function RegisterForm() {
@@ -142,15 +143,14 @@ export function RegisterForm() {
         <label htmlFor="email" className="block text-sm font-medium">
           Email
         </label>
-        <input
+        <Input
           id="email"
           name="email"
           type="email"
           value={formData.email}
           onChange={handleChange}
           className={cn(
-            "w-full px-4 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-primary/50",
-            validationErrors.email ? "border-destructive" : "border-border"
+            validationErrors.email ? "border-destructive" : ""
           )}
           placeholder="your.email@example.com"
         />
@@ -164,15 +164,14 @@ export function RegisterForm() {
         <label htmlFor="password" className="block text-sm font-medium">
           Password
         </label>
-        <input
+        <Input
           id="password"
           name="password"
           type="password"
           value={formData.password}
           onChange={handleChange}
           className={cn(
-            "w-full px-4 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-primary/50",
-            validationErrors.password ? "border-destructive" : "border-border"
+            validationErrors.password ? "border-destructive" : ""
           )}
           placeholder="••••••••"
         />
@@ -186,15 +185,14 @@ export function RegisterForm() {
         <label htmlFor="confirmPassword" className="block text-sm font-medium">
           Confirm Password
         </label>
-        <input
+        <Input
           id="confirmPassword"
           name="confirmPassword"
           type="password"
           value={formData.confirmPassword}
           onChange={handleChange}
           className={cn(
-            "w-full px-4 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-primary/50",
-            validationErrors.confirmPassword ? "border-destructive" : "border-border"
+            validationErrors.confirmPassword ? "border-destructive" : ""
           )}
           placeholder="••••••••"
         />
@@ -238,15 +236,14 @@ export function RegisterForm() {
         <label htmlFor="firstName" className="block text-sm font-medium">
           First Name
         </label>
-        <input
+        <Input
           id="firstName"
           name="firstName"
           type="text"
           value={formData.firstName}
           onChange={handleChange}
           className={cn(
-            "w-full px-4 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-primary/50",
-            validationErrors.firstName ? "border-destructive" : "border-border"
+            validationErrors.firstName ? "border-destructive" : ""
           )}
           placeholder="John"
         />
@@ -260,15 +257,14 @@ export function RegisterForm() {
         <label htmlFor="lastName" className="block text-sm font-medium">
           Last Name
         </label>
-        <input
+        <Input
           id="lastName"
           name="lastName"
           type="text"
           value={formData.lastName}
           onChange={handleChange}
           className={cn(
-            "w-full px-4 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-primary/50",
-            validationErrors.lastName ? "border-destructive" : "border-border"
+            validationErrors.lastName ? "border-destructive" : ""
           )}
           placeholder="Doe"
         />

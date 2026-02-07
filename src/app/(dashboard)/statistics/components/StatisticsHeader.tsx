@@ -4,13 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 
 interface StatisticsHeaderProps {
-  isMobile: boolean;
+  isDesktop: boolean;
   isSidebarOpen: boolean;
   toggleSidebar: () => void;
 }
 
 export const StatisticsHeader = ({
-  isMobile,
+  isDesktop,
   isSidebarOpen,
   toggleSidebar,
 }: StatisticsHeaderProps) => {
@@ -25,8 +25,8 @@ export const StatisticsHeader = ({
         </p>
       </div>
 
-      {/* Hamburger Menu - Mobile Only */}
-      {isMobile && (
+      {/* Hamburger Menu - Mobile/Tablet Only */}
+      {!isDesktop && (
         <Button
           variant="ghost"
           size="sm"

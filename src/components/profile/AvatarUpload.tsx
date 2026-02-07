@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthProvider';
 import { useProfile } from '@/contexts/ProfileProvider';
 import { uploadAvatar } from '@/lib/fileUpload';
@@ -144,13 +145,15 @@ export function AvatarUpload({ onUploadComplete, size = 150 }: AvatarUploadProps
     <div className="flex flex-col items-center">
       <div className="relative mb-4">
         <div
-          className="rounded-full overflow-hidden bg-muted"
+          className="rounded-full overflow-hidden bg-muted relative"
           style={{ width: size, height: size }}
         >
-          <img
+          <Image
             src={preview || avatarUrl || DEFAULT_AVATAR}
             alt="Profile"
-            className="w-full h-full object-cover"
+            fill
+            sizes={`${size}px`}
+            className="object-cover"
             onError={(e) => {
               (e.target as HTMLImageElement).src = DEFAULT_AVATAR;
             }}

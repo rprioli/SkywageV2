@@ -22,7 +22,7 @@ export default function StatisticsPage() {
   const { data: statisticsData, loading, error, refresh, availableYears } = useStatisticsData(selectedYear);
 
   // Get mobile navigation context
-  const { isMobile, toggleSidebar, isSidebarOpen } = useMobileNavigation();
+  const { isDesktop, toggleSidebar, isSidebarOpen } = useMobileNavigation();
 
   // Determine content state
   const hasError = !!error;
@@ -31,16 +31,16 @@ export default function StatisticsPage() {
   return (
     <div className="space-y-4">
       {/* Header and Statistics - Grouped with consistent spacing */}
-      <div className="space-y-6 px-6 pt-6">
+      <div className="space-y-6 pt-2">
         <StatisticsHeader
-          isMobile={isMobile}
+          isDesktop={isDesktop}
           isSidebarOpen={isSidebarOpen}
           toggleSidebar={toggleSidebar}
         />
       </div>
 
       {/* Main Content Area */}
-      <div className="responsive-container animate-in fade-in duration-500 motion-reduce:transition-none">
+      <div className="animate-in fade-in duration-500 motion-reduce:transition-none">
         {hasError ? (
           <Card className="bg-white rounded-3xl !border-0 !shadow-none">
             <CardContent className="card-responsive-padding text-center">
