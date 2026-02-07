@@ -12,14 +12,14 @@ import { getFlightAuditTrail, getUserAuditTrail } from '@/lib/database/audit';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from '@/components/ui/dialog';
+import {
+  ResponsiveModal,
+  ResponsiveModalContent,
+  ResponsiveModalDescription,
+  ResponsiveModalHeader,
+  ResponsiveModalTitle,
+  ResponsiveModalTrigger
+} from '@/components/ui/responsive-modal';
 import {
   History,
   User,
@@ -294,26 +294,26 @@ export function AuditTrailModal({
   trigger: React.ReactNode;
 }) {
   return (
-    <Dialog>
-      <DialogTrigger asChild>
+    <ResponsiveModal>
+      <ResponsiveModalTrigger asChild>
         {trigger}
-      </DialogTrigger>
-      <DialogContent className="modal-lg modal-touch-friendly max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Audit Trail</DialogTitle>
-          <DialogDescription>
+      </ResponsiveModalTrigger>
+      <ResponsiveModalContent className="modal-lg modal-touch-friendly max-h-[80vh] overflow-y-auto">
+        <ResponsiveModalHeader>
+          <ResponsiveModalTitle>Audit Trail</ResponsiveModalTitle>
+          <ResponsiveModalDescription>
             {flightId 
               ? 'Change history for this flight duty'
               : 'Recent activity for your account'
             }
-          </DialogDescription>
-        </DialogHeader>
+          </ResponsiveModalDescription>
+        </ResponsiveModalHeader>
         <AuditTrailDisplay 
           flightId={flightId}
           userId={userId}
           showUserActions={!flightId}
         />
-      </DialogContent>
-    </Dialog>
+      </ResponsiveModalContent>
+    </ResponsiveModal>
   );
 }

@@ -14,7 +14,7 @@ import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 export default function SettingsPage() {
-  const { isMobile, toggleSidebar, isSidebarOpen } = useMobileNavigation();
+  const { isMobile, isDesktop, toggleSidebar, isSidebarOpen } = useMobileNavigation();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftFade, setShowLeftFade] = useState(false);
   const [showRightFade, setShowRightFade] = useState(false);
@@ -47,7 +47,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-8">
       {/* Standard Page Header */}
-      <div className="space-y-6 px-6 pt-6">
+      <div className="space-y-6 pt-2">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <h1 className="text-responsive-3xl font-bold space-responsive-sm text-brand-ink">
@@ -58,8 +58,8 @@ export default function SettingsPage() {
             </p>
           </div>
 
-          {/* Mobile Menu Toggle */}
-          {isMobile && (
+          {/* Mobile/Tablet Menu Toggle */}
+          {!isDesktop && (
             <Button
               variant="ghost"
               size="sm"
@@ -79,7 +79,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Main Content with Tabs */}
-      <div className="responsive-container pb-6">
+      <div className="pb-6">
         <Tabs defaultValue="profile" className="w-full space-y-8">
           {/* Tab Navigation - Mobile friendly with horizontal scroll and fade indicators */}
           <div className="relative -mx-2 px-2">

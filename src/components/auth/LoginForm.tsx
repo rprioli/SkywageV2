@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useAuthentication } from '@/hooks/useAuthentication';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
 
 export function LoginForm() {
   const { handleLogin, loading, error, isRetrying, retryCount } = useAuthentication();
@@ -71,15 +72,14 @@ export function LoginForm() {
         <label htmlFor="email" className="block text-sm font-medium">
           Email
         </label>
-        <input
+        <Input
           id="email"
           name="email"
           type="email"
           value={formData.email}
           onChange={handleChange}
           className={cn(
-            "w-full px-4 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-primary/50",
-            validationErrors.email ? "border-destructive" : "border-border"
+            validationErrors.email ? "border-destructive" : ""
           )}
           placeholder="your.email@example.com"
         />
@@ -93,15 +93,14 @@ export function LoginForm() {
         <label htmlFor="password" className="block text-sm font-medium">
           Password
         </label>
-        <input
+        <Input
           id="password"
           name="password"
           type="password"
           value={formData.password}
           onChange={handleChange}
           className={cn(
-            "w-full px-4 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-primary/50",
-            validationErrors.password ? "border-destructive" : "border-border"
+            validationErrors.password ? "border-destructive" : ""
           )}
           placeholder="••••••••"
         />

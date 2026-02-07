@@ -32,7 +32,7 @@ export default function FriendsPage() {
     respondToRequest,
   } = useFriendsContext();
 
-  const { isMobile, toggleSidebar, isSidebarOpen } = useMobileNavigation();
+  const { isMobile, isDesktop, toggleSidebar, isSidebarOpen } = useMobileNavigation();
   const { showSuccess, showError } = useToast();
 
   const [sendingRequest, setSendingRequest] = useState(false);
@@ -119,7 +119,7 @@ export default function FriendsPage() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="space-y-6 px-6 pt-6">
+      <div className="space-y-6 pt-2">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <h1 className="text-responsive-3xl font-bold space-responsive-sm text-brand-ink">
@@ -130,8 +130,8 @@ export default function FriendsPage() {
             </p>
           </div>
 
-          {/* Mobile hamburger menu - matching Dashboard styling */}
-          {isMobile && (
+          {/* Mobile/Tablet hamburger menu - matching Dashboard styling */}
+          {!isDesktop && (
             <Button
               variant="ghost"
               size="sm"
@@ -151,7 +151,7 @@ export default function FriendsPage() {
       </div>
 
       {/* Main Content */}
-      <div className="responsive-container pb-6 space-y-4 md:space-y-6">
+      <div className="pb-6 space-y-4 md:space-y-6">
         {/* Error State */}
         {error && (
           <Card className="bg-red-50 rounded-3xl !border-0 !shadow-none">
@@ -162,7 +162,7 @@ export default function FriendsPage() {
         )}
 
         {/* Friends & Roster Comparison - Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 h-[calc(100vh-16rem)] min-h-[600px]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6 h-[calc(100dvh-16rem)] landscape:h-auto landscape:min-h-0">
           {/* Left Column: Friend List Sidebar */}
           <div className="lg:col-span-4 xl:col-span-3 h-full">
             <Card className="bg-white rounded-3xl !border-0 !shadow-none overflow-hidden h-full">

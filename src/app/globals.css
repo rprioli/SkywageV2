@@ -181,20 +181,6 @@
     scrollbar-width: none;  /* Firefox */
   }
 
-  /* Mobile navigation utilities */
-  .sidebar-slide-in {
-    animation: slideInFromLeft 0.3s ease-out forwards;
-  }
-
-  .sidebar-slide-out {
-    animation: slideOutToLeft 0.3s ease-in forwards;
-  }
-
-  /* Prevent scroll when mobile sidebar is open */
-  .no-scroll {
-    overflow: hidden;
-  }
-
   /* Touch-friendly tap targets */
   .touch-target {
     min-height: 44px;
@@ -319,7 +305,7 @@
   .modal-responsive {
     width: 100%;
     max-width: calc(100vw - 1rem);
-    max-height: calc(100vh - 1rem);
+    max-height: calc(100dvh - 1rem);
   }
 
   @media (min-width: 640px) {
@@ -337,148 +323,6 @@
   @media (min-width: 1024px) {
     .modal-responsive {
       max-width: 48rem; /* lg:max-w-3xl */
-    }
-  }
-
-  /* Full-screen mobile modal */
-  .modal-fullscreen-mobile {
-    width: 100vw !important;
-    height: 100vh !important;
-    max-width: 100vw !important;
-    max-height: 100vh !important;
-    border-radius: 0 !important;
-    border: none !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    transform: none !important;
-    box-sizing: border-box !important;
-    overflow-x: hidden !important;
-    margin: 0 !important;
-    /* Change from grid to flex for better mobile control */
-    display: flex !important;
-    flex-direction: column !important;
-    /* Equal padding on mobile for centered content */
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
-    padding-top: 1rem !important;
-    padding-bottom: 1rem !important;
-  }
-
-  /* Ensure all direct children take full width and are properly aligned */
-  .modal-fullscreen-mobile > * {
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-  }
-
-  /* Ensure form elements respect the modal width on mobile */
-  .modal-fullscreen-mobile input,
-  .modal-fullscreen-mobile select,
-  .modal-fullscreen-mobile textarea,
-  .modal-fullscreen-mobile button {
-    max-width: 100%;
-    box-sizing: border-box;
-  }
-
-  /* Ensure grid layouts don't overflow on mobile */
-  .modal-fullscreen-mobile .grid {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  /* Ensure form elements are properly aligned */
-  .modal-fullscreen-mobile form {
-    width: 100%;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-  }
-
-  /* Add spacing between header and content on mobile */
-  .modal-fullscreen-mobile [data-slot="dialog-header"] {
-    margin-bottom: 1.5rem !important;
-  }
-
-  /* Style dialog title to match dashboard color scheme */
-  .modal-fullscreen-mobile [data-slot="dialog-title"] {
-    color: rgb(58, 55, 128) !important;
-  }
-
-  /* Ensure close button is visible and accessible on mobile */
-  .modal-fullscreen-mobile button[data-slot="dialog-close"],
-  .modal-fullscreen-mobile > button[type="button"]:last-child {
-    position: absolute !important;
-    top: 0.75rem !important;
-    right: 0.75rem !important;
-    z-index: 100 !important;
-    width: 44px !important;
-    height: 44px !important;
-    min-width: 44px !important;
-    min-height: 44px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    opacity: 1 !important;
-    background-color: transparent !important;
-    border: none !important;
-    cursor: pointer !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    color: hsl(var(--foreground)) !important;
-  }
-
-  /* Make the X icon larger and more visible on mobile */
-  .modal-fullscreen-mobile button[data-slot="dialog-close"] svg,
-  .modal-fullscreen-mobile > button[type="button"]:last-child svg {
-    width: 24px !important;
-    height: 24px !important;
-  }
-
-  /* Add hover/active states for better feedback */
-  .modal-fullscreen-mobile button[data-slot="dialog-close"]:hover,
-  .modal-fullscreen-mobile > button[type="button"]:last-child:hover {
-    opacity: 0.7 !important;
-  }
-
-  .modal-fullscreen-mobile button[data-slot="dialog-close"]:active,
-  .modal-fullscreen-mobile > button[type="button"]:last-child:active {
-    opacity: 0.5 !important;
-  }
-
-  @media (min-width: 640px) {
-    .modal-fullscreen-mobile {
-      width: auto !important;
-      height: auto !important;
-      max-width: 32rem !important;
-      max-height: calc(100vh - 2rem) !important;
-      border-radius: 0.5rem !important;
-      border: 1px solid hsl(var(--border)) !important;
-      top: 50% !important;
-      left: 50% !important;
-      right: auto !important;
-      bottom: auto !important;
-      transform: translate(-50%, -50%) !important;
-      margin: auto !important;
-      /* Restore grid display on desktop */
-      display: grid !important;
-      padding: 1.5rem !important;
-    }
-
-    /* Remove the child constraint on desktop */
-    .modal-fullscreen-mobile > * {
-      width: auto;
-      margin-left: auto;
-      margin-right: auto;
-    }
-
-    .modal-fullscreen-mobile input,
-    .modal-fullscreen-mobile select,
-    .modal-fullscreen-mobile textarea,
-    .modal-fullscreen-mobile button {
-      max-width: none;
     }
   }
 
@@ -508,12 +352,14 @@
   /* Touch-friendly modal spacing */
   .modal-touch-friendly {
     padding: clamp(1rem, 3vw, 1.5rem);
+    padding-bottom: calc(clamp(1rem, 3vw, 1.5rem) + env(safe-area-inset-bottom));
     gap: clamp(1rem, 2vw, 1.5rem);
   }
 
   /* Compact modal spacing for forms */
   .modal-form-compact {
     padding: clamp(1rem, 3vw, 1.5rem);
+    padding-bottom: calc(clamp(1rem, 3vw, 1.5rem) + env(safe-area-inset-bottom));
   }
 
   /* Form responsive utilities */
@@ -639,4 +485,9 @@
   to {
     transform: translateX(-100%);
   }
+}
+
+/* Safe area inset utility for notched devices */
+.safe-area-inset-top {
+  padding-top: env(safe-area-inset-top);
 }

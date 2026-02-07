@@ -12,6 +12,7 @@ interface MobileNavigationContextType {
   isMobile: boolean;
   isTablet: boolean;
   isDesktop: boolean;
+  isReady: boolean;
   isSidebarOpen: boolean;
   toggleSidebar: () => void;
   closeSidebar: () => void;
@@ -29,22 +30,27 @@ interface MobileNavigationProviderProps {
 }
 
 export function MobileNavigationProvider({ children }: MobileNavigationProviderProps) {
+  // Start with indeterminate state (all false) to avoid hydration mismatch
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(true);
+  const [isDesktop, setIsDesktop] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Update screen size state based on window width
+  // Update screen size state based on window.matchMedia (CSS-aligned breakpoints)
   const updateScreenSize = useCallback(() => {
-    const width = window.innerWidth;
+    // Use matchMedia for CSS-aligned breakpoint detection
+    const mobileQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    const desktopQuery = window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT}px)`);
     
-    const mobile = width < MOBILE_BREAKPOINT;
-    const tablet = width >= MOBILE_BREAKPOINT && width < DESKTOP_BREAKPOINT;
-    const desktop = width >= DESKTOP_BREAKPOINT;
+    const mobile = mobileQuery.matches;
+    const desktop = desktopQuery.matches;
+    const tablet = !mobile && !desktop;
 
     setIsMobile(mobile);
     setIsTablet(tablet);
     setIsDesktop(desktop);
+    setIsReady(true);
 
     // Auto-close sidebar on mobile when switching to desktop
     if (desktop && isSidebarOpen) {
@@ -108,6 +114,7 @@ export function MobileNavigationProvider({ children }: MobileNavigationProviderP
     isMobile,
     isTablet,
     isDesktop,
+    isReady,
     isSidebarOpen,
     toggleSidebar,
     closeSidebar,

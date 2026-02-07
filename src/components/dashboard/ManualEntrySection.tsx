@@ -10,7 +10,7 @@
 
 import React, { useState, useCallback, memo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ResponsiveModal, ResponsiveModalContent, ResponsiveModalDescription, ResponsiveModalHeader, ResponsiveModalTitle } from '@/components/ui/responsive-modal';
 import { FileText } from 'lucide-react';
 import { Position } from '@/types/salary-calculator';
 import { ManualFlightEntry } from '@/components/salary-calculator/ManualFlightEntry';
@@ -57,17 +57,17 @@ export const ManualEntrySection = memo<ManualEntrySectionProps>(({
       </Button>
 
       {/* Manual Entry Modal */}
-      <Dialog open={manualEntryModalOpen} onOpenChange={setManualEntryModalOpen}>
-        <DialogContent className="modal-xl modal-form-compact max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      <ResponsiveModal open={manualEntryModalOpen} onOpenChange={setManualEntryModalOpen}>
+        <ResponsiveModalContent className="modal-xl modal-touch-friendly max-h-[90vh] overflow-y-auto">
+          <ResponsiveModalHeader className="pt-0 pb-0 sm:pb-4">
+            <ResponsiveModalTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
               Add Flight Manually
-            </DialogTitle>
-            <DialogDescription>
+            </ResponsiveModalTitle>
+            <ResponsiveModalDescription>
               Enter flight details manually for salary calculation
-            </DialogDescription>
-          </DialogHeader>
+            </ResponsiveModalDescription>
+          </ResponsiveModalHeader>
 
           {userPositionLoading ? (
             <div className="flex items-center justify-center p-8">
@@ -84,8 +84,8 @@ export const ManualEntrySection = memo<ManualEntrySectionProps>(({
               onSuccess={handleManualEntrySuccess}
             />
           )}
-        </DialogContent>
-      </Dialog>
+        </ResponsiveModalContent>
+      </ResponsiveModal>
     </>
   );
 });

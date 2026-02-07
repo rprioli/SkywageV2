@@ -60,11 +60,11 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed z-50 grid border shadow-lg duration-200",
+          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed z-50 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full grid border shadow-lg duration-200",
           // Conditional gap based on modal type - ultra compact on mobile for forms
           isCompactForm ? "gap-1 md:gap-3" : "gap-4",
           // Mobile-first responsive sizing
-          "modal-fullscreen-mobile p-4 sm:p-6",
+          "p-4 sm:p-6",
           className
         )}
         {...props}

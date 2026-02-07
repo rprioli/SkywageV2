@@ -8,6 +8,7 @@
  */
 
 import { useState, useMemo } from 'react';
+import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Check, Search, Users, UserPlus, X } from 'lucide-react';
@@ -314,13 +315,16 @@ function FriendListItem({ friend, isSelected, isMaxReached, onClick }: FriendLis
       {/* Avatar or Initial with selection indicator */}
       <div className="flex-shrink-0 relative">
         {friend.avatarUrl ? (
-          <img
-            src={friend.avatarUrl}
-            alt={displayName}
-            className="w-10 h-10 rounded-full object-cover"
-            onError={(e) => {
-              // Fallback to initial circle on image error
-              const target = e.target as HTMLImageElement;
+          <div className="w-10 h-10 rounded-full overflow-hidden relative">
+            <Image
+              src={friend.avatarUrl}
+              alt={displayName}
+              fill
+              sizes="40px"
+              className="object-cover"
+              onError={(e) => {
+                // Fallback to initial circle on image error
+                const target = e.target as HTMLImageElement;
               target.style.display = 'none';
               const parent = target.parentElement;
               if (parent) {
@@ -331,7 +335,8 @@ function FriendListItem({ friend, isSelected, isMaxReached, onClick }: FriendLis
                 `;
               }
             }}
-          />
+            />
+          </div>
         ) : (
           <div className={cn(
             "w-10 h-10 rounded-full flex items-center justify-center",

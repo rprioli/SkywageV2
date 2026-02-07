@@ -7,6 +7,7 @@
  */
 
 import React, { useMemo } from 'react';
+import Image from 'next/image';
 import { ChevronLeft, ChevronRight, EyeOff, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -337,11 +338,15 @@ function PersonRow({
         {/* Avatar */}
         <div className="flex-shrink-0">
           {userAvatarUrl && (isUserRow || person.avatarUrl) ? (
-            <img
-              src={isUserRow ? userAvatarUrl : person.avatarUrl}
-              alt={person.displayName}
-              className="w-10 h-10 rounded-full object-cover shadow-sm"
-            />
+            <div className="w-10 h-10 rounded-full overflow-hidden relative shadow-sm">
+              <Image
+                src={isUserRow ? userAvatarUrl : person.avatarUrl}
+                alt={person.displayName}
+                fill
+                sizes="40px"
+                className="object-cover"
+              />
+            </div>
           ) : (
             <div className={cn(
               "w-10 h-10 rounded-full flex items-center justify-center text-white font-medium text-lg shadow-sm",
