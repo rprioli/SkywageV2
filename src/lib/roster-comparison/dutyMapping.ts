@@ -356,9 +356,7 @@ function getConnectionCategory(duty: DutyTileData | null): ConnectionCategory {
  */
 function canConnect(category: ConnectionCategory): boolean {
   return category !== 'rest' && category !== 'empty';
-}
-
-/**
+}/**
  * Calculate the position of a duty within a consecutive group
  */
 function calculatePositionForDuty(
@@ -401,9 +399,7 @@ function calculatePositionForDuty(
   if (!connectsToPrev && connectsToNext) return 'start';
   
   return 'single';
-}
-
-/**
+}/**
  * Calculate group positions for a single person's duties across all days
  * @param duties - Map of dateKey -> DutyTileData for this person
  * @param days - Array of CalendarDay for the month
