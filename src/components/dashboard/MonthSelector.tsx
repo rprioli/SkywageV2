@@ -143,9 +143,36 @@ export const MonthSelector = memo<MonthSelectorProps>(({
     <Card className="bg-white rounded-3xl !border-0 !shadow-none overflow-hidden">
       <CardContent className="card-responsive-padding !pt-4">
         {/* Header with Year Selector */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="min-w-0 flex-1">
-            <h2 className="text-responsive-2xl font-bold mb-2 text-brand-ink">Overview</h2>
+        <div className="mb-4">
+          {/* Header Row: Overview + Year Selector */}
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-responsive-2xl font-bold text-brand-ink">Overview</h2>
+            
+            {/* Year Selector */}
+            <div className="flex-shrink-0 ml-2 md:ml-4">
+              <Select
+                value={selectedYear.toString()}
+                onValueChange={(value) => onYearChange(parseInt(value, 10))}
+              >
+                <SelectTrigger
+                  id="year-selector"
+                  className="w-auto min-w-[70px] h-7 text-sm border-gray-200 !px-2 !py-0 !justify-start [&>*]:!gap-1 [&_svg]:ml-1"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {getYearRange().map((year) => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Salary Block */}
+          <div className="min-w-0">
             <div
               className="text-responsive-5xl font-bold space-responsive-sm text-brand-ink"
               style={{ transition: 'opacity 0.2s ease-in-out' }}
@@ -162,28 +189,6 @@ export const MonthSelector = memo<MonthSelectorProps>(({
                   })()
               }
             </p>
-          </div>
-
-          {/* Year Selector */}
-          <div className="flex-shrink-0 ml-4">
-            <Select
-              value={selectedYear.toString()}
-              onValueChange={(value) => onYearChange(parseInt(value, 10))}
-            >
-              <SelectTrigger
-                id="year-selector"
-                className="w-[100px] h-7 text-sm border-gray-200 !px-2.5 !py-0 !justify-start [&>*]:!gap-0 [&_svg]:ml-auto"
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {getYearRange().map((year) => (
-                  <SelectItem key={year} value={year.toString()}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </div>
 
