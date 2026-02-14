@@ -186,10 +186,10 @@ export function FlightDutiesTable({
   if (flightDuties.length === 0) {
     return (
       <Card className="border-0 shadow-none bg-transparent">
-        <CardHeader className="pb-2 px-2 md:px-4">
+        <CardHeader className="pb-2 px-0">
           <h2 className="text-responsive-2xl font-bold text-brand-ink">Flight Duties</h2>
         </CardHeader>
-        <CardContent className="pt-2 pb-8 px-2 md:px-4">
+        <CardContent className="pt-2 pb-8 px-0">
           <EmptyState />
         </CardContent>
       </Card>
@@ -203,7 +203,7 @@ export function FlightDutiesTable({
 
   return (
     <Card className="border-0 shadow-none bg-transparent">
-      <CardHeader className="pb-2 px-2 md:px-4">
+      <CardHeader className="pb-2 px-0">
         <div className="flex flex-col space-y-4">
           {/* Header Row */}
           <div className="flex items-center justify-between">
@@ -334,7 +334,7 @@ export function FlightDutiesTable({
           )}
         </div>
       </CardHeader>
-      <CardContent className="pt-2 pb-8 px-2 md:px-4">
+      <CardContent className="pt-2 pb-8 px-0">
         {isFilteredEmpty ? (
           <EmptyState isFilteredEmpty />
         ) : (
