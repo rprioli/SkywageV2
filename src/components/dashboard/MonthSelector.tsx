@@ -3,7 +3,7 @@
  * 
  * Monthly overview card with interactive chart for month selection.
  * Displays salary data and allows users to select different months.
- * Extracted from dashboard page to reduce complexity.
+ * Uses shadcn/ui ChartContainer for consistent theming and tooltip support.
  */
 
 'use client';
@@ -11,7 +11,8 @@
 import React, { useState, useCallback, useMemo, memo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ResponsiveContainer, XAxis, Bar, BarChart, Cell } from 'recharts';
+import { XAxis, Bar, BarChart, Cell } from 'recharts';
+import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart';
 import { MonthlyCalculation } from '@/types/salary-calculator';
 import { MIN_SUPPORTED_YEAR } from '@/lib/constants/dates';
 
@@ -27,8 +28,31 @@ const getYearRange = (): number[] => {
     Math.max(minYear, currentYear),
     currentYear + 1,
     currentYear + 2,
-  ].filter((year, index, self) => self.indexOf(year) === index); // Remove duplicates
+  ].filter((year, index, self) => self.indexOf(year) === index);
 };
+
+/** Chart color config – drives CSS variables via ChartContainer */
+const chartConfig = {
+  salary: {
+    label: 'Salary',
+    color: '#4C49ED',
+  },
+} satisfies ChartConfig;
+
+/** Bar fill tokens derived from the brand purple */
+const BAR_FILL = {
+  active: 'var(--color-salary)',            // #4C49ED via chart config
+  hover: 'rgba(76, 73, 237, 0.4)',
+  inactive: 'rgba(76, 73, 237, 0.08)',
+} as const;
+
+interface ChartDataPoint {
+  month: string;
+  /** Normalized 0-100 value used for bar height aesthetics */
+  value: number;
+  /** Raw AED salary shown in the tooltip */
+  totalSalary: number;
+}
 
 interface MonthSelectorProps {
   allMonthlyCalculations: MonthlyCalculation[];
@@ -46,6 +70,14 @@ interface MonthSelectorProps {
   };
 }
 
+/** Format AED currency for display */
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat('en-AE', {
+    style: 'currency',
+    currency: 'AED',
+    minimumFractionDigits: 0,
+  }).format(amount);
+
 export const MonthSelector = memo<MonthSelectorProps>(({
   allMonthlyCalculations,
   selectedOverviewMonth,
@@ -57,91 +89,82 @@ export const MonthSelector = memo<MonthSelectorProps>(({
   loading,
   selectedData,
 }) => {
-
-  // Hover state for enhanced interactivity
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  // Track desktop breakpoint for conditional tooltip
+  React.useEffect(() => {
+    const checkDesktop = () => setIsDesktop(window.matchMedia('(min-width: 1280px)').matches);
+    checkDesktop();
+    window.addEventListener('resize', checkDesktop);
+    return () => window.removeEventListener('resize', checkDesktop);
+  }, []);
 
   // Memoized month selection handler for smooth transitions
   const handleMonthSelection = useCallback((index: number) => {
-    // Prevent the "month switching" state from getting stuck when re-clicking the active month.
-    // If the month doesn't change, data hooks won't refetch, so we shouldn't enable the switching UI.
+    // Skip if re-clicking the already-selected month to avoid stuck switching state
     if (index === selectedOverviewMonth) return;
 
-    // Immediate month selection for smooth chart transition
     onMonthChange(index);
     onUserSelectedChange(true);
-    // Set switching state for other UI elements (not chart)
     onMonthSwitchingChange(true);
   }, [onMonthChange, onUserSelectedChange, onMonthSwitchingChange, selectedOverviewMonth]);
 
-  // Memoize chart data to prevent unnecessary re-renders
-  const chartData = useMemo(() => {
-    const data = [];
+  // Build chart data with both normalized height and raw salary for tooltip
+  const chartData = useMemo<ChartDataPoint[]>(() => {
+    const maxSalary = Math.max(
+      ...allMonthlyCalculations.map(calc => calc.totalSalary),
+      1
+    );
 
-    // Find the maximum salary to normalize the chart values
-    const maxSalary = Math.max(...allMonthlyCalculations.map(calc => calc.totalSalary), 1);
-
-    for (let i = 0; i < 12; i++) {
-      const monthCalc = allMonthlyCalculations.find(calc =>
-        calc.month === i + 1 && calc.year === selectedYear
+    return Array.from({ length: 12 }, (_, i) => {
+      const monthCalc = allMonthlyCalculations.find(
+        calc => calc.month === i + 1 && calc.year === selectedYear
       );
 
-      // Normalize values to 0-100 range for better chart display
-      const normalizedValue = monthCalc ? Math.round((monthCalc.totalSalary / maxSalary) * 100) : 0;
-
-      data.push({
+      return {
         month: MONTHS[i],
-        value: normalizedValue
-      });
-    }
-
-    return data;
+        value: monthCalc
+          ? Math.round((monthCalc.totalSalary / maxSalary) * 100)
+          : 0,
+        totalSalary: monthCalc?.totalSalary ?? 0,
+      };
+    });
   }, [allMonthlyCalculations, selectedYear]);
 
-  // Enhanced color logic for smooth transitions
+  // Determine bar fill based on selected/hover state
   const getBarColor = useCallback((index: number) => {
-    if (index === selectedOverviewMonth) {
-      return '#4C49ED'; // Active: Dark purple
-    } else if (index === hoveredIndex) {
-      return 'rgba(76, 73, 237, 0.4)'; // Hover: Medium purple
-    } else {
-      return 'rgba(76, 73, 237, 0.08)'; // Inactive: Light purple
-    }
+    if (index === selectedOverviewMonth) return BAR_FILL.active;
+    if (index === hoveredIndex) return BAR_FILL.hover;
+    return BAR_FILL.inactive;
   }, [selectedOverviewMonth, hoveredIndex]);
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-AE', {
-      style: 'currency',
-      currency: 'AED',
-      minimumFractionDigits: 0
-    }).format(amount);
-  };
 
   return (
     <Card className="bg-white rounded-3xl !border-0 !shadow-none overflow-hidden">
-      <CardContent className="card-responsive-padding">
+      <CardContent className="card-responsive-padding !pt-4">
         {/* Header with Year Selector */}
-        <div className="flex items-start justify-between mb-4 md:mb-5">
+        <div className="flex items-start justify-between mb-4">
           <div className="min-w-0 flex-1">
-            <h2 className="text-responsive-2xl font-bold space-responsive-md text-brand-ink">Overview</h2>
-            <div className="text-responsive-5xl font-bold space-responsive-sm text-brand-ink" style={{
-              transition: 'opacity 0.2s ease-in-out'
-            }}>
+            <h2 className="text-responsive-2xl font-bold mb-2 text-brand-ink">Overview</h2>
+            <div
+              className="text-responsive-5xl font-bold space-responsive-sm text-brand-ink"
+              style={{ transition: 'opacity 0.2s ease-in-out' }}
+            >
               {loading ? '...' : formatCurrency(selectedData.totalSalary)}
             </div>
             <p className="text-responsive-sm text-gray-500">
-              {selectedData.totalSalary === 0 && !loading ?
-                `${MONTHS[selectedOverviewMonth]} - No Data` :
-                (() => {
-                  const nextMonth = selectedOverviewMonth === 11 ? 0 : selectedOverviewMonth + 1;
-                  const nextYear = selectedOverviewMonth === 11 ? selectedYear + 1 : selectedYear;
-                  return `Expected Salary for ${MONTHS[nextMonth]}, ${nextYear}`;
-                })()
+              {selectedData.totalSalary === 0 && !loading
+                ? `${MONTHS[selectedOverviewMonth]} - No Data`
+                : (() => {
+                    const nextMonth = selectedOverviewMonth === 11 ? 0 : selectedOverviewMonth + 1;
+                    const nextYear = selectedOverviewMonth === 11 ? selectedYear + 1 : selectedYear;
+                    return `Expected Salary for ${MONTHS[nextMonth]}, ${nextYear}`;
+                  })()
               }
             </p>
           </div>
 
-          {/* Year Selector - Aligned with Overview heading */}
+          {/* Year Selector */}
           <div className="flex-shrink-0 ml-4">
             <Select
               value={selectedYear.toString()}
@@ -164,36 +187,48 @@ export const MonthSelector = memo<MonthSelectorProps>(({
           </div>
         </div>
 
-        {/* Chart Area - Optimized for mobile with extended width */}
+        {/* Chart Area – ChartContainer handles ResponsiveContainer internally */}
         <div className="h-56 md:h-48 w-full -mx-2 md:mx-0">
           {loading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-gray-500 text-responsive-sm">Loading chart data...</div>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height="100%">
+            <ChartContainer
+              config={chartConfig}
+              className="!aspect-auto h-full w-full"
+            >
               <BarChart
+                accessibilityLayer
                 data={chartData}
-                margin={{
-                  top: 20,
-                  right: 8,
-                  left: 8,
-                  bottom: 5
-                }}
+                margin={{ top: 20, right: 8, left: 8, bottom: 0 }}
                 barCategoryGap="12%"
               >
                 <XAxis
                   dataKey="month"
                   axisLine={false}
                   tickLine={false}
-                  tick={{
-                    fontSize: 10,
-                    fill: '#6B7280',
-                    fontWeight: 500
-                  }}
-                  interval={0}
                   tickMargin={8}
+                  interval={0}
+                  tick={{ fontSize: 10, fontWeight: 500 }}
                 />
+                {isDesktop && (
+                  <ChartTooltip
+                    cursor={false}
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const data = payload[0].payload as ChartDataPoint;
+                      return (
+                        <div className="rounded-lg border border-border/50 bg-background px-3 py-2 shadow-xl">
+                          <p className="text-xs font-medium text-muted-foreground">{data.month}</p>
+                          <p className="text-sm font-bold text-foreground">
+                            {formatCurrency(data.totalSalary)}
+                          </p>
+                        </div>
+                      );
+                    }}
+                  />
+                )}
                 <Bar
                   dataKey="value"
                   radius={[10, 10, 0, 0]}
@@ -212,17 +247,24 @@ export const MonthSelector = memo<MonthSelectorProps>(({
                       onMouseEnter={() => setHoveredIndex(index)}
                       onMouseLeave={() => setHoveredIndex(null)}
                       role="button"
-                      aria-label={`Select month ${entry.month}`}
+                      tabIndex={0}
+                      aria-label={`${entry.month}: ${formatCurrency(entry.totalSalary)}. Click to select.`}
+                      onKeyDown={(e: React.KeyboardEvent) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleMonthSelection(index);
+                        }
+                      }}
                       style={{
                         cursor: 'pointer',
-                        transition: 'fill 0.4s ease-in-out, transform 0.2s ease-in-out',
-                        transformOrigin: 'bottom center'
+                        transition: 'fill 0.4s ease-in-out',
+                        outline: 'none',
                       }}
                     />
                   ))}
                 </Bar>
               </BarChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           )}
         </div>
       </CardContent>
@@ -231,4 +273,3 @@ export const MonthSelector = memo<MonthSelectorProps>(({
 });
 
 MonthSelector.displayName = 'MonthSelector';
-
