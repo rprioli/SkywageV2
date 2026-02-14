@@ -46,7 +46,7 @@ function ResponsiveModal({ children, open, onOpenChange }: ResponsiveModalProps)
   }
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
+    <Drawer open={open} onOpenChange={onOpenChange} handleOnly>
       {children}
     </Drawer>
   );
@@ -92,11 +92,13 @@ function ResponsiveModalContent({
   // Drawer path: keep the shell clean (vaul-managed classes only).
   // Caller className goes on an inner scroll container so overflow-y-auto
   // doesn't conflict with vaul's drag-to-dismiss gesture.
+  // Using data-vaul-no-drag + handleOnly to prevent content from dragging the drawer.
   return (
     <DrawerContent {...props}>
       <div
+        data-vaul-no-drag
         className={cn(
-          'overflow-y-auto flex-1 min-h-0 overscroll-contain',
+          'overflow-y-auto overflow-x-hidden flex-1 min-h-0 overscroll-contain touch-pan-y',
           className,
         )}
       >
