@@ -21,7 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Plane, Trash2, Clock, Banknote, UtensilsCrossed, Menu } from 'lucide-react';
+import { Plane, Trash2, Menu } from 'lucide-react';
 import { FlightDuty, Position } from '@/types/salary-calculator';
 import { deleteFlightDuty } from '@/lib/database/flights';
 import { FlightDutiesManager } from '@/components/salary-calculator/FlightDutiesManager';
@@ -33,6 +33,7 @@ import { useFlightDuties } from '@/hooks/useFlightDuties';
 import { useMonthlyCalculations } from '@/hooks/useMonthlyCalculations';
 import { useLayoverRestPeriods } from '@/hooks/useLayoverRestPeriods';
 import { MonthSelector } from '@/components/dashboard/MonthSelector';
+import { DashboardMetricCards } from '@/components/dashboard/DashboardMetricCards';
 import { MIN_SUPPORTED_YEAR } from '@/lib/constants/dates';
 import { RosterUploadSection } from '@/components/dashboard/RosterUploadSection';
 import { ManualEntrySection } from '@/components/dashboard/ManualEntrySection';
@@ -469,76 +470,16 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Side Cards - Responsive stacking: 3 cols on mobile, 2 cols on tablet, 1 col on desktop */}
-        <div className="@container">
-          <div className="grid grid-cols-3 sm:grid-cols-2 xl:grid-cols-1 gap-2 @md:gap-6">
-          {/* Flight Hours Card - Purple (Primary Brand Color) */}
-          <Card className="bg-white rounded-3xl !border-0 !shadow-none">
-            <CardContent className="p-2 @md:p-6">
-              <div className="flex flex-col @md:flex-row items-center @md:items-center gap-1.5 @md:gap-4">
-                <div className="w-9 h-9 @md:w-16 @md:h-16 rounded-xl @md:rounded-2xl flex items-center justify-center flex-shrink-0 bg-[rgba(76,73,237,0.15)]">
-                  <Clock className="h-4 w-4 @md:h-8 @md:w-8 text-[#4C49ED]" />
-                </div>
-                <div className="min-w-0 flex-1 text-center @md:text-left overflow-hidden">
-                  {/* Mobile: Compact format */}
-                  <div className="@md:hidden text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis text-brand-ink">
-                    {calculationsLoading || isMonthSwitching ? '...' : `${Math.floor(selectedData.dutyHours)}hr`}
-                  </div>
-                  {/* Desktop: Full format */}
-                  <div className="hidden @md:block text-responsive-3xl font-bold text-brand-ink">
-                    {calculationsLoading || isMonthSwitching ? '...' : `${Math.floor(selectedData.dutyHours)}`}
-                  </div>
-                  <div className="text-[10px] @md:text-responsive-sm whitespace-nowrap text-[#4C49ED]">Flight Hours</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-
-          {/* Flight Pay Card - Green (Accent Brand Color) */}
-          <Card className="bg-white rounded-3xl !border-0 !shadow-none">
-            <CardContent className="p-2 @md:p-6">
-              <div className="flex flex-col @md:flex-row items-center @md:items-center gap-1.5 @md:gap-4">
-                <div className="w-9 h-9 @md:w-16 @md:h-16 rounded-xl @md:rounded-2xl flex items-center justify-center flex-shrink-0 bg-[rgba(109,220,145,0.2)]">
-                  <Banknote className="h-4 w-4 @md:h-8 @md:w-8 text-[#6DDC91]" />
-                </div>
-                <div className="min-w-0 flex-1 text-center @md:text-left overflow-hidden">
-                  {/* Mobile: Compact format */}
-                  <div className="@md:hidden text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis text-[#059669]">
-                    AED {currentCalculation ? formatCurrencyCompact(currentCalculation.flightPay) : formatCurrencyCompact(0)}
-                  </div>
-                  {/* Desktop: Full format */}
-                  <div className="hidden @md:block text-responsive-xl font-bold text-[#059669]">
-                    {currentCalculation ? formatCurrency(currentCalculation.flightPay) : formatCurrency(0)}
-                  </div>
-                  <div className="text-[10px] @md:text-responsive-sm whitespace-nowrap text-[#10b981]">Flight Pay</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Per Diem Card - Teal (Complementary Color) */}
-          <Card className="bg-white rounded-3xl !border-0 !shadow-none">
-            <CardContent className="p-2 @md:p-6">
-              <div className="flex flex-col @md:flex-row items-center @md:items-center gap-1.5 @md:gap-4">
-                <div className="w-9 h-9 @md:w-16 @md:h-16 rounded-xl @md:rounded-2xl flex items-center justify-center flex-shrink-0 bg-[rgba(20,184,166,0.15)]">
-                  <UtensilsCrossed className="h-4 w-4 @md:h-8 @md:w-8 text-[#14b8a6]" />
-                </div>
-                <div className="min-w-0 flex-1 text-center @md:text-left overflow-hidden">
-                  {/* Mobile: Compact format */}
-                  <div className="@md:hidden text-sm font-bold whitespace-nowrap overflow-hidden text-ellipsis text-[#0f766e]">
-                    AED {currentCalculation ? formatCurrencyCompact(currentCalculation.perDiemPay) : formatCurrencyCompact(0)}
-                  </div>
-                  {/* Desktop: Full format */}
-                  <div className="hidden @md:block text-responsive-xl font-bold text-[#0f766e]">
-                    {currentCalculation ? formatCurrency(currentCalculation.perDiemPay) : formatCurrency(0)}
-                  </div>
-                  <div className="text-[10px] @md:text-responsive-sm whitespace-nowrap text-[#14b8a6]">Per Diem</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          </div>
+        {/* Side Cards - stable desktop sizing (no container queries) */}
+        <div className="xl:h-full">
+          <DashboardMetricCards
+            dutyHours={selectedData.dutyHours}
+            flightPay={currentCalculation?.flightPay ?? 0}
+            perDiemPay={currentCalculation?.perDiemPay ?? 0}
+            isLoading={calculationsLoading || isMonthSwitching}
+            formatCurrency={formatCurrency}
+            formatCurrencyCompact={formatCurrencyCompact}
+          />
         </div>
       </div>
 
