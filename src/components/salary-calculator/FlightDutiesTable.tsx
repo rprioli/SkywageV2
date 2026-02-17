@@ -239,8 +239,8 @@ export function FlightDutiesTable({
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 hover:bg-transparent cursor-pointer"
+                    size="touch"
+                    className="rounded-full p-0 text-gray-400 hover:text-gray-600 hover:bg-transparent"
                   >
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
@@ -311,9 +311,9 @@ export function FlightDutiesTable({
               }`}>
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="touch"
                   onClick={clearSelection}
-                  className="h-8 px-3 text-xs cursor-pointer hover:bg-transparent hover:opacity-80"
+                  className="px-3 text-xs hover:bg-transparent hover:opacity-80"
                   disabled={!isSomeSelected}
                 >
                   Clear<span className="hidden md:inline"> Selection</span>
@@ -321,9 +321,9 @@ export function FlightDutiesTable({
                 {onBulkDelete && (
                   <Button
                     variant="destructive"
-                    size="sm"
+                    size="touch"
                     onClick={handleBulkDelete}
-                    className="h-8 px-3 text-xs cursor-pointer hover:bg-transparent hover:opacity-80"
+                    className="px-3 text-xs hover:bg-transparent hover:opacity-80"
                     disabled={!isSomeSelected}
                   >
                     Delete

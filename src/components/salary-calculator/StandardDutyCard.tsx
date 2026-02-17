@@ -7,6 +7,7 @@
 
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -197,10 +198,17 @@ export function StandardDutyCard({
         <div className="card-mobile-optimized h-full flex flex-col">
           {/* Actions Menu - Bottom Right */}
           {showActions && onDelete && (
-            <div className="absolute bottom-2 right-2 z-10" onClick={(e) => e.stopPropagation()}>
+            <div className="absolute bottom-2 right-2 z-10">
               <DropdownMenu>
-                <DropdownMenuTrigger className="p-1 hover:bg-gray-100 rounded-full transition-colors">
-                  <MoreVertical className="h-4 w-4 text-gray-500" />
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="touch"
+                    className="rounded-full p-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MoreVertical className="h-4 w-4 text-gray-500" />
+                  </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   {userId && position && isEditable && (

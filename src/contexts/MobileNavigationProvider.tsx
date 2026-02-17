@@ -141,6 +141,7 @@ export function useMobileNavigation(): MobileNavigationContextType {
 
 /**
  * Hook to handle click outside sidebar to close it
+ * Uses pointerdown for unified mouse/touch/pen support
  */
 export function useClickOutside(
   ref: React.RefObject<HTMLElement | null>,
@@ -150,15 +151,15 @@ export function useClickOutside(
   useEffect(() => {
     if (!enabled) return;
 
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: PointerEvent) => {
       if (ref.current && !ref.current.contains(event.target as Node)) {
         callback();
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('pointerdown', handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('pointerdown', handleClickOutside);
     };
   }, [ref, callback, enabled]);
 }
