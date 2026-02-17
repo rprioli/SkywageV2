@@ -113,8 +113,8 @@ export const DashboardMetricCards = ({
       <div className="grid grid-cols-3 sm:grid-cols-2 xl:grid-cols-1 gap-2 md:gap-6 xl:grid-rows-3 xl:h-full">
         <MetricCard
           icon={Clock}
-          iconContainerClassName="bg-[#4C49ED]"
-          iconClassName="text-white"
+          iconContainerClassName="bg-[rgba(76,73,237,0.05)]"
+          iconClassName="text-brand-ink"
           value={
             <MetricValue
               compactValue={hoursValue}
@@ -129,8 +129,8 @@ export const DashboardMetricCards = ({
 
         <MetricCard
           icon={Banknote}
-          iconContainerClassName="bg-[#4C49ED]"
-          iconClassName="text-white"
+          iconContainerClassName="bg-[rgba(76,73,237,0.05)]"
+          iconClassName="text-brand-ink"
           value={
             <MetricValue
               compactValue={flightPayCompact}
@@ -145,8 +145,8 @@ export const DashboardMetricCards = ({
 
         <MetricCard
           icon={UtensilsCrossed}
-          iconContainerClassName="bg-[#4C49ED]"
-          iconClassName="text-white"
+          iconContainerClassName="bg-[rgba(76,73,237,0.05)]"
+          iconClassName="text-brand-ink"
           value={
             <MetricValue
               compactValue={perDiemCompact}
