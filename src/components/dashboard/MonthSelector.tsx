@@ -156,7 +156,8 @@ export const MonthSelector = memo<MonthSelectorProps>(({
               >
                 <SelectTrigger
                   id="year-selector"
-                  className="w-auto min-w-[70px] h-7 text-sm border-gray-200 !px-2 !py-0 !justify-start [&>*]:!gap-1 [&_svg]:ml-1"
+                  size="sm"
+                  className="w-auto min-w-[70px] text-sm border-gray-200 !px-2 !justify-start [&>*]:!gap-1 [&_svg]:ml-1"
                 >
                   <SelectValue />
                 </SelectTrigger>

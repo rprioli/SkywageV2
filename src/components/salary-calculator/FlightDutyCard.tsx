@@ -133,8 +133,8 @@ export function FlightDutyCard({
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 cursor-pointer hover:bg-transparent"
+                    size="touch"
+                    className="rounded-full p-0 text-gray-400 hover:text-gray-600 hover:bg-transparent"
                   >
                     <MoreVertical className="h-4 w-4" />
                     <span className="sr-only">Open menu</span>
