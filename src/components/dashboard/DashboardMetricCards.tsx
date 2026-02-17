@@ -113,8 +113,8 @@ export const DashboardMetricCards = ({
       <div className="grid grid-cols-3 sm:grid-cols-2 xl:grid-cols-1 gap-2 md:gap-6 xl:grid-rows-3 xl:h-full">
         <MetricCard
           icon={Clock}
-          iconContainerClassName="bg-[rgba(76,73,237,0.15)]"
-          iconClassName="text-[#4C49ED]"
+          iconContainerClassName="bg-[#4C49ED]"
+          iconClassName="text-white"
           value={
             <MetricValue
               compactValue={hoursValue}
@@ -129,34 +129,34 @@ export const DashboardMetricCards = ({
 
         <MetricCard
           icon={Banknote}
-          iconContainerClassName="bg-[rgba(109,220,145,0.2)]"
-          iconClassName="text-[#6DDC91]"
+          iconContainerClassName="bg-[#4C49ED]"
+          iconClassName="text-white"
           value={
             <MetricValue
               compactValue={flightPayCompact}
               fullValue={flightPayFull}
-              compactClassName="text-[#059669]"
-              fullClassName="text-[#059669] text-responsive-xl"
+              compactClassName="text-brand-ink"
+              fullClassName="text-brand-ink text-responsive-2xl"
             />
           }
           label="Flight Pay"
-          labelClassName="text-[#10b981]"
+          labelClassName="text-[#4C49ED]"
         />
 
         <MetricCard
           icon={UtensilsCrossed}
-          iconContainerClassName="bg-[rgba(20,184,166,0.15)]"
-          iconClassName="text-[#14b8a6]"
+          iconContainerClassName="bg-[#4C49ED]"
+          iconClassName="text-white"
           value={
             <MetricValue
               compactValue={perDiemCompact}
               fullValue={perDiemFull}
-              compactClassName="text-[#0f766e]"
-              fullClassName="text-[#0f766e] text-responsive-xl"
+              compactClassName="text-brand-ink"
+              fullClassName="text-brand-ink text-responsive-2xl"
             />
           }
           label="Per Diem"
-          labelClassName="text-[#14b8a6]"
+          labelClassName="text-[#4C49ED]"
         />
       </div>
     </div>
