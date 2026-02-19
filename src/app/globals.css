@@ -72,8 +72,9 @@
   --muted: #F0F0F0;
   --muted-foreground: #6B7280;
 
-  /* Accent (Green) */
-  --accent: var(--skywage-accent);
+  /* Accent - neutral gray for UI interaction states (hover, focus).
+     Brand green is preserved in --skywage-accent for explicit use. */
+  --accent: #F3F4F6;
   --accent-foreground: #1A1A1A;
 
   /* Other UI elements */
@@ -127,9 +128,9 @@
   --muted: #2D2D2D;
   --muted-foreground: #9CA3AF;
 
-  /* Accent (Green) */
-  --accent: var(--skywage-accent);
-  --accent-foreground: #121212;
+  /* Accent - neutral gray for UI interaction states (hover, focus). */
+  --accent: #2D2D2D;
+  --accent-foreground: #F9FAFB;
 
   /* Other UI elements */
   --destructive: #F87171; /* Lighter red for dark mode */

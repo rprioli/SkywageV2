@@ -255,7 +255,7 @@ export function AuditTrailDisplay({
                     variant="ghost"
                     size="sm"
                     onClick={() => toggleExpanded(entry.id!)}
-                    className="h-6 w-6 p-0"
+                    className="h-6 w-6 p-0 hover:bg-transparent focus-visible:ring-0 focus-visible:border-transparent cursor-pointer"
                   >
                     {entry.expanded ? (
                       <ChevronDown className="h-4 w-4" />
