@@ -43,7 +43,7 @@ export function HeroSection() {
               />
               <button
                 type="submit"
-                className="px-6 py-3 bg-accent text-accent-foreground font-medium rounded-md hover:bg-accent/90 transition-colors"
+                className="px-6 py-3 bg-[#6DDC91] text-[#1A1A1A] font-medium rounded-md hover:bg-[#6DDC91]/90 transition-colors"
               >
                 GO
               </button>

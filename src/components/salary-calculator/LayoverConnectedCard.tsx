@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreVertical, Trash2, ChevronLeft, ChevronRight, Edit } from 'lucide-react';
+import { MoreHorizontal, Trash2, ChevronLeft, ChevronRight, Edit } from 'lucide-react';
 import { FlightDuty, TimeValue, Position, LayoverRestPeriod } from '@/types/salary-calculator';
 import {
   mapFlightDutyToCardData,
@@ -219,11 +219,11 @@ export function LayoverConnectedCard({
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
-                      size="touch"
-                      className="rounded-full p-0"
+                      size="icon"
+                      className="rounded-full hover:bg-transparent focus-visible:ring-0 focus-visible:border-transparent cursor-pointer"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <MoreVertical className="h-4 w-4 text-gray-500" />
+                      <MoreHorizontal className="h-4 w-4 text-gray-500" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -234,7 +234,7 @@ export function LayoverConnectedCard({
                       </DropdownMenuItem>
                     )}
                     {onDelete !== undefined && (
-                      <DropdownMenuItem onClick={handleDelete} className="text-red-600">
+                      <DropdownMenuItem onClick={handleDelete} variant="destructive">
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete
                       </DropdownMenuItem>
@@ -372,11 +372,11 @@ export function LayoverConnectedCard({
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
-                      size="touch"
-                      className="rounded-full p-0"
+                      size="icon"
+                      className="rounded-full hover:bg-transparent focus-visible:ring-0 focus-visible:border-transparent cursor-pointer"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <MoreVertical className="h-4 w-4 text-gray-500" />
+                      <MoreHorizontal className="h-4 w-4 text-gray-500" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -387,7 +387,7 @@ export function LayoverConnectedCard({
                       </DropdownMenuItem>
                     )}
                     {onDelete !== undefined && (
-                      <DropdownMenuItem onClick={handleDelete} className="text-red-600">
+                      <DropdownMenuItem onClick={handleDelete} variant="destructive">
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete
                       </DropdownMenuItem>

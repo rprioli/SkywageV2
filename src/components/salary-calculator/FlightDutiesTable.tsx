@@ -240,7 +240,7 @@ export function FlightDutiesTable({
                   <Button
                     variant="ghost"
                     size="touch"
-                    className="rounded-full p-0 text-gray-400 hover:text-gray-600 hover:bg-transparent"
+                    className="rounded-full p-0 text-gray-400 hover:bg-transparent focus-visible:ring-0 focus-visible:border-transparent cursor-pointer"
                   >
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
@@ -265,7 +265,7 @@ export function FlightDutiesTable({
                   <DropdownMenuItem
                     onClick={handleDeleteAllClick}
                     disabled={flightDuties.length === 0}
-                    className="cursor-pointer text-red-600 focus:text-red-600"
+                    variant="destructive"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete All

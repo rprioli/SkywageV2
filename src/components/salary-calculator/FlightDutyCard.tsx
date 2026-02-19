@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  MoreVertical,
+  MoreHorizontal,
   Hotel,
   Clock,
   Trash2
@@ -128,15 +128,16 @@ export function FlightDutyCard({
 
           {/* Three Dots Menu - ShadCN Dropdown Menu */}
           {showActions && onDelete && !bulkMode && (
-            <div className="absolute top-4 right-4">
+            <div className="absolute bottom-2 right-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    size="touch"
-                    className="rounded-full p-0 text-gray-400 hover:text-gray-600 hover:bg-transparent"
+                    size="icon"
+                    className="rounded-full text-gray-400 hover:bg-transparent focus-visible:ring-0 focus-visible:border-transparent cursor-pointer"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <MoreVertical className="h-4 w-4" />
+                    <MoreHorizontal className="h-4 w-4" />
                     <span className="sr-only">Open menu</span>
                   </Button>
                 </DropdownMenuTrigger>
@@ -144,7 +145,7 @@ export function FlightDutyCard({
                   {onDelete && (
                     <DropdownMenuItem
                       onClick={() => onDelete(flightDuty)}
-                      className="text-red-600 focus:text-red-600 cursor-pointer"
+                      variant="destructive"
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete
