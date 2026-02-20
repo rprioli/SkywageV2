@@ -44,8 +44,8 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedUploadMonth, setSelectedUploadMonth] = useState<number | null>(null);
 
-  // Upload states
-  const [uploadState, setUploadState] = useState<'month' | 'upload' | 'processing'>('month');
+  // Upload states — 'upload' state removed; picker is now triggered by explicit button press
+  const [uploadState, setUploadState] = useState<'month' | 'processing'>('month');
   const [processingStatus, setProcessingStatus] = useState<ProcessingStatusType | null>(null);
 
   // Roster replacement state
@@ -54,9 +54,7 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [replacementProcessing, setReplacementProcessing] = useState(false);
 
-  // File picker refs (needed to detect native picker cancel, since onChange doesn't fire on cancel)
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const awaitingFileSelectionRef = useRef(false);
 
   // Handle upload modal opening
   const handleUploadClick = useCallback(() => {
@@ -66,58 +64,34 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
     setProcessingStatus(null);
   }, []);
 
-  // Handle upload modal close
+  // Handle upload modal close — full state reset
   const handleUploadModalClose = useCallback(() => {
     setUploadModalOpen(false);
     setUploadState('month');
     setSelectedUploadMonth(null);
     setProcessingStatus(null);
-    // Reset replacement state
     setReplacementDialogOpen(false);
     setExistingDataCheck(null);
     setPendingFile(null);
     setReplacementProcessing(false);
   }, []);
 
+  // Open the native file picker — no cancel-detection side effects.
+  // Mobile browsers require file input clicks to originate from a direct user gesture,
+  // so this must be called from a button's onClick handler.
   const openFilePicker = useCallback(() => {
     const fileInput = fileInputRef.current;
     if (!fileInput) return;
 
-    // Ensure we don't keep a previous selection around (important for cancel detection).
+    // Clear any previous selection so the same file can be re-picked after a cancel.
     fileInput.value = '';
-
-    awaitingFileSelectionRef.current = true;
-
-    // When the native file picker closes via "Cancel", onChange doesn't fire.
-    // Focus returns to the window, so we close the modal if no file was selected.
-    // NOTE: Windows browsers can fire 'focus' before the file input populates and before onChange fires.
-    // We delay the check by 300ms to allow time for the browser to dispatch onChange if a file was selected.
-    const handleWindowFocus = () => {
-      window.setTimeout(() => {
-        if (!awaitingFileSelectionRef.current) return;
-
-        const hasFile = (fileInputRef.current?.files?.length ?? 0) > 0;
-        if (!hasFile) {
-          handleUploadModalClose();
-        }
-        awaitingFileSelectionRef.current = false;
-      }, 300);
-    };
-
-    window.addEventListener('focus', handleWindowFocus, { once: true });
     fileInput.click();
-  }, [handleUploadModalClose]);
+  }, []);
 
-  // Handle month selection for upload - automatically trigger file selection
+  // Update selected month — no longer auto-opens the file picker
   const handleMonthSelect = useCallback((month: number) => {
     setSelectedUploadMonth(month);
-    setUploadState('upload');
-
-    // Automatically trigger file selection after a brief delay
-    setTimeout(() => {
-      openFilePicker();
-    }, 100);
-  }, [openFilePicker]);
+  }, []);
 
   // Process file upload (with or without replacement)
   const processFileUpload = useCallback(async (file: File, performReplacement: boolean) => {
@@ -129,7 +103,6 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
 
     setUploadState('processing');
 
-    // Show loading toast
     const loadingToast = salaryCalculator.processingStarted(file.name);
 
     try {
@@ -145,7 +118,6 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
         performReplacement
       );
 
-      // Dismiss loading toast
       salaryCalculator.dismiss(loadingToast);
 
       if (result.success && result.flightDuties) {
@@ -159,24 +131,22 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
           salaryCalculator.csvUploadSuccess(file.name, result.flightDuties.length);
         }
 
-        // Refresh dashboard data
         await onUploadSuccess();
-
-        // Close modal - user will see results on dashboard
         handleUploadModalClose();
       } else {
         salaryCalculator.csvUploadError(result.errors?.join(', ') || 'Unknown error occurred');
-        setUploadState('upload');
+        // Return to month selection so the user can retry
+        setUploadState('month');
       }
     } catch (error) {
       salaryCalculator.dismiss(loadingToast);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       salaryCalculator.csvUploadError(errorMessage);
-      setUploadState('upload');
+      setUploadState('month');
     }
   }, [selectedUploadMonth, userId, position, salaryCalculator, onUploadSuccess, handleUploadModalClose]);
 
-  // Handle file selection and start processing
+  // Handle file selection from the hidden input
   const handleFileSelect = useCallback(async (file: File) => {
     if (!selectedUploadMonth) {
       salaryCalculator.csvUploadError('Please select a month before uploading a roster.');
@@ -184,26 +154,22 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
       return;
     }
 
-    // Validate file first (unified validation for both CSV and Excel)
     const validation = validateFileQuick(file);
     if (!validation.valid) {
-      salaryCalculator.csvUploadError(validation.errors?.join(', ') || "Please select a valid roster file.");
+      salaryCalculator.csvUploadError(validation.errors?.join(', ') || 'Please select a valid roster file.');
       return;
     }
 
-    // Ensure user is authenticated before upload
     if (!userId) {
       salaryCalculator.csvUploadError('You must be logged in to upload roster files. Please sign in and try again.');
       return;
     }
 
-    // Wait for user position to be loaded
     if (userPositionLoading) {
       salaryCalculator.csvUploadError('Loading user profile... Please try again in a moment.');
       return;
     }
 
-    // Check for existing data before processing
     try {
       const existingCheck = await checkForExistingData(userId, selectedUploadMonth, selectedYear);
 
@@ -212,7 +178,6 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
         return;
       }
 
-      // If data exists, show replacement confirmation dialog
       if (existingCheck.exists) {
         setExistingDataCheck(existingCheck);
         setPendingFile(file);
@@ -220,9 +185,7 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
         return;
       }
 
-      // No existing data, proceed with normal upload
       await processFileUpload(file, false);
-
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       salaryCalculator.csvUploadError(`Error during upload: ${errorMessage}`);
@@ -248,12 +211,12 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
     }
   }, [pendingFile, userId, selectedUploadMonth, processFileUpload, salaryCalculator]);
 
-  // Handle replacement cancellation
+  // Handle replacement cancellation — stay on month step so the user can retry
   const handleReplacementCancel = useCallback(() => {
     setReplacementDialogOpen(false);
     setPendingFile(null);
     setExistingDataCheck(null);
-    setUploadState('month'); // Go back to month selection
+    setUploadState('month');
   }, []);
 
   return (
@@ -269,22 +232,30 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
       </Button>
 
       {/* Upload Roster Modal */}
-      <ResponsiveModal open={uploadModalOpen} onOpenChange={handleUploadModalClose}>
+      <ResponsiveModal
+        open={uploadModalOpen}
+        onOpenChange={(open) => {
+          // Only run the full reset when the modal is actually closing, not on incidental
+          // open-change callbacks (e.g. from the portalled Select dropdown on mobile).
+          if (!open) handleUploadModalClose();
+        }}
+      >
         <ResponsiveModalContent className="modal-xl modal-touch-friendly max-h-[90vh] overflow-y-auto">
           <ResponsiveModalHeader className="pr-10">
             <ResponsiveModalTitle className="flex items-center gap-2 justify-center sm:justify-start">
               <Upload className="h-5 w-5 text-primary" />
               Upload Roster
             </ResponsiveModalTitle>
-            {uploadState === 'month' && (
-              <ResponsiveModalDescription>
-                Select the month for your roster upload
-              </ResponsiveModalDescription>
-            )}
+            <ResponsiveModalDescription>
+              {selectedUploadMonth
+                ? `Upload your roster for ${getMonthName(selectedUploadMonth)} ${selectedYear}`
+                : 'Select the month for your roster upload'}
+            </ResponsiveModalDescription>
           </ResponsiveModalHeader>
 
           <div className="space-y-6">
-            {/* Hidden file input (kept mounted so the auto-triggered native picker always works) */}
+            {/* Hidden file input — kept always mounted so the browser can associate the
+                programmatic click with a user gesture when triggered from the button below. */}
             <input
               ref={fileInputRef}
               id="roster-file-input"
@@ -293,16 +264,9 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-
-                // Whether a file was selected or the picker was dismissed, we’re no longer awaiting.
-                awaitingFileSelectionRef.current = false;
-
-                // Some browsers may still fire onChange with no file on cancel.
-                if (!file) {
-                  handleUploadModalClose();
-                  return;
-                }
-
+                // If the user cancelled the picker (no file chosen), stay on the current
+                // screen so they can retry — do NOT close or reset the modal.
+                if (!file) return;
                 handleFileSelect(file);
               }}
             />
@@ -311,7 +275,11 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
               <div className="w-full max-w-sm mx-auto space-y-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Month</label>
-                  <Select onValueChange={(value) => handleMonthSelect(parseInt(value, 10))}>
+                  {/* Controlled Select — preserves the visible selection after the picker is dismissed */}
+                  <Select
+                    value={selectedUploadMonth?.toString() ?? ''}
+                    onValueChange={(value) => handleMonthSelect(parseInt(value, 10))}
+                  >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select a month" />
                     </SelectTrigger>
@@ -324,11 +292,18 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
                     </SelectContent>
                   </Select>
                 </div>
+
+                {selectedUploadMonth !== null && (
+                  <Button
+                    className="w-full"
+                    onClick={openFilePicker}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Choose roster file
+                  </Button>
+                )}
               </div>
             )}
-
-            {/* uploadState === 'upload' intentionally renders no UI because the native file picker is auto-opened.
-                If the user cancels the picker, the modal auto-closes via the focus handler in openFilePicker(). */}
 
             {uploadState === 'processing' && processingStatus && (
               <ProcessingStatus status={processingStatus} />
@@ -353,4 +328,3 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
 });
 
 RosterUploadSection.displayName = 'RosterUploadSection';
-
