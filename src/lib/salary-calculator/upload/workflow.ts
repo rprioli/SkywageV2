@@ -1,12 +1,12 @@
 /**
  * Upload Workflow Module
- * Main upload processing workflows for CSV and Excel files
+ * Main upload processing workflows for CSV and Excel files.
+ *
+ * Position is resolved internally from user_position_history after parsing —
+ * callers no longer need to pass a position argument.
  */
 
-import {
-  FlightDuty,
-  Position
-} from '@/types/salary-calculator';
+import { FlightDuty } from '@/types/salary-calculator';
 import {
   validateCompleteCSV,
   FlydubaiCSVParser,
@@ -30,15 +30,12 @@ import {
 import { detectFileType, validateFileQuick, readFileContent } from './validation';
 import { parseFileContent } from './parsing';
 import { MIN_SUPPORTED_YEAR, MAX_SUPPORTED_YEAR } from '@/lib/constants/dates';
+import { getUserPositionForMonth } from '@/lib/user-position-history';
 
 /**
  * Checks for existing roster data before processing
  */
-export async function checkForExistingData(
-  userId: string,
-  month: number,
-  year: number
-) {
+export async function checkForExistingData(userId: string, month: number, year: number) {
   return await checkExistingRosterData(userId, month, year);
 }
 
@@ -49,7 +46,6 @@ export async function checkForExistingData(
 export async function processCSVUpload(
   file: File,
   userId: string,
-  position: Position,
   onProgress?: ProgressCallback,
   dryRun: boolean = false,
   targetMonth?: number,
@@ -58,34 +54,18 @@ export async function processCSVUpload(
   const warnings: string[] = [];
 
   try {
-    // Step 1: File validation
-    onProgress?.({
-      step: 'validating',
-      progress: 10,
-      message: 'Validating CSV file...',
-      details: 'Checking file format and content'
-    });
+    onProgress?.({ step: 'validating', progress: 10, message: 'Validating CSV file...', details: 'Checking file format and content' });
 
     const content = await readFileContent(file);
     const validation = await validateCompleteCSV(file, content);
-    
+
     if (!validation.valid) {
-      return {
-        success: false,
-        errors: validation.errors,
-        warnings: validation.warnings
-      };
+      return { success: false, errors: validation.errors, warnings: validation.warnings };
     }
 
     warnings.push(...validation.warnings);
 
-    // Step 2: CSV parsing
-    onProgress?.({
-      step: 'parsing',
-      progress: 30,
-      message: 'Parsing flight duties...',
-      details: 'Extracting flight data from CSV'
-    });
+    onProgress?.({ step: 'parsing', progress: 30, message: 'Parsing flight duties...', details: 'Extracting flight data from CSV' });
 
     const parser = new FlydubaiCSVParser();
     const parseResult = parser.parseFlightDuties(content, userId);
@@ -101,14 +81,31 @@ export async function processCSVUpload(
     let flightDuties = parseResult.data;
     warnings.push(...(parseResult.warnings || []));
 
-    // Step 3: Calculate duty hours and flight pay
-    onProgress?.({
-      step: 'calculating',
-      progress: 40,
-      message: 'Calculating flight payments...',
-      details: 'Computing duty hours and flight pay'
-    });
+    // Determine month/year from target or parsed data
+    const firstFlight = flightDuties[0];
+    if (!firstFlight) {
+      return { success: false, errors: ['No flight duties found in CSV'], warnings };
+    }
 
+    const month = targetMonth ?? firstFlight.month;
+    const year = targetYear ?? firstFlight.year;
+
+    if (targetMonth && targetYear) {
+      flightDuties.forEach((duty) => { duty.month = month; duty.year = year; });
+    }
+
+    if (!month || !year || month < 1 || month > 12 || year < MIN_SUPPORTED_YEAR || year > MAX_SUPPORTED_YEAR) {
+      return {
+        success: false,
+        errors: [`Invalid month/year: ${month}/${year}. Expected month 1-12 and year ${MIN_SUPPORTED_YEAR}-${MAX_SUPPORTED_YEAR}.`],
+        warnings
+      };
+    }
+
+    // Resolve position for this month/year from history
+    onProgress?.({ step: 'calculating', progress: 40, message: 'Calculating flight payments...', details: 'Computing duty hours and flight pay' });
+
+    const position = await getUserPositionForMonth(userId, year, month);
     const { calculateFlightDuty } = await import('../calculation-engine');
 
     flightDuties = flightDuties.map(duty => {
@@ -123,58 +120,12 @@ export async function processCSVUpload(
       }
     });
 
-    // Step 4: Calculate layover rest periods
-    onProgress?.({
-      step: 'calculating',
-      progress: 55,
-      message: 'Calculating layover periods...',
-      details: 'Computing rest times and per diem'
-    });
+    onProgress?.({ step: 'calculating', progress: 55, message: 'Calculating layover periods...', details: 'Computing rest times and per diem' });
 
     const layoverRestPeriods = calculateLayoverRestPeriods(flightDuties, userId, position);
 
-    // Extract month and year
-    const firstFlight = flightDuties[0];
-    if (!firstFlight) {
-      return {
-        success: false,
-        errors: ['No flight duties found in CSV'],
-        warnings
-      };
-    }
-
-    let month: number;
-    let year: number;
-
-    if (targetMonth && targetYear) {
-      month = targetMonth;
-      year = targetYear;
-      flightDuties.forEach((duty) => {
-        duty.month = month;
-        duty.year = year;
-      });
-    } else {
-      month = firstFlight.month;
-      year = firstFlight.year;
-    }
-
-    if (!month || !year || month < 1 || month > 12 || year < MIN_SUPPORTED_YEAR || year > MAX_SUPPORTED_YEAR) {
-      return {
-        success: false,
-        errors: [`Invalid month/year: ${month}/${year}. Expected month 1-12 and year ${MIN_SUPPORTED_YEAR}-${MAX_SUPPORTED_YEAR}.`],
-        warnings
-      };
-    }
-
-    // Step 5: Save to database (skip if dry run)
     if (dryRun) {
-      onProgress?.({
-        step: 'complete',
-        progress: 100,
-        message: 'Validation complete!',
-        details: `Successfully validated ${flightDuties.length} flight duties`
-      });
-
+      onProgress?.({ step: 'complete', progress: 100, message: 'Validation complete!', details: `Successfully validated ${flightDuties.length} flight duties` });
       return {
         success: true,
         monthlyCalculation: undefined,
@@ -184,42 +135,22 @@ export async function processCSVUpload(
       };
     }
 
-    return await saveUploadData(
-      flightDuties,
-      layoverRestPeriods,
-      userId,
-      position,
-      month,
-      year,
-      warnings,
-      onProgress
-    );
+    return await saveUploadData(flightDuties, layoverRestPeriods, userId, month, year, warnings, onProgress);
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    
-    onProgress?.({
-      step: 'error',
-      progress: 0,
-      message: 'Processing failed',
-      details: errorMessage
-    });
-
-    return {
-      success: false,
-      errors: [errorMessage],
-      warnings
-    };
+    onProgress?.({ step: 'error', progress: 0, message: 'Processing failed', details: errorMessage });
+    return { success: false, errors: [errorMessage], warnings };
   }
 }
 
 /**
- * Unified file upload processor for both CSV and Excel files
+ * Unified file upload processor for both CSV and Excel files.
+ * Position is resolved internally from user_position_history.
  */
 export async function processFileUpload(
   file: File,
   userId: string,
-  position: Position,
   onProgress?: ProgressCallback,
   dryRun: boolean = false,
   targetMonth?: number,
@@ -229,44 +160,24 @@ export async function processFileUpload(
   const fileType = detectFileType(file);
 
   try {
-    // Step 1: File validation
-    onProgress?.({
-      step: 'validating',
-      progress: 10,
-      message: `Validating ${fileType.toUpperCase()} file...`,
-      details: 'Checking file format and content'
-    });
+    onProgress?.({ step: 'validating', progress: 10, message: `Validating ${fileType.toUpperCase()} file...`, details: 'Checking file format and content' });
 
     if (fileType === 'excel') {
       const validation = validateFileQuick(file);
       if (!validation.valid) {
-        return {
-          success: false,
-          errors: validation.errors,
-          warnings: validation.warnings
-        };
+        return { success: false, errors: validation.errors, warnings: validation.warnings };
       }
       warnings.push(...validation.warnings);
     } else {
       const content = await readFileContent(file);
       const validation = await validateCompleteCSV(file, content);
       if (!validation.valid) {
-        return {
-          success: false,
-          errors: validation.errors,
-          warnings: validation.warnings
-        };
+        return { success: false, errors: validation.errors, warnings: validation.warnings };
       }
       warnings.push(...validation.warnings);
     }
 
-    // Step 2: File parsing
-    onProgress?.({
-      step: 'parsing',
-      progress: 30,
-      message: 'Parsing flight duties...',
-      details: `Extracting flight data from ${fileType.toUpperCase()}`
-    });
+    onProgress?.({ step: 'parsing', progress: 30, message: 'Parsing flight duties...', details: `Extracting flight data from ${fileType.toUpperCase()}` });
 
     const parseResult = await parseFileContent(file, userId, targetMonth, targetYear);
 
@@ -281,39 +192,7 @@ export async function processFileUpload(
     let flightDuties = parseResult.data;
     warnings.push(...(parseResult.warnings || []));
 
-    // Step 3: Calculate duty hours and flight pay
-    onProgress?.({
-      step: 'calculating',
-      progress: 40,
-      message: 'Calculating flight payments...',
-      details: 'Computing duty hours and flight pay'
-    });
-
-    const { calculateFlightDuty } = await import('../calculation-engine');
-
-    flightDuties = flightDuties.map(duty => {
-      const calculationResult = calculateFlightDuty(duty, position);
-      if (calculationResult.errors.length === 0) {
-        warnings.push(...calculationResult.warnings);
-        return calculationResult.flightDuty;
-      } else {
-        warnings.push(...calculationResult.errors);
-        warnings.push(...calculationResult.warnings);
-        return duty;
-      }
-    });
-
-    // Step 4: Calculate layover rest periods
-    onProgress?.({
-      step: 'calculating',
-      progress: 60,
-      message: 'Calculating layover rest periods...',
-      details: 'Computing rest time between flights'
-    });
-
-    const layoverRestPeriods = calculateLayoverRestPeriods(flightDuties, userId, position);
-
-    // Extract month and year
+    // Determine month/year
     let month: number;
     let year: number;
 
@@ -338,10 +217,7 @@ export async function processFileUpload(
     }
 
     if (targetMonth && targetYear) {
-      flightDuties.forEach((duty) => {
-        duty.month = month;
-        duty.year = year;
-      });
+      flightDuties.forEach((duty) => { duty.month = month; duty.year = year; });
     }
 
     if (!month || !year || month < 1 || month > 12 || year < MIN_SUPPORTED_YEAR || year > MAX_SUPPORTED_YEAR) {
@@ -352,15 +228,30 @@ export async function processFileUpload(
       };
     }
 
-    // Step 5: Save to database (skip if dry run)
-    if (dryRun) {
-      onProgress?.({
-        step: 'complete',
-        progress: 100,
-        message: 'Validation complete!',
-        details: `Successfully validated ${flightDuties.length} flight duties`
-      });
+    // Resolve position for this month/year from history
+    onProgress?.({ step: 'calculating', progress: 40, message: 'Calculating flight payments...', details: 'Computing duty hours and flight pay' });
 
+    const position = await getUserPositionForMonth(userId, year, month);
+    const { calculateFlightDuty } = await import('../calculation-engine');
+
+    flightDuties = flightDuties.map(duty => {
+      const calculationResult = calculateFlightDuty(duty, position);
+      if (calculationResult.errors.length === 0) {
+        warnings.push(...calculationResult.warnings);
+        return calculationResult.flightDuty;
+      } else {
+        warnings.push(...calculationResult.errors);
+        warnings.push(...calculationResult.warnings);
+        return duty;
+      }
+    });
+
+    onProgress?.({ step: 'calculating', progress: 60, message: 'Calculating layover rest periods...', details: 'Computing rest time between flights' });
+
+    const layoverRestPeriods = calculateLayoverRestPeriods(flightDuties, userId, position);
+
+    if (dryRun) {
+      onProgress?.({ step: 'complete', progress: 100, message: 'Validation complete!', details: `Successfully validated ${flightDuties.length} flight duties` });
       return {
         success: true,
         monthlyCalculation: undefined,
@@ -370,65 +261,37 @@ export async function processFileUpload(
       };
     }
 
-    return await saveUploadData(
-      flightDuties,
-      layoverRestPeriods,
-      userId,
-      position,
-      month,
-      year,
-      warnings,
-      onProgress
-    );
+    return await saveUploadData(flightDuties, layoverRestPeriods, userId, month, year, warnings, onProgress);
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-
-    onProgress?.({
-      step: 'error',
-      progress: 0,
-      message: 'Processing failed',
-      details: errorMessage
-    });
-
-    return {
-      success: false,
-      errors: [errorMessage],
-      warnings
-    };
+    onProgress?.({ step: 'error', progress: 0, message: 'Processing failed', details: errorMessage });
+    return { success: false, errors: [errorMessage], warnings };
   }
 }
 
 /**
  * Processes CSV upload with roster replacement if needed
+ * @deprecated Use processFileUploadWithReplacement instead
  */
 export async function processCSVUploadWithReplacement(
   file: File,
   userId: string,
-  position: Position,
   month: number,
   year: number,
   onProgress?: ProgressCallback,
   performReplacement: boolean = false
 ): Promise<ProcessingResult> {
-  return processFileUploadWithReplacement(
-    file,
-    userId,
-    position,
-    month,
-    year,
-    onProgress,
-    performReplacement
-  );
+  return processFileUploadWithReplacement(file, userId, month, year, onProgress, performReplacement);
 }
 
 /**
- * Unified file upload processor with roster replacement
+ * Unified file upload processor with roster replacement.
+ * Position is resolved internally for the target month/year.
  */
 export async function processFileUploadWithReplacement(
   file: File,
   userId: string,
-  position: Position,
   month: number,
   year: number,
   onProgress?: ProgressCallback,
@@ -447,7 +310,7 @@ export async function processFileUploadWithReplacement(
       });
 
       // Step 1: Process new data first (dry run)
-      const newDataResult = await processFileUpload(file, userId, position, onProgress, true, month, year);
+      const newDataResult = await processFileUpload(file, userId, onProgress, true, month, year);
 
       if (!newDataResult.success) {
         return {
@@ -458,7 +321,6 @@ export async function processFileUploadWithReplacement(
         };
       }
 
-      // Step 2: Delete existing data
       onProgress?.({
         step: 'validating',
         progress: 50,
@@ -482,7 +344,6 @@ export async function processFileUploadWithReplacement(
         };
       }
 
-      // Step 3: Save new data
       onProgress?.({
         step: 'saving',
         progress: 75,
@@ -490,7 +351,7 @@ export async function processFileUploadWithReplacement(
         details: 'Creating new flights and calculations'
       });
 
-      const finalResult = await processFileUpload(file, userId, position, onProgress, false, month, year);
+      const finalResult = await processFileUpload(file, userId, onProgress, false, month, year);
 
       if (!finalResult.success) {
         return {
@@ -501,18 +362,10 @@ export async function processFileUploadWithReplacement(
         };
       }
 
-      return {
-        ...finalResult,
-        replacementPerformed: performReplacement,
-        replacementResult
-      };
+      return { ...finalResult, replacementPerformed: performReplacement, replacementResult };
     } else {
-      const result = await processFileUpload(file, userId, position, onProgress, false, month, year);
-      return {
-        ...result,
-        replacementPerformed: false,
-        replacementResult: undefined
-      };
+      const result = await processFileUpload(file, userId, onProgress, false, month, year);
+      return { ...result, replacementPerformed: false, replacementResult: undefined };
     }
 
   } catch (error) {
@@ -527,26 +380,20 @@ export async function processFileUploadWithReplacement(
 }
 
 /**
- * Internal helper to save upload data to database
+ * Internal helper to save upload data to database.
+ * Position is resolved internally by recalculateMonthlyTotals.
  */
 async function saveUploadData(
   flightDuties: FlightDuty[],
   layoverRestPeriods: import('@/types/salary-calculator').LayoverRestPeriod[],
   userId: string,
-  position: Position,
   month: number,
   year: number,
   warnings: string[],
   onProgress?: ProgressCallback
 ): Promise<ProcessingResult> {
-  onProgress?.({
-    step: 'saving',
-    progress: 70,
-    message: 'Saving to database...',
-    details: 'Storing flight duties and calculations'
-  });
+  onProgress?.({ step: 'saving', progress: 70, message: 'Saving to database...', details: 'Storing flight duties and calculations' });
 
-  // Save flight duties
   const flightSaveResult = await createFlightDuties(flightDuties, userId);
   if (flightSaveResult.error) {
     return {
@@ -558,22 +405,11 @@ async function saveUploadData(
 
   const savedFlightDuties = flightSaveResult.data || [];
 
-  // Calculate monthly totals using recalculation engine
-  // This ensures cross-month layover pairing is handled correctly
-  onProgress?.({
-    step: 'calculating',
-    progress: 85,
-    message: 'Calculating monthly totals...',
-    details: 'Computing final salary breakdown with cross-month layover pairing'
-  });
+  // Recalculate using the engine (position resolved internally per month)
+  onProgress?.({ step: 'calculating', progress: 85, message: 'Calculating monthly totals...', details: 'Computing final salary breakdown with cross-month layover pairing' });
 
   const { recalculateMonthlyTotals } = await import('@/lib/salary-calculator/recalculation-engine');
-  const recalcResult = await recalculateMonthlyTotals(
-    userId,
-    month,
-    year,
-    position
-  );
+  const recalcResult = await recalculateMonthlyTotals(userId, month, year);
 
   if (!recalcResult.success) {
     return {
@@ -583,19 +419,11 @@ async function saveUploadData(
     };
   }
 
-  // Also recalculate the previous month.
-  // Reason: flights in the first days of this month may be the inbound segment for a previous-month layover
-  // (e.g., outbound on Dec 31, inbound on Jan 2). Without this, the previous month keeps the "old behavior".
+  // Also recalculate the previous month for cross-month layover pairing
   const previousMonth = month === 1 ? 12 : month - 1;
   const previousYear = month === 1 ? year - 1 : year;
   if (previousYear >= MIN_SUPPORTED_YEAR) {
-    const previousRecalc = await recalculateMonthlyTotals(
-      userId,
-      previousMonth,
-      previousYear,
-      position
-    );
-
+    const previousRecalc = await recalculateMonthlyTotals(userId, previousMonth, previousYear);
     if (!previousRecalc.success) {
       warnings.push(
         `Warning: Uploaded month calculated, but failed to update previous month (${previousMonth}/${previousYear}): ${previousRecalc.errors.join(', ')}`
@@ -603,15 +431,8 @@ async function saveUploadData(
     }
   }
 
-  // Complete
-  onProgress?.({
-    step: 'complete',
-    progress: 100,
-    message: 'Processing complete!',
-    details: `Successfully processed ${flightDuties.length} flight duties`
-  });
+  onProgress?.({ step: 'complete', progress: 100, message: 'Processing complete!', details: `Successfully processed ${flightDuties.length} flight duties` });
 
-  // Dispatch event for statistics refresh
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('dashboardDataUpdated'));
   }
@@ -624,4 +445,3 @@ async function saveUploadData(
     warnings: warnings.length > 0 ? warnings : undefined
   };
 }
-

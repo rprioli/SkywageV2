@@ -29,9 +29,9 @@ import {
   ManualEntryResult,
   BatchManualEntryResult
 } from '@/lib/salary-calculator/manual-entry-processor';
+import { getUserPositionForMonth } from '@/lib/user-position-history';
 
 interface ManualFlightEntryProps {
-  position: Position;
   selectedYear: number;
   onBack?: () => void;
   onSuccess?: () => void;
@@ -41,7 +41,6 @@ interface ManualFlightEntryProps {
 type EntryState = 'form' | 'processing' | 'success' | 'error';
 
 export function ManualFlightEntry({
-  position,
   selectedYear,
   onBack,
   onSuccess,
@@ -49,6 +48,18 @@ export function ManualFlightEntry({
 }: ManualFlightEntryProps) {
   const { user } = useAuth();
   const { salaryCalculator } = useToast();
+
+  // Resolve position for the real-time validation preview.
+  // Defaults to the current month's position; updated when the form date changes.
+  const [previewPosition, setPreviewPosition] = useState<Position>('CCM');
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const now = new Date();
+    getUserPositionForMonth(user.id, now.getFullYear(), now.getMonth() + 1)
+      .then((pos) => setPreviewPosition(pos))
+      .catch(() => { /* use default 'CCM' */ });
+  }, [user?.id]);
 
   // Component state
   const [entryState, setEntryState] = useState<EntryState>('form');
@@ -95,11 +106,13 @@ export function ManualFlightEntry({
 
       if (isBatchMode || batchDuties.length > 0) {
         // Process as batch (include current form data + batch)
+        // Position is resolved internally per entry's month/year
         const allDuties = [...batchDuties, data];
-        processingResult = await processManualEntryBatch(allDuties, user.id, position);
+        processingResult = await processManualEntryBatch(allDuties, user.id);
       } else {
         // Process single entry
-        processingResult = await processManualEntry(data, user.id, position);
+        // Position is resolved internally for the entry's month/year
+        processingResult = await processManualEntry(data, user.id);
       }
 
       if (processingResult.success) {
@@ -160,7 +173,8 @@ export function ManualFlightEntry({
 
     try {
       // Process only the batched duties (exclude current form)
-      const processingResult = await processManualEntryBatch(batchDuties, user.id, position);
+      // Position is resolved internally per entry's month/year
+      const processingResult = await processManualEntryBatch(batchDuties, user.id);
 
       if (processingResult.success) {
         setResult(processingResult);
@@ -212,7 +226,7 @@ export function ManualFlightEntry({
             onAddToBatch={handleAddToBatch}
             onSaveBatchOnly={handleSaveBatchOnly}
             loading={loading}
-            position={position}
+            position={previewPosition}
             selectedYear={selectedYear}
             batchCount={batchDuties.length}
           />

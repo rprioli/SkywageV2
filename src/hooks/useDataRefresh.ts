@@ -1,26 +1,27 @@
 /**
  * useDataRefresh Hook
- * 
+ *
  * Consolidated data refresh logic for the dashboard.
  * Replaces 4 duplicated refresh functions with a single reusable hook.
- * 
+ *
  * Handles:
  * - Refresh after single flight deletion
  * - Refresh after bulk flight deletion
  * - Refresh after roster upload
  * - Refresh after manual entry
+ *
+ * Position is no longer a parameter — recalculateMonthlyTotals resolves it
+ * internally from the user's position history timeline.
  */
 
-import { FlightDuty, Position } from '@/types/salary-calculator';
+import { FlightDuty } from '@/types/salary-calculator';
 import { recalculateMonthlyTotals } from '@/lib/salary-calculator/recalculation-engine';
 import { useState, useCallback } from 'react';
 
 interface UseDataRefreshOptions {
   userId: string;
-  position: Position;
   selectedMonth: number; // 0-based month (0 = January)
   selectedYear: number;
-  userPositionLoading: boolean;
   onCalculationsUpdate: () => Promise<void>;
   onFlightDutiesUpdate: () => Promise<void>;
   onError: (title: string, description: string) => void;
@@ -43,15 +44,11 @@ interface UseDataRefreshReturn {
   isRefreshing: boolean;
 }
 
-export function useDataRefresh(
-  options: UseDataRefreshOptions
-): UseDataRefreshReturn {
+export function useDataRefresh(options: UseDataRefreshOptions): UseDataRefreshReturn {
   const {
     userId,
-    position,
     selectedMonth,
     selectedYear,
-    userPositionLoading,
     onCalculationsUpdate,
     onError,
   } = options;
@@ -67,7 +64,6 @@ export function useDataRefresh(
   const fetchAndUpdateData = useCallback(
     async () => {
       try {
-        // Call update callbacks to refetch data
         await onCalculationsUpdate();
         return { success: true };
       } catch (error) {
@@ -79,30 +75,20 @@ export function useDataRefresh(
 
   /**
    * Refresh after single flight deletion
-   * - Recalculates the selected month
+   * - Recalculates the selected month (position resolved internally)
    * - Updates all data for selected month
    */
   const refreshAfterDelete = useCallback(async () => {
     if (!userId) return;
 
-    // Wait for user position to be loaded
-    if (userPositionLoading) {
-      onError(
-        'Loading Profile',
-        'Please wait for user profile to load before refreshing data.'
-      );
-      return;
-    }
-
     setIsRefreshing(true);
 
     try {
-      // CRITICAL: Trigger recalculation FIRST before fetching updated data
+      // Position is resolved from user_position_history inside recalculateMonthlyTotals
       const recalcResult = await recalculateMonthlyTotals(
         userId,
         selectedMonthOneBased,
-        selectedYear,
-        position
+        selectedYear
       );
 
       if (!recalcResult.success) {
@@ -113,103 +99,69 @@ export function useDataRefresh(
         return;
       }
 
-      // Fetch and update all data
       await fetchAndUpdateData();
     } catch (error) {
       onError(
         'Refresh Failed',
-        error instanceof Error
-          ? error.message
-          : 'Unknown error occurred during refresh'
+        error instanceof Error ? error.message : 'Unknown error occurred during refresh'
       );
     } finally {
       setIsRefreshing(false);
     }
-  }, [
-    userId,
-    userPositionLoading,
-    selectedMonthOneBased,
-    selectedYear,
-    position,
-    onError,
-    fetchAndUpdateData,
-  ]);
+  }, [userId, selectedMonthOneBased, selectedYear, onError, fetchAndUpdateData]);
 
   /**
    * Refresh after bulk deletion
-   * - Recalculates all affected months
+   * - Recalculates all affected months (position resolved per-month internally)
    * - Updates data for currently selected month
    */
   const refreshAfterBulkDelete = useCallback(
     async (deletedFlights: FlightDuty[]) => {
       if (!userId) return;
 
-      // Wait for user position to be loaded
-      if (userPositionLoading) {
-        onError(
-          'Loading Profile',
-          'Please wait for user profile to load before refreshing data.'
-        );
-        return;
-      }
-
       setIsRefreshing(true);
 
       try {
-        // Get unique months/years from deleted flights
+        // Collect unique months/years from deleted flights
         const affectedMonths = new Map<string, { month: number; year: number }>();
         deletedFlights.forEach((flight) => {
           const key = `${flight.month}-${flight.year}`;
           affectedMonths.set(key, { month: flight.month, year: flight.year });
         });
 
-        // Recalculate all affected months in parallel (independent operations)
-        const recalcPromises = Array.from(affectedMonths.values()).map(
-          ({ month, year }) =>
-            recalculateMonthlyTotals(userId, month, year, position)
+        // Recalculate all affected months in parallel
+        const recalcPromises = Array.from(affectedMonths.values()).map(({ month, year }) =>
+          recalculateMonthlyTotals(userId, month, year)
         );
 
         const recalcResults = await Promise.all(recalcPromises);
 
-        // Check for any failures
         const failures = recalcResults.filter((result) => !result.success);
         if (failures.length > 0) {
-          const errorMessages = failures
-            .map((result) => result.errors.join(', '))
-            .join('; ');
+          const errorMessages = failures.map((result) => result.errors.join(', ')).join('; ');
           onError(
             'Recalculation Failed',
             `Failed to recalculate ${failures.length} month(s): ${errorMessages}`
           );
-          // Continue anyway to refresh the data we can
         }
 
-        // Fetch and update data for currently selected month
         await fetchAndUpdateData();
       } catch (error) {
         onError(
           'Refresh Failed',
-          error instanceof Error
-            ? error.message
-            : 'Unknown error occurred during refresh'
+          error instanceof Error ? error.message : 'Unknown error occurred during refresh'
         );
       } finally {
         setIsRefreshing(false);
       }
     },
-    [
-      userId,
-      userPositionLoading,
-      position,
-      onError,
-      fetchAndUpdateData,
-    ]
+    [userId, onError, fetchAndUpdateData]
   );
 
   /**
    * Refresh after roster upload
-   * - No recalculation (already done by upload processor)
-   * - Only updates displayed data if upload month matches selected month
+   * - No recalculation needed (already done by upload processor)
+   * - Only refreshes displayed data
    */
   const refreshAfterUpload = useCallback(
     async () => {
@@ -218,31 +170,23 @@ export function useDataRefresh(
       setIsRefreshing(true);
 
       try {
-        // Refresh all data
         await fetchAndUpdateData();
       } catch (error) {
         onError(
           'Refresh Failed',
-          error instanceof Error
-            ? error.message
-            : 'Unknown error occurred during refresh'
+          error instanceof Error ? error.message : 'Unknown error occurred during refresh'
         );
       } finally {
         setIsRefreshing(false);
       }
     },
-    [
-      userId,
-      onError,
-      fetchAndUpdateData,
-    ]
+    [userId, onError, fetchAndUpdateData]
   );
 
   /**
    * Refresh after manual entry
-   * - No recalculation (already done by manual entry processor)
+   * - No recalculation needed (already done by manual entry processor)
    * - Includes 500ms delay to ensure database updates are complete
-   * - Updates data for currently selected month
    */
   const refreshAfterManualEntry = useCallback(async () => {
     if (!userId) return;
@@ -250,29 +194,17 @@ export function useDataRefresh(
     setIsRefreshing(true);
 
     try {
-      // CRITICAL: Add a small delay to ensure database updates are complete
-      // The manual entry process calls recalculateMonthlyTotals() which needs time to complete
       await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Fetch and update all data
       await fetchAndUpdateData();
     } catch (error) {
       onError(
         'Refresh Failed',
-        error instanceof Error
-          ? error.message
-          : 'Unknown error occurred during refresh'
+        error instanceof Error ? error.message : 'Unknown error occurred during refresh'
       );
     } finally {
       setIsRefreshing(false);
     }
-  }, [
-    userId,
-    selectedMonthOneBased,
-    selectedYear,
-    onError,
-    fetchAndUpdateData,
-  ]);
+  }, [userId, onError, fetchAndUpdateData]);
 
   return {
     refreshAfterDelete,
@@ -282,4 +214,3 @@ export function useDataRefresh(
     isRefreshing,
   };
 }
-

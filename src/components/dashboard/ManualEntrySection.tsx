@@ -12,19 +12,14 @@ import React, { useState, useCallback, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { ResponsiveModal, ResponsiveModalContent, ResponsiveModalDescription, ResponsiveModalHeader, ResponsiveModalTitle } from '@/components/ui/responsive-modal';
 import { FileText } from 'lucide-react';
-import { Position } from '@/types/salary-calculator';
 import { ManualFlightEntry } from '@/components/salary-calculator/ManualFlightEntry';
 
 interface ManualEntrySectionProps {
-  position: Position;
-  userPositionLoading: boolean;
   selectedYear: number;
   onEntrySuccess: () => Promise<void>;
 }
 
 export const ManualEntrySection = memo<ManualEntrySectionProps>(({
-  position,
-  userPositionLoading,
   selectedYear,
   onEntrySuccess,
 }) => {
@@ -69,21 +64,11 @@ export const ManualEntrySection = memo<ManualEntrySectionProps>(({
             </ResponsiveModalDescription>
           </ResponsiveModalHeader>
 
-          {userPositionLoading ? (
-            <div className="flex items-center justify-center p-8">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-                <p className="text-sm text-gray-600">Loading user profile...</p>
-              </div>
-            </div>
-          ) : (
-            <ManualFlightEntry
-              position={position}
-              selectedYear={selectedYear}
-              onBack={() => setManualEntryModalOpen(false)}
-              onSuccess={handleManualEntrySuccess}
-            />
-          )}
+          <ManualFlightEntry
+            selectedYear={selectedYear}
+            onBack={() => setManualEntryModalOpen(false)}
+            onSuccess={handleManualEntrySuccess}
+          />
         </ResponsiveModalContent>
       </ResponsiveModal>
     </>

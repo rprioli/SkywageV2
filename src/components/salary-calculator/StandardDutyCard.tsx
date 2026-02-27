@@ -20,6 +20,7 @@ import { mapFlightDutyToCardData } from '@/lib/salary-calculator/card-data-mappe
 import { EditTimesDialog } from './EditTimesDialog';
 import { updateFlightDuty } from '@/lib/database/flights';
 import { recalculateMonthlyTotals } from '@/lib/salary-calculator/recalculation-engine';
+import { getPositionRatesForDate } from '@/lib/salary-calculator/calculation-engine';
 import { useToast } from '@/hooks/use-toast';
 
 const BRAND = { primary: "#4C49ED", accent: "#6DDC91", neutral: "#FFFFFF" };
@@ -89,19 +90,22 @@ export function StandardDutyCard({
       }
       const dutyHours = dutyMinutes / 60;
 
-      // Calculate flight pay based on duty type
+      // Preliminary pay calculation using date-aware rates.
+      // recalculateMonthlyTotals (called below) resolves position from history
+      // and recomputes the final accurate value — this is just for the immediate DB write.
+      const month = flightDuty.date.getMonth() + 1;
+      const year = flightDuty.date.getFullYear();
+      const prelimRates = position ? getPositionRatesForDate(position, year, month) : { hourlyRate: 50 };
+
       let flightPay;
       if (flightDuty.dutyType === 'sby') {
         // SBY (Home Standby) is always unpaid
         flightPay = 0;
       } else if (flightDuty.dutyType === 'asby') {
         // ASBY (Airport Standby) has fixed 4-hour payment regardless of actual duty hours
-        // Keep the existing payment (4 hours × hourly rate)
         flightPay = flightDuty.flightPay;
       } else {
-        // Other duty types (shouldn't happen for StandardDutyCard, but fallback)
-        const hourlyRate = position === 'SCCM' ? 62 : 50;
-        flightPay = dutyHours * hourlyRate;
+        flightPay = dutyHours * prelimRates.hourlyRate;
       }
 
       // Update flight duty in database
@@ -123,11 +127,8 @@ export function StandardDutyCard({
         return;
       }
 
-      // Recalculate monthly totals
-      const month = flightDuty.date.getMonth() + 1; // Convert to 1-based
-      const year = flightDuty.date.getFullYear();
-
-      await recalculateMonthlyTotals(userId, month, year, position);
+      // Recalculate monthly totals (position resolved internally from history)
+      await recalculateMonthlyTotals(userId, month, year);
 
       showSuccess('Flight times updated successfully');
 

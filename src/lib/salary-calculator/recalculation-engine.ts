@@ -1,20 +1,23 @@
 /**
  * Recalculation Engine for Skywage Salary Calculator
- * Phase 5: Handles real-time recalculation when flights are edited
- * Following existing patterns from calculation-engine.ts
+ *
+ * Handles full monthly recalculation with effective-dated position resolution.
+ * Position is resolved internally from user_position_history — callers no longer
+ * need to (or should) pass a position argument.
  */
 
-import { 
-  FlightDuty, 
-  LayoverRestPeriod, 
+import {
+  FlightDuty,
+  LayoverRestPeriod,
   MonthlyCalculationResult,
-  Position 
+  Position
 } from '@/types/salary-calculator';
 import {
   calculateMonthlySalary,
   calculateLayoverRestPeriods,
   calculateFlightDuty
 } from '@/lib/salary-calculator';
+import { getPositionRatesForDate } from '@/lib/salary-calculator/calculation-engine';
 import {
   getFlightDutiesByMonth,
   getFlightDutiesByMonthWithLookahead,
@@ -26,6 +29,7 @@ import {
   upsertMonthlyCalculation,
   deleteMonthlyCalculation
 } from '@/lib/database/calculations';
+import { getUserPositionForMonth } from '@/lib/user-position-history';
 
 export interface RecalculationResult {
   success: boolean;
@@ -37,112 +41,122 @@ export interface RecalculationResult {
 }
 
 /**
- * Recalculates monthly totals after a flight duty is modified
+ * Recalculates monthly totals for a given user/month/year.
+ *
+ * Position is resolved internally from the user's position history timeline.
+ * This ensures historical months always use the position effective at that time,
+ * regardless of what the user's current position is.
+ *
+ * Per-diem note: when a layover straddles a promotion boundary (e.g., outbound
+ * last day of CCM month, inbound first day of SCCM month), per diem is attributed
+ * to the outbound month and uses the CCM rate. This is consistent with the
+ * "attribute rest to outbound month" logic in calculateLayoverRestPeriods.
  */
 export async function recalculateMonthlyTotals(
   userId: string,
   month: number,
-  year: number,
-  position: Position
+  year: number
 ): Promise<RecalculationResult> {
   const errors: string[] = [];
   const warnings: string[] = [];
 
   try {
-    // Get all flight duties for the month (for display and duty hour totals)
+    // Resolve the position that applies to this month from the timeline.
+    // This is the single source of truth — no position prop accepted.
+    let position: Position;
+    try {
+      position = await getUserPositionForMonth(userId, year, month);
+    } catch (resolveError) {
+      const msg = resolveError instanceof Error ? resolveError.message : String(resolveError);
+      errors.push(`Failed to resolve position for ${year}-${month}: ${msg}`);
+      return { success: false, updatedFlights: [], updatedLayovers: [], updatedCalculation: null, errors, warnings };
+    }
+
+    // Derive snapshot rate values for this position + month
+    const rates = getPositionRatesForDate(position, year, month);
+
+    // Fetch all flight duties for the month
     const flightsResult = await getFlightDutiesByMonth(userId, month, year);
     if (flightsResult.error) {
       errors.push(`Failed to fetch flights: ${flightsResult.error}`);
-      return {
-        success: false,
-        updatedFlights: [],
-        updatedLayovers: [],
-        updatedCalculation: null,
-        errors,
-        warnings
-      };
+      return { success: false, updatedFlights: [], updatedLayovers: [], updatedCalculation: null, errors, warnings };
     }
 
     const flightDuties = flightsResult.data || [];
+
     if (flightDuties.length === 0) {
-      // Delete existing layover rest periods for the month
-      const deleteResult = await deleteLayoverRestPeriods(userId, month, year);
-      if (deleteResult.error) {
-        warnings.push(`Warning: Could not delete old layover periods: ${deleteResult.error}`);
+      // Clean up stale data for an empty month
+      const deleteLayoverResult = await deleteLayoverRestPeriods(userId, month, year);
+      if (deleteLayoverResult.error) {
+        warnings.push(`Warning: Could not delete old layover periods: ${deleteLayoverResult.error}`);
       }
 
-      // Delete monthly calculation for empty month (removes bar from chart)
       const deleteCalcResult = await deleteMonthlyCalculation(userId, month, year);
       if (deleteCalcResult.error) {
         warnings.push(`Warning: Could not delete monthly calculation: ${deleteCalcResult.error}`);
       }
 
-      return {
-        success: true,
-        updatedFlights: [],
-        updatedLayovers: [],
-        updatedCalculation: null,
-        errors,
-        warnings
-      };
+      return { success: true, updatedFlights: [], updatedLayovers: [], updatedCalculation: null, errors, warnings };
     }
 
-    // Backfill: Recompute BP duties that may have been saved with fixed 5 hours
-    // This corrects historical data when a month is recalculated
-    const backfillPromises = flightDuties
-      .filter(duty => duty.dutyType === 'business_promotion' && duty.id)
+    // Recompute all per-flight computed values using the resolved position.
+    // Previously only BP duties were backfilled; now we recompute all duties
+    // so that position changes are reflected accurately across every duty type.
+    const recomputePromises = flightDuties
+      .filter(duty => duty.id)
       .map(async (duty) => {
-        // Recompute duty hours and flight pay from stored times
         const recalcResult = calculateFlightDuty(duty, position, year, month);
         const newDutyHours = recalcResult.flightDuty.dutyHours;
         const newFlightPay = recalcResult.flightDuty.flightPay;
-        
-        // Only update if values differ (avoid unnecessary DB writes)
-        const needsUpdate = 
+
+        const needsUpdate =
           Math.abs(newDutyHours - duty.dutyHours) > 0.01 ||
           Math.abs(newFlightPay - duty.flightPay) > 0.01;
-        
-        if (needsUpdate) {
-          const updateResult = await updateFlightDutyComputedValues(
-            duty.id!,
-            { dutyHours: newDutyHours, flightPay: newFlightPay },
-            userId,
-            'System recalculation: BP rule update'
-          );
-          
-          if (!updateResult.success) {
-            warnings.push(`Warning: Could not update BP duty ${duty.id}: ${updateResult.error}`);
-          } else {
-            // Update the in-memory duty for subsequent calculations
-            duty.dutyHours = newDutyHours;
-            duty.flightPay = newFlightPay;
-          }
+
+        // Always write snapshot columns even if computed values didn't change
+        const updateResult = await updateFlightDutyComputedValues(
+          duty.id!,
+          {
+            dutyHours: needsUpdate ? newDutyHours : duty.dutyHours,
+            flightPay: needsUpdate ? newFlightPay : duty.flightPay,
+            positionUsed: position,
+            hourlyRateUsed: rates.hourlyRate,
+          },
+          userId,
+          'System recalculation: position-aware recompute'
+        );
+
+        if (!updateResult.success) {
+          warnings.push(`Warning: Could not update duty ${duty.id}: ${updateResult.error}`);
+        } else if (needsUpdate) {
+          // Update in-memory for subsequent monthly total calculation
+          duty.dutyHours = newDutyHours;
+          duty.flightPay = newFlightPay;
         }
       });
-    
-    await Promise.all(backfillPromises);
 
-    // Sort flights by date and time for proper layover calculation
-    const sortedFlights = flightDuties.sort((a, b) => {
+    await Promise.all(recomputePromises);
+
+    // Sort flights for correct layover pairing
+    const sortedFlights = [...flightDuties].sort((a, b) => {
       const dateCompare = a.date.getTime() - b.date.getTime();
       if (dateCompare !== 0) return dateCompare;
-      
-      // If same date, sort by report time
       if (a.reportTime && b.reportTime) {
         return a.reportTime.totalMinutes - b.reportTime.totalMinutes;
       }
       return 0;
     });
 
-    // Fetch flights with lookahead for cross-month layover pairing
-    // This allows pairing outbound flights at month-end with inbound flights in early next month
+    // Fetch flights with lookahead for cross-month layover pairing.
+    // Layovers straddling the month boundary are attributed to the outbound month
+    // and use the outbound month's resolved position (this month's position).
     const pairingFlightsResult = await getFlightDutiesByMonthWithLookahead(userId, month, year, 3);
+    let pairingFlights: FlightDuty[];
     if (pairingFlightsResult.error) {
       warnings.push(`Warning: Could not fetch lookahead flights for pairing: ${pairingFlightsResult.error}`);
-      // Fall back to month-only flights for pairing
-      var pairingFlights = sortedFlights;
+      pairingFlights = sortedFlights;
     } else {
-      var pairingFlights = (pairingFlightsResult.data || []).sort((a, b) => {
+      pairingFlights = (pairingFlightsResult.data || []).sort((a, b) => {
         const dateCompare = a.date.getTime() - b.date.getTime();
         if (dateCompare !== 0) return dateCompare;
         if (a.reportTime && b.reportTime) {
@@ -152,24 +166,30 @@ export async function recalculateMonthlyTotals(
       });
     }
 
-    // Recalculate layover rest periods using the expanded pairing window
+    // Recalculate layover rest periods using the resolved position.
+    // Per-diem design: the outbound month's position drives per-diem for any
+    // cross-month layover pair, preserving CCM rates even if inbound is SCCM month.
     const allLayoverRestPeriods = calculateLayoverRestPeriods(pairingFlights, userId, position);
-    
-    // Filter to only rest periods attributed to the target month (outbound month)
+
+    // Only persist rest periods attributed to this month
     const layoverRestPeriods = allLayoverRestPeriods.filter(
       rp => rp.month === month && rp.year === year
     );
 
-    // Delete existing layover rest periods for the month
-    const deleteResult = await deleteLayoverRestPeriods(userId, month, year);
-    if (deleteResult.error) {
-      warnings.push(`Warning: Could not delete old layover periods: ${deleteResult.error}`);
+    // Replace stale layover periods for this month
+    const deleteLayoverResult = await deleteLayoverRestPeriods(userId, month, year);
+    if (deleteLayoverResult.error) {
+      warnings.push(`Warning: Could not delete old layover periods: ${deleteLayoverResult.error}`);
     }
 
-    // Create new layover rest periods
     let savedLayovers: LayoverRestPeriod[] = [];
     if (layoverRestPeriods.length > 0) {
-      const createResult = await createLayoverRestPeriods(layoverRestPeriods, userId);
+      const createResult = await createLayoverRestPeriods(
+        layoverRestPeriods,
+        userId,
+        position,
+        rates.perDiemRate
+      );
       if (createResult.error) {
         warnings.push(`Warning: Could not save layover periods: ${createResult.error}`);
       } else {
@@ -177,7 +197,7 @@ export async function recalculateMonthlyTotals(
       }
     }
 
-    // Calculate monthly totals
+    // Calculate monthly totals with the resolved position
     const monthlyCalculation = calculateMonthlySalary(
       sortedFlights,
       layoverRestPeriods,
@@ -187,10 +207,11 @@ export async function recalculateMonthlyTotals(
       userId
     );
 
-    // Save monthly calculation
+    // Persist with position snapshot
     const calculationResult = await upsertMonthlyCalculation(
       monthlyCalculation.monthlyCalculation,
-      userId
+      userId,
+      position
     );
     if (calculationResult.error) {
       warnings.push(`Warning: Could not save monthly calculation: ${calculationResult.error}`);
@@ -202,24 +223,19 @@ export async function recalculateMonthlyTotals(
       updatedLayovers: savedLayovers,
       updatedCalculation: monthlyCalculation,
       errors,
-      warnings
+      warnings,
     };
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error during recalculation';
     errors.push(errorMessage);
-    
     return {
       success: false,
       updatedFlights: [],
       updatedLayovers: [],
       updatedCalculation: null,
       errors,
-      warnings
+      warnings,
     };
   }
 }
-
-
-
-

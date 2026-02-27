@@ -12,11 +12,14 @@ import { Badge } from '@/components/ui/badge';
 
 interface SalaryBreakdownProps {
   calculation: MonthlyCalculation;
-  position: 'CCM' | 'SCCM';
+  /** Fallback position to display if the calculation does not have a positionUsed snapshot. */
+  position?: 'CCM' | 'SCCM';
   loading?: boolean;
 }
 
 export function SalaryBreakdown({ calculation, position, loading = false }: SalaryBreakdownProps) {
+  // Prefer the audit snapshot from the calculation; fall back to the prop for legacy records.
+  const displayPosition = calculation.positionUsed ?? position;
   if (loading) {
     return (
       <Card>
@@ -62,7 +65,7 @@ export function SalaryBreakdown({ calculation, position, loading = false }: Sala
             <Badge variant="outline">
               {monthNames[calculation.month - 1]} {calculation.year}
             </Badge>
-            <Badge variant="secondary">{position}</Badge>
+            {displayPosition && <Badge variant="secondary">{displayPosition}</Badge>}
           </div>
         </CardTitle>
       </CardHeader>
@@ -173,6 +176,7 @@ export function SalaryBreakdown({ calculation, position, loading = false }: Sala
  * Compact version for dashboard or summary views
  */
 export function SalaryBreakdownCompact({ calculation, position }: SalaryBreakdownProps) {
+  const compactPosition = calculation.positionUsed ?? position;
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-AE', {
       style: 'currency',
@@ -192,7 +196,7 @@ export function SalaryBreakdownCompact({ calculation, position }: SalaryBreakdow
             {new Date(calculation.year, calculation.month - 1).toLocaleDateString('en-US', {
               month: 'long',
               year: 'numeric'
-            })} • {position}
+            })}{compactPosition ? ` • ${compactPosition}` : ''}
           </div>
           
           <div className="grid grid-cols-2 gap-4 text-sm">

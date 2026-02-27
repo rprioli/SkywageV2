@@ -13,6 +13,7 @@ import {
   calculateDuration,
   calculateFlightPay
 } from '@/lib/salary-calculator';
+import { getPositionRatesForDate } from '@/lib/salary-calculator/calculation-engine';
 import { ManualFlightEntryData } from '../manual-entry-validation';
 import {
   transformFlightNumbers,
@@ -385,22 +386,25 @@ export function convertToFlightDuty(
       data.isCrossDay
     );
 
+    // Use date-aware rates (legacy vs new) for the resolved position.
+    // This replaces the previous hardcoded inline rate maps.
+    const dateAwareRates = getPositionRatesForDate(position, year, month);
+
     let flightPay = 0;
     if (data.dutyType === 'asby') {
-      const rates = { CCM: { hourlyRate: 50, asbyHours: 4 }, SCCM: { hourlyRate: 62, asbyHours: 4 } };
-      flightPay = rates[position].asbyHours * rates[position].hourlyRate;
+      flightPay = dateAwareRates.asbyHours * dateAwareRates.hourlyRate;
     } else if (data.dutyType === 'recurrent') {
       const isELD = data.flightNumbers.some(fn => fn.toUpperCase().includes('ELD')) ||
                     data.sectors.some(s => s.toUpperCase().includes('ELD'));
       if (!isELD) {
-        const rates = { CCM: { hourlyRate: 50 }, SCCM: { hourlyRate: 62 } };
-        flightPay = 4 * rates[position].hourlyRate;
+        // Recurrent is paid at 4 hours × hourly rate
+        flightPay = 4 * dateAwareRates.hourlyRate;
       }
     } else if (data.dutyType === 'business_promotion') {
-      // Pay BP like a normal duty: rostered duty hours × hourly rate
-      flightPay = calculateFlightPay(dutyHours, position);
+      // BP is paid like a normal duty: rostered duty hours × hourly rate
+      flightPay = calculateFlightPay(dutyHours, position, year, month);
     } else if (data.dutyType === 'turnaround') {
-      flightPay = calculateFlightPay(dutyHours, position);
+      flightPay = calculateFlightPay(dutyHours, position, year, month);
     }
 
     const flightNumbers = transformFlightNumbers(data.flightNumbers);

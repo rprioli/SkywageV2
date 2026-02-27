@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { ResponsiveModal, ResponsiveModalContent, ResponsiveModalDescription, ResponsiveModalHeader, ResponsiveModalTitle } from '@/components/ui/responsive-modal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload } from 'lucide-react';
-import { Position } from '@/types/salary-calculator';
 import { ProcessingStatus } from '@/components/salary-calculator/ProcessingStatus';
 import { RosterReplacementDialog } from '@/components/salary-calculator/RosterReplacementDialog';
 import { useToast } from '@/hooks/use-toast';
@@ -25,16 +24,12 @@ const getMonthName = (month: number) => {
 
 interface RosterUploadSectionProps {
   userId: string;
-  position: Position;
-  userPositionLoading: boolean;
   selectedYear: number;
   onUploadSuccess: () => Promise<void>;
 }
 
 export const RosterUploadSection = memo<RosterUploadSectionProps>(({
   userId,
-  position,
-  userPositionLoading,
   selectedYear,
   onUploadSuccess,
 }) => {
@@ -109,7 +104,6 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
       const result = await processFileUploadWithReplacement(
         file,
         userId,
-        position,
         selectedUploadMonth,
         selectedYear,
         (status) => {
@@ -144,7 +138,7 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
       salaryCalculator.csvUploadError(errorMessage);
       setUploadState('month');
     }
-  }, [selectedUploadMonth, userId, position, salaryCalculator, onUploadSuccess, handleUploadModalClose]);
+  }, [selectedUploadMonth, userId, salaryCalculator, onUploadSuccess, handleUploadModalClose]);
 
   // Handle file selection from the hidden input
   const handleFileSelect = useCallback(async (file: File) => {
@@ -162,11 +156,6 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
 
     if (!userId) {
       salaryCalculator.csvUploadError('You must be logged in to upload roster files. Please sign in and try again.');
-      return;
-    }
-
-    if (userPositionLoading) {
-      salaryCalculator.csvUploadError('Loading user profile... Please try again in a moment.');
       return;
     }
 
@@ -190,7 +179,7 @@ export const RosterUploadSection = memo<RosterUploadSectionProps>(({
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       salaryCalculator.csvUploadError(`Error during upload: ${errorMessage}`);
     }
-  }, [selectedUploadMonth, userId, userPositionLoading, salaryCalculator, processFileUpload]);
+  }, [selectedUploadMonth, userId, salaryCalculator, processFileUpload]);
 
   // Handle replacement confirmation
   const handleReplacementConfirm = useCallback(async () => {
