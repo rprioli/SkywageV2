@@ -63,33 +63,29 @@ export default function DashboardPage() {
   const [selectedFlightsForBulkDelete, setSelectedFlightsForBulkDelete] = useState<FlightDuty[]>([]);
   const [deleteProcessing, setDeleteProcessing] = useState(false);
 
-  // User position state - load from database profile (source of truth)
+  // User position state - used for display in FlightDutiesManager.
+  // Sourced from the loaded profile; position for calculations is resolved
+  // per-month from user_position_history inside the calculation pipeline.
   const [userPosition, setUserPosition] = useState<Position>('CCM');
-  const [userPositionLoading, setUserPositionLoading] = useState(true);
 
   // User preferences state
   const [userPreferences, setUserPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
 
-  // Load user position from database profile (source of truth)
+  // Load user position from database profile (display only — not used for calculations)
   useEffect(() => {
     const loadUserPosition = async () => {
       if (!user?.id) return;
 
       try {
-        setUserPositionLoading(true);
         const { data: profile, error } = await getProfile(user.id);
 
         if (profile && !error && profile.position) {
           setUserPosition(profile.position as Position);
         } else {
-          // Fallback to auth metadata if database fails
           setUserPosition((user?.user_metadata?.position as Position) || 'CCM');
         }
       } catch {
-        // Fallback to auth metadata
         setUserPosition((user?.user_metadata?.position as Position) || 'CCM');
-      } finally {
-        setUserPositionLoading(false);
       }
     };
 
@@ -180,10 +176,8 @@ export default function DashboardPage() {
     refreshAfterManualEntry,
   } = useDataRefresh({
     userId: user?.id || '',
-    position: userPosition,
     selectedMonth: selectedOverviewMonth,
     selectedYear: selectedYear,
-    userPositionLoading,
     onCalculationsUpdate: async () => {
       // Silently refetch calculations and flight duties (no loading state)
       // This prevents the chart from reloading when adding/deleting flights
@@ -438,15 +432,11 @@ export default function DashboardPage() {
         {/* Action Buttons */}
         <div className="flex gap-4">
           <ManualEntrySection
-            position={userPosition}
-            userPositionLoading={userPositionLoading}
             selectedYear={selectedYear}
             onEntrySuccess={handleManualEntrySuccess}
           />
           <RosterUploadSection
             userId={user?.id || ''}
-            position={userPosition}
-            userPositionLoading={userPositionLoading}
             selectedYear={selectedYear}
             onUploadSuccess={handleUploadSuccess}
           />

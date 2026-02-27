@@ -64,12 +64,12 @@ export interface MonthlyCalculation {
   userId?: string;
   month: number;
   year: number;
-  
+
   // Fixed components
   basicSalary: number;
   housingAllowance: number;
   transportAllowance: number;
-  
+
   // Variable components
   totalDutyHours: number;
   flightPay: number;
@@ -77,12 +77,16 @@ export interface MonthlyCalculation {
   perDiemPay: number;
   asbyCount: number;
   asbyPay: number;
-  
+
   // Totals
   totalFixed: number;
   totalVariable: number;
   totalSalary: number;
-  
+
+  // Audit snapshot: the position (CCM/SCCM) used when this month was last calculated.
+  // Set by the calculation pipeline; null/undefined for records created before this feature.
+  positionUsed?: Position | null;
+
   createdAt?: Date;
   updatedAt?: Date;
 }

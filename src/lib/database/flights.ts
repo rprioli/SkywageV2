@@ -620,6 +620,8 @@ export async function updateFlightDutyComputedValues(
   updates: {
     dutyHours: number;
     flightPay: number;
+    positionUsed?: 'CCM' | 'SCCM';
+    hourlyRateUsed?: number;
   },
   userId: string,
   changeReason?: string
@@ -634,16 +636,22 @@ export async function updateFlightDutyComputedValues(
 
     // Update database with both old and new schema columns
     // Do NOT change data_source or original_data - this is a system recalculation
+    const updatePayload: Record<string, unknown> = {
+      // Old schema columns (for backward compatibility)
+      hours: updates.dutyHours,
+      pay: updates.flightPay,
+      // New schema columns
+      duty_hours: updates.dutyHours,
+      flight_pay: updates.flightPay,
+    };
+
+    // Set snapshot columns if provided
+    if (updates.positionUsed !== undefined) updatePayload.position_used = updates.positionUsed;
+    if (updates.hourlyRateUsed !== undefined) updatePayload.hourly_rate_used = updates.hourlyRateUsed;
+
     const { error } = await supabase
       .from('flights')
-      .update({
-        // Old schema columns (for backward compatibility)
-        hours: updates.dutyHours,
-        pay: updates.flightPay,
-        // New schema columns
-        duty_hours: updates.dutyHours,
-        flight_pay: updates.flightPay
-      })
+      .update(updatePayload)
       .eq('id', flightId)
       .eq('user_id', userId);
 

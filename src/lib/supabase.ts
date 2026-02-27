@@ -144,6 +144,8 @@ export type Database = {
           last_edited_by?: string;
           month?: number;
           year?: number;
+          position_used?: 'CCM' | 'SCCM' | null;
+          hourly_rate_used?: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -177,6 +179,8 @@ export type Database = {
           last_edited_by?: string;
           month: number;
           year: number;
+          position_used?: 'CCM' | 'SCCM' | null;
+          hourly_rate_used?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -210,6 +214,8 @@ export type Database = {
           last_edited_by?: string;
           month?: number;
           year?: number;
+          position_used?: 'CCM' | 'SCCM' | null;
+          hourly_rate_used?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -260,6 +266,8 @@ export type Database = {
           per_diem_pay: number;
           month: number;
           year: number;
+          position_used?: 'CCM' | 'SCCM' | null;
+          per_diem_rate_used?: number | null;
           created_at: string;
         };
         Insert: {
@@ -273,6 +281,8 @@ export type Database = {
           per_diem_pay: number;
           month: number;
           year: number;
+          position_used?: 'CCM' | 'SCCM' | null;
+          per_diem_rate_used?: number | null;
           created_at?: string;
         };
         Update: {
@@ -286,6 +296,8 @@ export type Database = {
           per_diem_pay?: number;
           month?: number;
           year?: number;
+          position_used?: 'CCM' | 'SCCM' | null;
+          per_diem_rate_used?: number | null;
           created_at?: string;
         };
       };
@@ -308,6 +320,7 @@ export type Database = {
           total_fixed: number;
           total_variable: number;
           total_salary: number;
+          position_used?: 'CCM' | 'SCCM' | null;
           created_at: string;
           updated_at: string;
         };
@@ -328,6 +341,7 @@ export type Database = {
           total_fixed: number;
           total_variable: number;
           total_salary: number;
+          position_used?: 'CCM' | 'SCCM' | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -348,6 +362,7 @@ export type Database = {
           total_fixed?: number;
           total_variable?: number;
           total_salary?: number;
+          position_used?: 'CCM' | 'SCCM' | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -373,6 +388,33 @@ export type Database = {
           settings?: Record<string, unknown>;
           created_at?: string;
           updated_at?: string;
+        };
+      };
+      // Effective-dated position history table
+      user_position_history: {
+        Row: {
+          id: string;
+          user_id: string;
+          position: 'CCM' | 'SCCM';
+          effective_from_year: number;
+          effective_from_month: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          position: 'CCM' | 'SCCM';
+          effective_from_year: number;
+          effective_from_month: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          position?: 'CCM' | 'SCCM';
+          effective_from_year?: number;
+          effective_from_month?: number;
+          created_at?: string;
         };
       };
       // Friendships table for Friends feature

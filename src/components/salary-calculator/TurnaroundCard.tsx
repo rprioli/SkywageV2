@@ -23,6 +23,7 @@ import { parseSectors } from './flight-duty-card/utils';
 import { isDoubleSectorTurnaroundPattern, extractTurnaroundDestinations } from '@/lib/salary-calculator/input-transformers';
 import { updateFlightDuty } from '@/lib/database/flights';
 import { recalculateMonthlyTotals } from '@/lib/salary-calculator/recalculation-engine';
+import { getPositionRatesForDate } from '@/lib/salary-calculator/calculation-engine';
 import { useToast } from '@/hooks/use-toast';
 
 const BRAND = { primary: "#4C49ED", accent: "#6DDC91", neutral: "#FFFFFF" };
@@ -132,9 +133,13 @@ export function TurnaroundCard({
       }
       const dutyHours = dutyMinutes / 60;
 
-      // Calculate new flight pay based on position
-      const hourlyRate = position === 'SCCM' ? 62 : 50;
-      const flightPay = dutyHours * hourlyRate;
+      // Preliminary pay calculation using date-aware rates.
+      // recalculateMonthlyTotals (called below) will resolve position from history
+      // and recompute the final accurate value — this is just for the immediate DB write.
+      const month = flightDuty.date.getMonth() + 1;
+      const year = flightDuty.date.getFullYear();
+      const prelimRates = position ? getPositionRatesForDate(position, year, month) : { hourlyRate: 50 };
+      const flightPay = dutyHours * prelimRates.hourlyRate;
 
       // Update flight duty in database
       const result = await updateFlightDuty(
@@ -155,11 +160,8 @@ export function TurnaroundCard({
         return;
       }
 
-      // Recalculate monthly totals
-      const month = flightDuty.date.getMonth() + 1; // Convert to 1-based
-      const year = flightDuty.date.getFullYear();
-
-      await recalculateMonthlyTotals(userId, month, year, position);
+      // Recalculate monthly totals (position resolved internally from history)
+      await recalculateMonthlyTotals(userId, month, year);
 
       showSuccess('Flight times updated successfully');
 

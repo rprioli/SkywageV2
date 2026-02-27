@@ -1,181 +1,237 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthProvider';
-import { PositionSelect } from '@/components/ui/PositionSelect';
-import { updateUserPosition } from '@/lib/userProfile';
-import { getProfile } from '@/lib/db';
-import { getPositionName } from '@/lib/positionUtils';
-import { recalculateMonthlyTotals } from '@/lib/salary-calculator/recalculation-engine';
-import { getAllMonthlyCalculations } from '@/lib/database/calculations';
-import { Position } from '@/types/salary-calculator';
-import { ProfileSettingsRow } from './ProfileSettingsRow';
+import { useToast } from '@/hooks/use-toast';
+
 import { Button } from '@/components/ui/button';
+import { ProfileSettingsRow } from './ProfileSettingsRow';
+import { AddPositionChangeForm } from './AddPositionChangeForm';
+import { PositionHistoryTimeline } from './PositionHistoryTimeline';
+import {
+  getUserPositionTimeline,
+  addPositionChange,
+  updatePositionChange,
+  deletePositionChange,
+  getAffectedMonthsFrom,
+  getPreviousMonth,
+  PositionHistoryEntry,
+} from '@/lib/user-position-history';
+import { recalculateMonthlyTotals } from '@/lib/salary-calculator/recalculation-engine';
+import { getPositionName } from '@/lib/positionUtils';
+import { Position } from '@/types/salary-calculator';
+import { MIN_SUPPORTED_YEAR } from '@/lib/constants/dates';
+import { Plus } from 'lucide-react';
+
+const CONCURRENCY_LIMIT = 3;
+
+/** Run async tasks with a concurrency cap to avoid overwhelming the DB. */
+async function runWithConcurrency<T>(
+  tasks: (() => Promise<T>)[],
+  limit: number
+): Promise<PromiseSettledResult<T>[]> {
+  const results: PromiseSettledResult<T>[] = [];
+  for (let i = 0; i < tasks.length; i += limit) {
+    const chunk = tasks.slice(i, i + limit).map((t) => t());
+    const chunkResults = await Promise.allSettled(chunk);
+    results.push(...chunkResults);
+  }
+  return results;
+}
 
 export function PositionUpdate() {
   const { user, loading: authLoading } = useAuth();
-  const [position, setPosition] = useState<'CCM' | 'SCCM' | ''>('');
+  const { showSuccess, showError, showInfo } = useToast();
+
+  const [timeline, setTimeline] = useState<PositionHistoryEntry[]>([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [updateSuccess, setUpdateSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Load position from database profile (source of truth)
-  useEffect(() => {
-    const loadPosition = async () => {
-      if (user?.id) {
-        try {
-          const { data: profile, error } = await getProfile(user.id);
-          if (profile && !error) {
-            setPosition(profile.position || '');
-          }
-        } catch {
-          // Fallback to auth metadata if database fails
-          setPosition(user?.user_metadata?.position || '');
-        }
-      }
-    };
+  const currentPosition = timeline[timeline.length - 1]?.position ?? '';
 
-    loadPosition();
-  }, [user?.id, user?.user_metadata?.position]);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (successTimeoutRef.current) {
-        clearTimeout(successTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const handlePositionChange = (value: 'CCM' | 'SCCM') => {
-    setPosition(value);
-  };
-
-  // Recalculate all existing data after position change
-  const recalculateAllData = async (newPosition: Position) => {
+  const loadTimeline = useCallback(async () => {
     if (!user?.id) return;
+    const { data, error } = await getUserPositionTimeline(user.id);
+    if (!error) setTimeline(data);
+  }, [user?.id]);
+
+  useEffect(() => {
+    loadTimeline();
+  }, [loadTimeline]);
+
+  /**
+   * Recalculates months >= effectiveYear/Month (and the month before for layover pairing).
+   * Uses concurrency limit to avoid overwhelming the DB.
+   */
+  const recalculateAffected = useCallback(
+    async (effectiveYear: number, effectiveMonth: number): Promise<string[]> => {
+      if (!user?.id) return [];
+
+      const affected = await getAffectedMonthsFrom(user.id, effectiveYear, effectiveMonth);
+
+      // Also recalculate the month before the effective month for cross-month layovers
+      const prev = getPreviousMonth(effectiveYear, effectiveMonth);
+      const allMonths = prev.year >= MIN_SUPPORTED_YEAR
+        ? [prev, ...affected]
+        : affected;
+
+      if (allMonths.length === 0) return [];
+
+      if (allMonths.length >= 4) {
+        showInfo(`Recalculating ${allMonths.length} months of data...`);
+      }
+
+      const tasks = allMonths.map(
+        ({ month, year }) =>
+          () => recalculateMonthlyTotals(user.id!, month, year)
+      );
+
+      const results = await runWithConcurrency(tasks, CONCURRENCY_LIMIT);
+      const failures = results.filter((r) => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.success));
+
+      return failures.length > 0
+        ? [`${failures.length} month(s) failed to recalculate`]
+        : [];
+    },
+    [user?.id, showInfo]
+  );
+
+  const handleAddPositionChange = async (position: Position, year: number, month: number) => {
+    if (!user?.id) return;
+    setIsLoading(true);
 
     try {
-      // Get all months with existing calculations
-      const { data: monthlyCalculations, error } = await getAllMonthlyCalculations(user.id);
-
-      if (error || !monthlyCalculations) {
+      const result = await addPositionChange(user.id, position, year, month);
+      if (!result.success) {
+        showError(result.error ?? 'Failed to add position change.');
         return;
       }
 
-      // Recalculate each month with the new position
-      const recalculationPromises = monthlyCalculations.map(calc =>
-        recalculateMonthlyTotals(user.id, calc.month, calc.year, newPosition)
-      );
+      const warnings = await recalculateAffected(year, month);
 
-      await Promise.allSettled(recalculationPromises);
+      await loadTimeline();
+      setShowAddForm(false);
 
-    } catch {
-      // Silently handle bulk recalculation errors
-    }
-  };
-
-  const handleSave = async () => {
-    if (!position || (position !== 'CCM' && position !== 'SCCM')) {
-      setError('Please select a valid position');
-      return;
-    }
-
-    try {
-      setIsUpdating(true);
-      setError(null);
-      setUpdateSuccess(false);
-
-      const { success, error } = await updateUserPosition(position, user?.id);
-
-      if (!success || error) {
-        throw new Error(error || 'Failed to update position');
-      }
-
-      // Trigger recalculation of all existing data with new position
-      await recalculateAllData(position as Position);
-
-      setUpdateSuccess(true);
-      setIsEditing(false);
-
-      // Notify other components that position has been updated
       window.dispatchEvent(new CustomEvent('userPositionUpdated'));
 
-      // Auto-hide success message after 3 seconds
-      if (successTimeoutRef.current) {
-        clearTimeout(successTimeoutRef.current);
+      if (warnings.length > 0) {
+        showError(`Saved, but: ${warnings.join(', ')}`);
+      } else {
+        showSuccess(`${position} effective from ${month}/${year} — calculations updated.`);
       }
-      successTimeoutRef.current = setTimeout(() => {
-        setUpdateSuccess(false);
-      }, 3000);
-
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      showError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
-      setIsUpdating(false);
+      setIsLoading(false);
     }
   };
 
-  const handleCancel = async () => {
-    // Reset to original value from database
-    if (user?.id) {
-      try {
-        const { data: profile, error } = await getProfile(user.id);
-        if (profile && !error) {
-          setPosition(profile.position || '');
-        }
-      } catch {
-        // Fallback to auth metadata if database fails
-        setPosition(user?.user_metadata?.position || '');
+  const handleUpdatePositionChange = async (id: string, position: Position, year: number, month: number) => {
+    if (!user?.id) return;
+    setIsLoading(true);
+
+    try {
+      const result = await updatePositionChange(id, user.id, { position, effectiveFromYear: year, effectiveFromMonth: month });
+      if (!result.success) {
+        showError(result.error ?? 'Failed to update.');
+        return;
       }
+
+      const warnings = await recalculateAffected(year, month);
+
+      await loadTimeline();
+      window.dispatchEvent(new CustomEvent('userPositionUpdated'));
+
+      if (warnings.length > 0) {
+        showError(`Saved, but: ${warnings.join(', ')}`);
+      } else {
+        showSuccess('Position history updated and calculations refreshed.');
+      }
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setIsLoading(false);
     }
-    setIsEditing(false);
-    setError(null);
   };
+
+  const handleDeletePositionChange = async (id: string) => {
+    if (!user?.id) return;
+    setIsLoading(true);
+
+    try {
+      // Find the effective date of the entry being deleted so we know what to recalculate
+      const entry = timeline.find((e) => e.id === id);
+      const result = await deletePositionChange(id, user.id);
+      if (!result.success) {
+        showError(result.error ?? 'Failed to delete.');
+        return;
+      }
+
+      const warnings = entry
+        ? await recalculateAffected(entry.effectiveFromYear, entry.effectiveFromMonth)
+        : [];
+
+      await loadTimeline();
+      window.dispatchEvent(new CustomEvent('userPositionUpdated'));
+
+      if (warnings.length > 0) {
+        showError(`Deleted, but: ${warnings.join(', ')}`);
+      } else {
+        showSuccess('Position history updated and calculations refreshed.');
+      }
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const displayValue = authLoading
+    ? 'Loading...'
+    : currentPosition
+    ? getPositionName(currentPosition)
+    : 'Not set';
 
   return (
     <ProfileSettingsRow
       label="Position"
-      value={authLoading ? 'Loading...' : getPositionName(position)}
+      value={displayValue}
       action={{
-        label: 'Edit',
-        onClick: () => setIsEditing(true),
-        disabled: authLoading
+        label: isEditing ? 'Close' : 'Edit',
+        onClick: () => { setIsEditing((v) => !v); setShowAddForm(false); },
+        disabled: authLoading,
       }}
       isEditing={isEditing}
     >
       <div className="space-y-4">
-        <div className="max-w-md">
-          <PositionSelect
-            value={position}
-            onValueChange={handlePositionChange}
-            className="w-full"
+        {/* Timeline */}
+        <PositionHistoryTimeline
+          entries={timeline}
+          onUpdate={handleUpdatePositionChange}
+          onDelete={handleDeletePositionChange}
+          isLoading={isLoading}
+        />
+
+        {/* Add new position change */}
+        {showAddForm ? (
+          <AddPositionChangeForm
+            onAdd={handleAddPositionChange}
+            onCancel={() => setShowAddForm(false)}
+            isLoading={isLoading}
           />
-        </div>
-
-        {error && (
-          <p className="text-sm text-destructive">{error}</p>
-        )}
-
-        <div className="flex gap-2">
+        ) : (
           <Button
-            onClick={handleSave}
-            disabled={isUpdating}
             size="sm"
-          >
-            {isUpdating ? 'Saving...' : 'Save'}
-          </Button>
-          <Button
             variant="outline"
-            onClick={handleCancel}
-            disabled={isUpdating}
-            size="sm"
+            onClick={() => setShowAddForm(true)}
+            disabled={isLoading}
+            className="gap-1"
           >
-            Cancel
+            <Plus className="w-4 h-4" />
+            Add position change
           </Button>
-        </div>
+        )}
       </div>
     </ProfileSettingsRow>
   );

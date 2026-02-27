@@ -17,7 +17,11 @@ type LayoverRestPeriodInsert = Database['public']['Tables']['layover_rest_period
 /**
  * Converts MonthlyCalculation to database insert format
  */
-function monthlyCalculationToInsert(calculation: MonthlyCalculation, userId: string): MonthlyCalculationInsert {
+function monthlyCalculationToInsert(
+  calculation: MonthlyCalculation,
+  userId: string,
+  positionUsed?: 'CCM' | 'SCCM'
+): MonthlyCalculationInsert {
   return {
     user_id: userId,
     month: calculation.month,
@@ -33,7 +37,8 @@ function monthlyCalculationToInsert(calculation: MonthlyCalculation, userId: str
     asby_pay: calculation.asbyPay,
     total_fixed: calculation.totalFixed,
     total_variable: calculation.totalVariable,
-    total_salary: calculation.totalSalary
+    total_salary: calculation.totalSalary,
+    ...(positionUsed !== undefined && { position_used: positionUsed }),
   };
 }
 
@@ -58,15 +63,21 @@ function rowToMonthlyCalculation(row: MonthlyCalculationRow): MonthlyCalculation
     totalFixed: row.total_fixed,
     totalVariable: row.total_variable,
     totalSalary: row.total_salary,
+    positionUsed: (row.position_used as 'CCM' | 'SCCM' | null | undefined) ?? null,
     createdAt: new Date(row.created_at),
-    updatedAt: new Date(row.updated_at)
+    updatedAt: new Date(row.updated_at),
   };
 }
 
 /**
  * Converts LayoverRestPeriod to database insert format
  */
-function layoverRestPeriodToInsert(restPeriod: LayoverRestPeriod, userId: string): LayoverRestPeriodInsert {
+function layoverRestPeriodToInsert(
+  restPeriod: LayoverRestPeriod,
+  userId: string,
+  snapshotPosition?: 'CCM' | 'SCCM',
+  snapshotPerDiemRate?: number
+): LayoverRestPeriodInsert {
   return {
     user_id: userId,
     outbound_flight_id: restPeriod.outboundFlightId,
@@ -76,7 +87,9 @@ function layoverRestPeriodToInsert(restPeriod: LayoverRestPeriod, userId: string
     rest_hours: restPeriod.restHours,
     per_diem_pay: restPeriod.perDiemPay,
     month: restPeriod.month,
-    year: restPeriod.year
+    year: restPeriod.year,
+    ...(snapshotPosition !== undefined && { position_used: snapshotPosition }),
+    ...(snapshotPerDiemRate !== undefined && { per_diem_rate_used: snapshotPerDiemRate }),
   };
 }
 
@@ -104,7 +117,8 @@ function rowToLayoverRestPeriod(row: LayoverRestPeriodRow): LayoverRestPeriod {
  */
 export async function upsertMonthlyCalculation(
   calculation: MonthlyCalculation,
-  userId: string
+  userId: string,
+  positionUsed?: 'CCM' | 'SCCM'
 ): Promise<{ data: MonthlyCalculation | null; error: string | null }> {
   try {
     if (!calculation) {
@@ -115,7 +129,7 @@ export async function upsertMonthlyCalculation(
       return { data: null, error: 'Calculation missing required month/year data' };
     }
 
-    const insertData = monthlyCalculationToInsert(calculation, userId);
+    const insertData = monthlyCalculationToInsert(calculation, userId, positionUsed);
     
     const { data, error } = await supabase
       .from('monthly_calculations')
@@ -196,7 +210,9 @@ export async function getAllMonthlyCalculations(
  */
 export async function createLayoverRestPeriods(
   restPeriods: LayoverRestPeriod[],
-  userId: string
+  userId: string,
+  snapshotPosition?: 'CCM' | 'SCCM',
+  snapshotPerDiemRate?: number
 ): Promise<{ data: LayoverRestPeriod[] | null; error: string | null }> {
   try {
     // Validate that all rest periods have valid flight IDs
@@ -211,7 +227,9 @@ export async function createLayoverRestPeriods(
       };
     }
 
-    const insertData = restPeriods.map(period => layoverRestPeriodToInsert(period, userId));
+    const insertData = restPeriods.map(period =>
+      layoverRestPeriodToInsert(period, userId, snapshotPosition, snapshotPerDiemRate)
+    );
 
 
 

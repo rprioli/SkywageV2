@@ -16,6 +16,7 @@ import {
   parseTimeString,
   calculateDuration
 } from '@/lib/salary-calculator';
+import { getPositionRatesForDate } from '@/lib/salary-calculator/calculation-engine';
 import {
   transformFlightNumbers,
   transformSectors,
@@ -593,8 +594,12 @@ export function validateManualEntry(
         if (reportTimeObj.success && debriefTimeObj.success && reportTimeObj.timeValue && debriefTimeObj.timeValue) {
           calculatedDutyHours = calculateDuration(reportTimeObj.timeValue, debriefTimeObj.timeValue, data.isCrossDay);
 
-          // Calculate estimated pay based on position and duty type
-          const rates = FLYDUBAI_CONFIG.salaryRates[position];
+          // Calculate estimated pay using date-aware rates (preview only — the save
+          // workflow resolves position from history for the authoritative calculation).
+          const previewDate = data.date ? new Date(data.date) : new Date();
+          const previewYear = previewDate.getFullYear();
+          const previewMonth = previewDate.getMonth() + 1;
+          const rates = getPositionRatesForDate(position, previewYear, previewMonth);
           if (data.dutyType === 'asby') {
             estimatedPay = rates.asbyHours * rates.hourlyRate;
           } else {
