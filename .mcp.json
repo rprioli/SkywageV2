@@ -1,0 +1,29 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=tftjpuyvcwvkxexciebh"
+    },
+    "shadcn": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "shadcn@latest",
+        "mcp"
+      ]
+    },
+    "excel": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "--yes",
+        "@negokaz/excel-mcp-server"
+      ],
+      "env": {
+        "EXCEL_MCP_PAGING_CELLS_LIMIT": "4000"
+      }
+    }
+  }
+}

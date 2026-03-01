@@ -58,6 +58,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@types/jest": "^30.0.0",
-    "baseline-browser-mapping": "^2.9.19"
+    "baseline-browser-mapping": "^2.9.19",
+    "shadcn": "^3.8.5"
   }
 }

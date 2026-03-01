@@ -1,6 +1,7 @@
 # Spec for <feature-name>
 
-branch: feature/<feature-name>
+branch: claude/feature/<feature-name>
+figma_component (if used): <figma-component-name>
 
 ## Summary
 
@@ -9,6 +10,12 @@ branch: feature/<feature-name>
 ## Functional Requirements
 
 - ...
+
+## Figma Design Reference (only if referenced)
+
+- File: ...
+- Component name: ...
+- Key visual constraints: ...
 
 ## Possible Edge Cases
 
