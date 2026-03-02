@@ -4,7 +4,10 @@
       "Bash(find C:\\\\Users\\\\rprio\\\\OneDrive\\\\Desktop\\\\skywagev2\\\\src\\\\app\\\\\\(dashboard\\):*)",
       "Bash(claude mcp:*)",
       "mcp__shadcn__get_project_registries",
-      "mcp__shadcn__list_items_in_registries"
+      "mcp__shadcn__list_items_in_registries",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(head:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

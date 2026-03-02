@@ -11,6 +11,7 @@ Skywage v2 — Airline salary calculator for Flydubai crew (CCM/SCCM). Calculate
 ```bash
 npm run dev          # Start dev server (Turbopack)
 npm run build        # Production build
+npm run start        # Start production server
 npm run lint         # ESLint
 ```
 
@@ -25,6 +26,10 @@ No test runner is configured. Test files exist under `src/lib/__tests__/` and `s
 - Deployed on Netlify
 
 ## Architecture
+
+### Path Alias
+
+`@/*` maps to `./src/*` (configured in tsconfig.json).
 
 ### Route Structure
 
@@ -104,4 +109,4 @@ Audit snapshot fields (`position_used`, `hourly_rate_used`, `per_diem_rate_used`
 - Stay focused on the requested task — don't touch unrelated code
 - Check for existing similar code before writing new code (avoid duplication)
 - When fixing bugs, exhaust existing implementation options before introducing new patterns; if a new pattern is needed, remove the old one
-- Use the `git switch -c` command to switch to new branches, not `git checkout`
+- Use `git switch -c` for branches, not `git checkout`
