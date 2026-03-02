@@ -7,7 +7,8 @@
       "mcp__shadcn__list_items_in_registries",
       "Bash(cat:*)",
       "Bash(ls:*)",
-      "Bash(head:*)"
+      "Bash(head:*)",
+      "Bash(git commit:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
