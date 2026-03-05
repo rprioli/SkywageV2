@@ -6,6 +6,45 @@
 
 import { TimeValue, TimeParseResult } from '@/types/salary-calculator';
 
+/** Gulf Standard Time offset from UTC (Dubai = UTC+4) */
+export const GST_OFFSET_HOURS = 4;
+
+/**
+ * Determines the UTC-based payment month for a duty.
+ *
+ * Flydubai rosters use Dubai local time (GST = UTC+4), but payment is
+ * assigned based on the UTC date of the duty start.  A duty showing
+ * "May 1, 01:30 local" is actually "April 30, 21:30 UTC" → paid in April.
+ *
+ * @param localDate  The duty date as stored (UTC representation of the local date,
+ *                   e.g. `2025-05-01T00:00:00Z` for May 1 local).
+ * @param reportTime The local report time for the duty.
+ * @returns `{ month, year }` — 1-based month in UTC.
+ */
+export function getPaymentMonth(
+  localDate: Date,
+  reportTime: TimeValue
+): { month: number; year: number } {
+  // Build a timestamp in "fake UTC" that actually represents local time
+  const localMs =
+    Date.UTC(
+      localDate.getUTCFullYear(),
+      localDate.getUTCMonth(),
+      localDate.getUTCDate(),
+      reportTime.hours,
+      reportTime.minutes
+    );
+
+  // Subtract GST offset to get real UTC
+  const utcMs = localMs - GST_OFFSET_HOURS * 60 * 60 * 1000;
+  const utcDate = new Date(utcMs);
+
+  return {
+    month: utcDate.getUTCMonth() + 1, // 1-based
+    year: utcDate.getUTCFullYear()
+  };
+}
+
 /**
  * Creates a TimeValue object from hours and minutes
  */

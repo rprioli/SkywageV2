@@ -5,7 +5,7 @@
  */
 
 import { CSVParseResult, FlightDuty } from '@/types/salary-calculator';
-import { parseTimeString, parseTimeStringWithCrossDay, createTimeValue } from './time-calculator';
+import { parseTimeString, parseTimeStringWithCrossDay, createTimeValue, getPaymentMonth } from './time-calculator';
 import { classifyFlightDuty, extractFlightNumbers, extractSectors, detectNonWorkingDay } from './flight-classifier';
 import { validateFlightNumbers, validateSectors } from './csv-validator';
 import { parseDate, extractMonthYearFromText } from './date-utilities';
@@ -512,25 +512,43 @@ export function parseFlightDutiesFromCSV(
       i += rowsUsed;
     }
 
-    // Apply month boundary filtering to prevent duplicate duties from overlapping months
-    const filteredDuties = flightDuties.filter(duty => {
+    // Pass 1 (display): keep duties whose local date matches the target month
+    const filteredDuties: FlightDuty[] = [];
+    const rejectedDuties: FlightDuty[] = [];
+
+    for (const duty of flightDuties) {
       const dutyMonth = duty.date.getUTCMonth() + 1; // Convert to 1-based month
       const dutyYear = duty.date.getUTCFullYear();
 
-      const belongsToTargetMonth = dutyMonth === month && dutyYear === year;
-
-      if (!belongsToTargetMonth) {
+      if (dutyMonth === month && dutyYear === year) {
+        filteredDuties.push(duty);
+      } else {
         warnings.push(
           `Filtered out duty from ${duty.date.toISOString().split('T')[0]} (belongs to ${dutyMonth}/${dutyYear}, target: ${month}/${year})`
         );
+        rejectedDuties.push(duty);
       }
+    }
 
-      return belongsToTargetMonth;
+    // Pass 2 (boundary): from rejected duties, find payable ones whose UTC payment month matches the target
+    const nonPayableTypes = new Set(['off', 'rest', 'annual_leave', 'sby']);
+    const boundaryDuties = rejectedDuties.filter(duty => {
+      if (nonPayableTypes.has(duty.dutyType)) return false;
+      if (!duty.reportTime) return false;
+
+      const payment = getPaymentMonth(duty.date, duty.reportTime);
+      return payment.month === month && payment.year === year;
     });
 
     if (filteredDuties.length !== flightDuties.length) {
       warnings.push(
         `Month boundary filtering: ${flightDuties.length - filteredDuties.length} duties filtered out (${filteredDuties.length} remaining)`
+      );
+    }
+
+    if (boundaryDuties.length > 0) {
+      warnings.push(
+        `UTC boundary: ${boundaryDuties.length} ${boundaryDuties.length === 1 ? 'duty' : 'duties'} from adjacent month paid in ${month}/${year}`
       );
     }
 
@@ -542,7 +560,8 @@ export function parseFlightDutiesFromCSV(
       month,
       year,
       totalRows: dataRows.length,
-      processedRows: filteredDuties.length // Update to reflect filtered count
+      processedRows: filteredDuties.length, // Update to reflect filtered count
+      boundaryDuties: boundaryDuties.length > 0 ? boundaryDuties : undefined
     };
 
   } catch (error) {

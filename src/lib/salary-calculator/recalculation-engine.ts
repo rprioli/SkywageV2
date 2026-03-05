@@ -18,6 +18,7 @@ import {
   calculateFlightDuty
 } from '@/lib/salary-calculator';
 import { getPositionRatesForDate } from '@/lib/salary-calculator/calculation-engine';
+import { getPaymentMonth } from '@/lib/salary-calculator/time-calculator';
 import {
   getFlightDutiesByMonth,
   getFlightDutiesByMonthWithLookahead,
@@ -197,9 +198,46 @@ export async function recalculateMonthlyTotals(
       }
     }
 
+    // ── UTC payment month filtering ──
+    // Duties are stored by local date, but payment is based on UTC date.
+    // A duty on May 1 at 01:30 local is April 30 21:30 UTC → paid in April.
+    const nonPayableTypes = new Set(['off', 'rest', 'annual_leave', 'sby']);
+
+    // 1. From current-month duties, exclude any whose UTC payment month differs
+    const paymentEligibleFromCurrent = sortedFlights.filter(duty => {
+      // Non-payable types pass through with 0 pay (they don't shift months)
+      if (nonPayableTypes.has(duty.dutyType)) return true;
+      if (!duty.reportTime) return true;
+
+      const payment = getPaymentMonth(duty.date, duty.reportTime);
+      return payment.month === month && payment.year === year;
+    });
+
+    // 2. From lookahead flights NOT in the current month, find those paid this month
+    const lookaheadBoundaryDuties = pairingFlights.filter(duty => {
+      const dutyMonth = duty.date.getUTCMonth() + 1;
+      const dutyYear = duty.date.getUTCFullYear();
+      // Skip if it's already in the current month
+      if (dutyMonth === month && dutyYear === year) return false;
+      if (nonPayableTypes.has(duty.dutyType)) return false;
+      if (!duty.reportTime) return false;
+
+      const payment = getPaymentMonth(duty.date, duty.reportTime);
+      return payment.month === month && payment.year === year;
+    });
+
+    // Recompute pay for lookahead duties using this month's position
+    const recomputedLookahead = lookaheadBoundaryDuties.map(duty => {
+      const result = calculateFlightDuty(duty, position, year, month);
+      return result.errors.length === 0 ? result.flightDuty : duty;
+    });
+
+    // Merge both sets
+    const paymentEligibleFlights = [...paymentEligibleFromCurrent, ...recomputedLookahead];
+
     // Calculate monthly totals with the resolved position
     const monthlyCalculation = calculateMonthlySalary(
-      sortedFlights,
+      paymentEligibleFlights,
       layoverRestPeriods,
       position,
       month,

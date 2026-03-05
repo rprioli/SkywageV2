@@ -58,5 +58,7 @@ export interface UnifiedParseResult {
   processedRows?: number;
   month?: number;
   year?: number;
+  /** Duties whose local date falls outside the target month but whose UTC payment month matches it */
+  boundaryDuties?: FlightDuty[];
 }
 
