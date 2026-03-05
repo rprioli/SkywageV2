@@ -15,6 +15,9 @@ import {
 } from '@/types/salary-calculator';
 import { calculateDuration, calculateRestPeriod, createTimestamp, calculateTimestampDuration } from './time-calculator';
 
+/** Fixed flight hours for Business Promotion pay (mirrors FLYDUBAI_BUSINESS_RULES.bpFixedHours) */
+const BP_FIXED_HOURS = 5;
+
 // Historical salary rates (effective until June 2025)
 export const FLYDUBAI_RATES_LEGACY: { [K in Position]: SalaryRates } = {
   CCM: {
@@ -201,9 +204,11 @@ export function calculateFlightDuty(
       };
     }
 
-    // Calculate duty hours
-    const dutyHours = calculateDutyHours(flightDuty);
-    
+    // Calculate duty hours — BP uses fixed 5 hours for both pay and totals
+    const dutyHours = flightDuty.dutyType === 'business_promotion'
+      ? BP_FIXED_HOURS
+      : calculateDutyHours(flightDuty);
+
     // Validate duty hours
     if (dutyHours <= 0) {
       errors.push('Duty hours must be greater than 0');
@@ -258,8 +263,8 @@ export function calculateFlightDuty(
         break;
 
       case 'business_promotion':
-        // Pay BP like a normal duty: rostered duty hours × hourly rate
-        flightPay = calculateFlightPay(dutyHours, position, calculationYear, calculationMonth);
+        // BP pays a fixed 5 hours regardless of rostered duration
+        flightPay = calculateFlightPay(BP_FIXED_HOURS, position, calculationYear, calculationMonth);
         break;
 
       // Note: 'sby', 'off', 'rest', and 'annual_leave' are handled by early return at the start of this function

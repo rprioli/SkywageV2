@@ -112,6 +112,8 @@ export interface CSVParseResult {
   year?: number;
   totalRows: number;
   processedRows: number;
+  /** Duties whose local date falls outside the target month but whose UTC payment month matches it */
+  boundaryDuties?: FlightDuty[];
 }
 
 // Calculation result for individual flight

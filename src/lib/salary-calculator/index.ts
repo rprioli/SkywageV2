@@ -33,7 +33,9 @@ export {
   createTimestamp,
   calculateTimestampDuration,
   detectCrossDay,
-  parseTimeStringWithCrossDay
+  parseTimeStringWithCrossDay,
+  getPaymentMonth,
+  GST_OFFSET_HOURS
 } from './time-calculator';
 
 // Flight classification utilities

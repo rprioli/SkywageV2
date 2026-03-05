@@ -35,7 +35,7 @@ import {
   FlexibleExcelStructure
 } from './excel-parser';
 import { classifyFlightDuty, detectNonWorkingDay } from './flight-classifier';
-import { createTimeValue, parseTimeStringWithCrossDay, calculateDuration } from './time-calculator';
+import { createTimeValue, parseTimeStringWithCrossDay, calculateDuration, getPaymentMonth } from './time-calculator';
 
 /**
  * Main Flydubai Excel Parser Class
@@ -44,6 +44,7 @@ export class FlydubaiExcelParser {
   private config: ExcelParsingConfig;
   private context: ExcelParsingContext | null = null;
   private flexibleStructure: FlexibleExcelStructure | null = null;
+  private _boundaryDuties: FlightDuty[] = [];
 
   constructor(config: ExcelParsingConfig = DEFAULT_EXCEL_CONFIG) {
     this.config = config;
@@ -146,7 +147,8 @@ export class FlydubaiExcelParser {
         year: finalYear,
         totalRows: this.context.totalRows,
         processedRows: excelFlightDuties.length,
-        employeeInfo
+        employeeInfo,
+        boundaryDuties: this._boundaryDuties.length > 0 ? this._boundaryDuties : undefined
       };
 
     } catch (error) {
@@ -440,6 +442,7 @@ export class FlydubaiExcelParser {
     year: number,
     position?: Position
   ): FlightDuty[] {
+    this._boundaryDuties = [];
     const flightDuties: FlightDuty[] = [];
 
     for (const excelDuty of excelDuties) {
@@ -457,25 +460,45 @@ export class FlydubaiExcelParser {
       }
     }
 
-    // Apply month boundary filtering to prevent duplicate duties from overlapping months
-    const filteredDuties = flightDuties.filter(duty => {
+    // Pass 1 (display): keep duties whose local date matches the target month
+    const filteredDuties: FlightDuty[] = [];
+    const rejectedDuties: FlightDuty[] = [];
+
+    for (const duty of flightDuties) {
       const dutyMonth = duty.date.getUTCMonth() + 1; // Convert to 1-based month
       const dutyYear = duty.date.getUTCFullYear();
 
-      const belongsToTargetMonth = dutyMonth === month && dutyYear === year;
-
-      if (!belongsToTargetMonth && this.context) {
-        this.context.warnings.push(
-          `Filtered out duty from ${duty.date.toISOString().split('T')[0]} (belongs to ${dutyMonth}/${dutyYear}, target: ${month}/${year})`
-        );
+      if (dutyMonth === month && dutyYear === year) {
+        filteredDuties.push(duty);
+      } else {
+        if (this.context) {
+          this.context.warnings.push(
+            `Filtered out duty from ${duty.date.toISOString().split('T')[0]} (belongs to ${dutyMonth}/${dutyYear}, target: ${month}/${year})`
+          );
+        }
+        rejectedDuties.push(duty);
       }
+    }
 
-      return belongsToTargetMonth;
+    // Pass 2 (boundary): from rejected duties, find payable ones whose UTC payment month matches the target
+    const nonPayableTypes = new Set(['off', 'rest', 'annual_leave', 'sby']);
+    this._boundaryDuties = rejectedDuties.filter(duty => {
+      if (nonPayableTypes.has(duty.dutyType)) return false;
+      if (!duty.reportTime) return false;
+
+      const payment = getPaymentMonth(duty.date, duty.reportTime);
+      return payment.month === month && payment.year === year;
     });
 
     if (this.context && filteredDuties.length !== flightDuties.length) {
       this.context.warnings.push(
         `Month boundary filtering: ${flightDuties.length - filteredDuties.length} duties filtered out (${filteredDuties.length} remaining)`
+      );
+    }
+
+    if (this._boundaryDuties.length > 0 && this.context) {
+      this.context.warnings.push(
+        `UTC boundary: ${this._boundaryDuties.length} ${this._boundaryDuties.length === 1 ? 'duty' : 'duties'} from adjacent month paid in ${month}/${year}`
       );
     }
 

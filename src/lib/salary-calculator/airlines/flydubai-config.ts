@@ -49,7 +49,8 @@ export const FLYDUBAI_BUSINESS_RULES = {
   maxDutyHours: 14,    // Maximum duty hours per day
   minRestHours: 8,     // Minimum rest hours between duties
   maxRestHours: 72,    // Maximum rest hours for per diem calculation
-  asbyFixedHours: 4    // Fixed hours for Airport Standby
+  asbyFixedHours: 4,   // Fixed hours for Airport Standby
+  bpFixedHours: 5      // Fixed hours for Business Promotion
 };
 
 // Complete Flydubai configuration

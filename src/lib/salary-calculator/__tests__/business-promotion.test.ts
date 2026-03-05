@@ -1,9 +1,9 @@
 /**
  * Unit tests for Business Promotion duty calculations
- * Tests that BP duties are paid by rostered duration and included in total hours
+ * Tests that BP duties use fixed 5 flight hours for both pay and totals
  */
 
-import { 
+import {
   calculateFlightPay,
   calculateMonthlySalary,
   calculateFlightDuty
@@ -12,13 +12,13 @@ import { FlightDuty, Position } from '@/types/salary-calculator';
 import { createTimeValue } from '../time-calculator';
 
 describe('Business Promotion Duty Calculations', () => {
-  
+
   describe('BP Pay Calculations', () => {
     test('BP duty from 08:00 to 16:00 pays 8 hours × hourly rate for CCM', () => {
       const dutyHours = 8;
       const position: Position = 'CCM';
       const expectedPay = 8 * 50; // 400 AED
-      
+
       expect(calculateFlightPay(dutyHours, position)).toBe(expectedPay);
     });
 
@@ -26,7 +26,7 @@ describe('Business Promotion Duty Calculations', () => {
       const dutyHours = 8;
       const position: Position = 'SCCM';
       const expectedPay = 8 * 62; // 496 AED
-      
+
       expect(calculateFlightPay(dutyHours, position)).toBe(expectedPay);
     });
 
@@ -34,20 +34,20 @@ describe('Business Promotion Duty Calculations', () => {
       const dutyHours = 6.5;
       const ccmPay = calculateFlightPay(dutyHours, 'CCM');
       const sccmPay = calculateFlightPay(dutyHours, 'SCCM');
-      
+
       expect(ccmPay).toBe(6.5 * 50); // 325 AED
       expect(sccmPay).toBe(6.5 * 62); // 403 AED
     });
   });
 
   describe('BP Duty Hours in Monthly Totals', () => {
-    test('BP duty hours are included in totalDutyHours', () => {
+    test('BP fixed 5 hours are included in totalDutyHours', () => {
       const userId = 'test-user';
       const position: Position = 'CCM';
       const month = 1;
       const year = 2025;
 
-      // Create a BP duty with 8 hours
+      // BP duty — dutyHours is fixed 5 regardless of rostered time
       const bpDuty: FlightDuty = {
         id: 'bp-1',
         userId,
@@ -59,8 +59,8 @@ describe('Business Promotion Duty Calculations', () => {
         dutyType: 'business_promotion',
         reportTime: createTimeValue(8, 0),
         debriefTime: createTimeValue(16, 0),
-        dutyHours: 8,
-        flightPay: 400, // 8 * 50
+        dutyHours: 5,
+        flightPay: 250, // fixed 5 * 50
         isCrossDay: false,
         dataSource: 'manual',
         createdAt: new Date(),
@@ -96,11 +96,11 @@ describe('Business Promotion Duty Calculations', () => {
         userId
       );
 
-      // Total duty hours should include both BP (8h) and turnaround (5h) = 13h
-      expect(result.monthlyCalculation.totalDutyHours).toBe(13);
-      
-      // Total flight pay should include both duties
-      expect(result.monthlyCalculation.flightPay).toBe(650); // 400 + 250
+      // Total duty hours: BP fixed 5h + turnaround 5h = 10h
+      expect(result.monthlyCalculation.totalDutyHours).toBe(10);
+
+      // Total flight pay: BP 5*50=250 + turnaround 5*50=250 = 500
+      expect(result.monthlyCalculation.flightPay).toBe(500);
     });
 
     test('BP duties are counted in totalFlights summary stat', () => {
@@ -120,8 +120,8 @@ describe('Business Promotion Duty Calculations', () => {
         dutyType: 'business_promotion',
         reportTime: createTimeValue(8, 0),
         debriefTime: createTimeValue(16, 0),
-        dutyHours: 8,
-        flightPay: 400,
+        dutyHours: 5,
+        flightPay: 250, // fixed 5 * 50
         isCrossDay: false,
         dataSource: 'manual',
         createdAt: new Date(),
@@ -158,14 +158,14 @@ describe('Business Promotion Duty Calculations', () => {
 
       // totalFlights should count both BP and turnaround
       expect(result.calculationSummary.totalFlights).toBe(2);
-      
-      // averageDutyHours should be (8 + 5) / 2 = 6.5
-      expect(result.calculationSummary.averageDutyHours).toBe(6.5);
+
+      // averageDutyHours should be (5 + 5) / 2 = 5
+      expect(result.calculationSummary.averageDutyHours).toBe(5);
     });
   });
 
   describe('BP Flight Duty Calculation', () => {
-    test('calculateFlightDuty computes BP pay from rostered duty hours', () => {
+    test('calculateFlightDuty sets BP dutyHours to fixed 5 regardless of rostered time', () => {
       const userId = 'test-user';
       const position: Position = 'CCM';
       const month = 1;
@@ -192,17 +192,17 @@ describe('Business Promotion Duty Calculations', () => {
 
       const result = calculateFlightDuty(bpDuty, position, year, month);
 
-      // Should calculate 6.5 hours (09:00 to 15:30)
-      expect(result.flightDuty.dutyHours).toBe(6.5);
-      
-      // Should calculate 6.5 * 50 = 325 AED
-      expect(result.flightDuty.flightPay).toBe(325);
-      
+      // dutyHours should be fixed 5 (not rostered 6.5)
+      expect(result.flightDuty.dutyHours).toBe(5);
+
+      // flightPay = fixed 5 * 50 = 250 AED
+      expect(result.flightDuty.flightPay).toBe(250);
+
       // Should have no errors
       expect(result.errors).toEqual([]);
     });
 
-    test('calculateFlightDuty handles cross-day BP duties', () => {
+    test('calculateFlightDuty handles cross-day BP duties with fixed 5 hours', () => {
       const userId = 'test-user';
       const position: Position = 'SCCM';
       const month = 1;
@@ -229,15 +229,14 @@ describe('Business Promotion Duty Calculations', () => {
 
       const result = calculateFlightDuty(bpDuty, position, year, month);
 
-      // Should calculate 8 hours (22:00 to 06:00 next day)
-      expect(result.flightDuty.dutyHours).toBe(8);
-      
-      // Should calculate 8 * 62 = 496 AED
-      expect(result.flightDuty.flightPay).toBe(496);
-      
+      // dutyHours should be fixed 5 (not rostered 8)
+      expect(result.flightDuty.dutyHours).toBe(5);
+
+      // flightPay = fixed 5 * 62 = 310 AED
+      expect(result.flightDuty.flightPay).toBe(310);
+
       // Should have no errors
       expect(result.errors).toEqual([]);
     });
   });
 });
-

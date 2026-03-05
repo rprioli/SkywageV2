@@ -6,6 +6,7 @@
 
 import { FlightClassificationResult, Position, TimeValue, DutyType } from '@/types/salary-calculator';
 import { calculateRecurrentPay, calculateAsbyPay, calculateFlightPay, FLYDUBAI_RATES } from './calculation-engine';
+import { FLYDUBAI_BUSINESS_RULES } from './airlines/flydubai-config';
 import { calculateDuration } from './time-calculator';
 
 /**
@@ -114,18 +115,8 @@ export function classifyFlightDuty(
 
   // Check for Business Promotion
   if (dutiesUpper.includes('BP') || detailsUpper.includes('BUSINESS PROMOTION')) {
-    // Compute BP duty hours from rostered times (not fixed 5 hours)
-    const inferredIsCrossDay =
-      reportTimeValue && debriefTimeValue
-        ? debriefTimeValue.totalMinutes < reportTimeValue.totalMinutes
-        : false;
-    
-    const dutyHours = typeof actualDutyHours === 'number' && actualDutyHours > 0
-      ? actualDutyHours
-      : (reportTimeValue && debriefTimeValue)
-        ? calculateDuration(reportTimeValue, debriefTimeValue, inferredIsCrossDay)
-        : 0;
-    
+    // BP uses fixed 5 hours for both dutyHours and pay
+    const dutyHours = FLYDUBAI_BUSINESS_RULES.bpFixedHours;
     const flightPay = position ? calculateFlightPay(dutyHours, position) : 0;
 
     return {

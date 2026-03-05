@@ -4,7 +4,7 @@
  * Based on real-world analysis of Jul25ScheduleReport.xlsx
  */
 
-import { Position, DutyType } from './salary-calculator';
+import { Position, DutyType, FlightDuty } from './salary-calculator';
 
 // Excel file format types
 export type ExcelFileFormat = 'xlsx' | 'xlsm';
@@ -47,6 +47,8 @@ export interface ExcelParseResult {
   totalRows: number;
   processedRows: number;
   employeeInfo?: ExcelEmployeeInfo;
+  /** Duties whose local date falls outside the target month but whose UTC payment month matches it */
+  boundaryDuties?: FlightDuty[];
 }
 
 // Excel-specific flight duty (before conversion to FlightDuty)
