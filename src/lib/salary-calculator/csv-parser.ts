@@ -531,7 +531,7 @@ export function parseFlightDutiesFromCSV(
     }
 
     // Pass 2 (boundary): from rejected duties, find payable ones whose UTC payment month matches the target
-    const nonPayableTypes = new Set(['off', 'rest', 'annual_leave', 'sby']);
+    const nonPayableTypes = new Set(['off', 'rest', 'annual_leave', 'sby', 'sick']);
     const boundaryDuties = rejectedDuties.filter(duty => {
       if (nonPayableTypes.has(duty.dutyType)) return false;
       if (!duty.reportTime) return false;
@@ -552,6 +552,15 @@ export function parseFlightDutiesFromCSV(
       );
     }
 
+    // Pass 3 (lookahead): next-month layover flights for cross-month pairing
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+    const nextMonthDuties = rejectedDuties.filter(duty => {
+      const dutyMonth = duty.date.getUTCMonth() + 1;
+      const dutyYear = duty.date.getUTCFullYear();
+      return dutyMonth === nextMonth && dutyYear === nextYear && duty.dutyType === 'layover';
+    });
+
     return {
       success: errors.length === 0,
       data: filteredDuties,
@@ -561,7 +570,8 @@ export function parseFlightDutiesFromCSV(
       year,
       totalRows: dataRows.length,
       processedRows: filteredDuties.length, // Update to reflect filtered count
-      boundaryDuties: boundaryDuties.length > 0 ? boundaryDuties : undefined
+      boundaryDuties: boundaryDuties.length > 0 ? boundaryDuties : undefined,
+      nextMonthDuties: nextMonthDuties.length > 0 ? nextMonthDuties : undefined
     };
 
   } catch (error) {

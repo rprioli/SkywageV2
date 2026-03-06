@@ -179,8 +179,9 @@ export function calculateFlightDuty(
 
   try {
     // Skip calculation for off days, rest days, annual leave, and home standby - they have no pay
-    if (flightDuty.dutyType === 'off' || flightDuty.dutyType === 'sby' || 
-        flightDuty.dutyType === 'rest' || flightDuty.dutyType === 'annual_leave') {
+    if (flightDuty.dutyType === 'off' || flightDuty.dutyType === 'sby' ||
+        flightDuty.dutyType === 'rest' || flightDuty.dutyType === 'annual_leave' ||
+        flightDuty.dutyType === 'sick') {
       
       // For SBY (Home Standby), preserve the already-calculated duty hours for display purposes
       // while keeping flightPay at 0 (SBY is unpaid)
@@ -333,10 +334,10 @@ export function calculateLayoverRestPeriods(
       let parts: string[];
       if (sectorString.includes(' - ')) {
         // Format with spaces: "DXB - ZAG"
-        parts = sectorString.split(' - ').map(s => s.trim());
+        parts = sectorString.split(' - ').map(s => s.trim().replace(/^\*/, ''));
       } else if (sectorString.includes('-')) {
         // Format without spaces: "DXB-ZAG" (manual entry format)
-        parts = sectorString.split('-').map(s => s.trim());
+        parts = sectorString.split('-').map(s => s.trim().replace(/^\*/, ''));
       } else {
         // Fallback for other formats
         parts = [sectorString.trim()];
@@ -480,7 +481,7 @@ export function calculateMonthlySalary(
   // Only count duty hours for actual flight duties (turnaround, layover, asby, business_promotion)
   // Exclude recurrent, sby (Home Standby), off, rest, and annual_leave from flight hours total
   let totalDutyHours = flightDuties
-    .filter(flight => !['recurrent', 'sby', 'off', 'rest', 'annual_leave'].includes(flight.dutyType))
+    .filter(flight => !['recurrent', 'sby', 'off', 'rest', 'annual_leave', 'sick'].includes(flight.dutyType))
     .reduce((sum, flight) => sum + flight.dutyHours, 0);
 
   // Apply precision adjustment to match Excel calculations

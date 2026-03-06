@@ -82,7 +82,8 @@ export function NewFlightDutyCard({
     case 'off':
     case 'rest':
     case 'annual_leave':
-      // Show off/rest/annual leave days only in roster comparison view
+    case 'sick':
+      // Show off/rest/annual leave/sick days only in roster comparison view
       return showOffDays ? <OffDayCard flightDuty={flightDuty} /> : null;
 
     case 'asby':

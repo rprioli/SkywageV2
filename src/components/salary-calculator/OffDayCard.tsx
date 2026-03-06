@@ -41,11 +41,13 @@ export function OffDayCard({ flightDuty }: OffDayCardProps) {
         return { icon: Moon, label: 'Rest Day' };
       case 'annual_leave':
         return { icon: Palmtree, label: 'Annual Leave' };
+      case 'sick':
+        return { icon: Home, label: 'Sick Day' };
       case 'off':
       default:
-        return { 
-          icon: Home, 
-          label: isAdditionalDayOff ? 'Additional Day Off' : 'Day Off' 
+        return {
+          icon: Home,
+          label: isAdditionalDayOff ? 'Additional Day Off' : 'Day Off'
         };
     }
   };

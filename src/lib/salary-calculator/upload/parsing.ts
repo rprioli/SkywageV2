@@ -36,7 +36,8 @@ export async function parseFileContent(
         processedRows: excelResult.processedRows,
         month: excelResult.month,
         year: excelResult.year,
-        boundaryDuties: excelResult.boundaryDuties
+        boundaryDuties: excelResult.boundaryDuties,
+        nextMonthDuties: excelResult.nextMonthDuties
       };
     } else {
       // Parse CSV file with target month/year for boundary filtering
@@ -56,7 +57,8 @@ export async function parseFileContent(
         processedRows: csvResult.processedRows,
         month: csvResult.month || monthExtraction?.month,
         year: csvResult.year || monthExtraction?.year,
-        boundaryDuties: csvResult.boundaryDuties
+        boundaryDuties: csvResult.boundaryDuties,
+        nextMonthDuties: csvResult.nextMonthDuties
       };
     }
   } catch (error) {

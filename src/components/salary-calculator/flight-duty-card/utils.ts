@@ -77,13 +77,13 @@ export function formatTimeWithDate(
  */
 export function parseSectors(sectorString: string): string[] {
   if (sectorString.includes(' → ')) {
-    return sectorString.split(' → ').map(s => s.trim());
+    return sectorString.split(' → ').map(s => s.trim().replace(/^\*/, ''));
   } else if (sectorString.includes(' - ')) {
-    return sectorString.split(' - ').map(s => s.trim());
+    return sectorString.split(' - ').map(s => s.trim().replace(/^\*/, ''));
   } else if (sectorString.includes('-')) {
-    return sectorString.split('-').map(s => s.trim());
+    return sectorString.split('-').map(s => s.trim().replace(/^\*/, ''));
   } else {
-    return [sectorString.trim()];
+    return [sectorString.trim().replace(/^\*/, '')];
   }
 }
 
@@ -156,6 +156,8 @@ export function getDutyTypeConfig(dutyType: string): DutyTypeConfig {
       return { ...baseConfig, icon: Calendar, label: 'Rest' };
     case 'annual_leave':
       return { ...baseConfig, icon: Calendar, label: 'Annual Leave' };
+    case 'sick':
+      return { ...baseConfig, icon: Calendar, label: 'Sick' };
     default:
       return { ...baseConfig, icon: Timer, label: dutyType.toUpperCase() };
   }
