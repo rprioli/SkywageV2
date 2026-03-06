@@ -7,6 +7,7 @@
 import { CSVParseResult, FlightDuty } from '@/types/salary-calculator';
 import { parseTimeString, parseTimeStringWithCrossDay, createTimeValue, getPaymentMonth } from './time-calculator';
 import { classifyFlightDuty, extractFlightNumbers, extractSectors, detectNonWorkingDay } from './flight-classifier';
+import { NON_PAYABLE_DUTY_TYPES } from './calculation-engine';
 import { validateFlightNumbers, validateSectors } from './csv-validator';
 import { parseDate, extractMonthYearFromText } from './date-utilities';
 import Papa from 'papaparse';
@@ -531,9 +532,8 @@ export function parseFlightDutiesFromCSV(
     }
 
     // Pass 2 (boundary): from rejected duties, find payable ones whose UTC payment month matches the target
-    const nonPayableTypes = new Set(['off', 'rest', 'annual_leave', 'sby', 'sick']);
     const boundaryDuties = rejectedDuties.filter(duty => {
-      if (nonPayableTypes.has(duty.dutyType)) return false;
+      if (NON_PAYABLE_DUTY_TYPES.has(duty.dutyType)) return false;
       if (!duty.reportTime) return false;
 
       const payment = getPaymentMonth(duty.date, duty.reportTime);

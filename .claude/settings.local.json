@@ -19,7 +19,8 @@
       "mcp__supabase__execute_sql",
       "mcp__supabase__apply_migration",
       "mcp__excel__excel_describe_sheets",
-      "mcp__excel__excel_read_sheet"
+      "mcp__excel__excel_read_sheet",
+      "Bash(grep:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

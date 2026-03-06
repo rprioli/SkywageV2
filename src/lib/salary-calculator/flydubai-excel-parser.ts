@@ -36,6 +36,7 @@ import {
 } from './excel-parser';
 import { classifyFlightDuty, detectNonWorkingDay } from './flight-classifier';
 import { createTimeValue, parseTimeStringWithCrossDay, calculateDuration, getPaymentMonth } from './time-calculator';
+import { NON_PAYABLE_DUTY_TYPES } from './calculation-engine';
 
 /**
  * Main Flydubai Excel Parser Class
@@ -485,9 +486,8 @@ export class FlydubaiExcelParser {
     }
 
     // Pass 2 (boundary): from rejected duties, find payable ones whose UTC payment month matches the target
-    const nonPayableTypes = new Set(['off', 'rest', 'annual_leave', 'sby', 'sick']);
     this._boundaryDuties = rejectedDuties.filter(duty => {
-      if (nonPayableTypes.has(duty.dutyType)) return false;
+      if (NON_PAYABLE_DUTY_TYPES.has(duty.dutyType)) return false;
       if (!duty.reportTime) return false;
 
       const payment = getPaymentMonth(duty.date, duty.reportTime);

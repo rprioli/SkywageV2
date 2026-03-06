@@ -17,7 +17,7 @@ import {
   calculateLayoverRestPeriods,
   calculateFlightDuty
 } from '@/lib/salary-calculator';
-import { getPositionRatesForDate } from '@/lib/salary-calculator/calculation-engine';
+import { getPositionRatesForDate, NON_PAYABLE_DUTY_TYPES } from '@/lib/salary-calculator/calculation-engine';
 import { getPaymentMonth } from '@/lib/salary-calculator/time-calculator';
 import {
   getFlightDutiesByMonth,
@@ -56,8 +56,7 @@ export interface RecalculationResult {
 export async function recalculateMonthlyTotals(
   userId: string,
   month: number,
-  year: number,
-  extraPairingFlights?: FlightDuty[]
+  year: number
 ): Promise<RecalculationResult> {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -168,20 +167,6 @@ export async function recalculateMonthlyTotals(
       });
     }
 
-    // Include any extra pairing flights (e.g., next-month inbound duties from the uploaded file
-    // that aren't in the DB yet) for cross-month layover matching
-    if (extraPairingFlights && extraPairingFlights.length > 0) {
-      pairingFlights = [...pairingFlights, ...extraPairingFlights];
-      pairingFlights.sort((a, b) => {
-        const dateCompare = a.date.getTime() - b.date.getTime();
-        if (dateCompare !== 0) return dateCompare;
-        if (a.reportTime && b.reportTime) {
-          return a.reportTime.totalMinutes - b.reportTime.totalMinutes;
-        }
-        return 0;
-      });
-    }
-
     // Recalculate layover rest periods using the resolved position.
     // Per-diem design: the outbound month's position drives per-diem for any
     // cross-month layover pair, preserving CCM rates even if inbound is SCCM month.
@@ -216,12 +201,11 @@ export async function recalculateMonthlyTotals(
     // ── UTC payment month filtering ──
     // Duties are stored by local date, but payment is based on UTC date.
     // A duty on May 1 at 01:30 local is April 30 21:30 UTC → paid in April.
-    const nonPayableTypes = new Set(['off', 'rest', 'annual_leave', 'sby', 'sick']);
 
     // 1. From current-month duties, exclude any whose UTC payment month differs
     const paymentEligibleFromCurrent = sortedFlights.filter(duty => {
       // Non-payable types pass through with 0 pay (they don't shift months)
-      if (nonPayableTypes.has(duty.dutyType)) return true;
+      if (NON_PAYABLE_DUTY_TYPES.has(duty.dutyType)) return true;
       if (!duty.reportTime) return true;
 
       const payment = getPaymentMonth(duty.date, duty.reportTime);
@@ -234,7 +218,7 @@ export async function recalculateMonthlyTotals(
       const dutyYear = duty.date.getUTCFullYear();
       // Skip if it's already in the current month
       if (dutyMonth === month && dutyYear === year) return false;
-      if (nonPayableTypes.has(duty.dutyType)) return false;
+      if (NON_PAYABLE_DUTY_TYPES.has(duty.dutyType)) return false;
       if (!duty.reportTime) return false;
 
       const payment = getPaymentMonth(duty.date, duty.reportTime);
