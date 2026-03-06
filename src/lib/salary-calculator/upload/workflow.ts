@@ -191,6 +191,7 @@ export async function processFileUpload(
 
     let flightDuties = parseResult.data;
     const rawBoundaryDuties = parseResult.boundaryDuties || [];
+    const rawNextMonthDuties = parseResult.nextMonthDuties || [];
     warnings.push(...(parseResult.warnings || []));
 
     // Determine month/year
@@ -255,7 +256,10 @@ export async function processFileUpload(
 
     onProgress?.({ step: 'calculating', progress: 60, message: 'Calculating layover rest periods...', details: 'Computing rest time between flights' });
 
-    const layoverRestPeriods = calculateLayoverRestPeriods(flightDuties, userId, position);
+    // Include boundary and next-month duties in the pairing pool so cross-month
+    // layovers (e.g., outbound Jan 31 + inbound Feb 1) can be matched
+    const pairingPool = [...flightDuties, ...calculatedBoundaryDuties, ...rawNextMonthDuties];
+    const layoverRestPeriods = calculateLayoverRestPeriods(pairingPool, userId, position);
 
     if (dryRun) {
       onProgress?.({ step: 'complete', progress: 100, message: 'Validation complete!', details: `Successfully validated ${flightDuties.length} flight duties` });
@@ -270,7 +274,8 @@ export async function processFileUpload(
 
     return await saveUploadData(
       flightDuties, layoverRestPeriods, userId, month, year, warnings, onProgress,
-      calculatedBoundaryDuties.length > 0 ? calculatedBoundaryDuties : undefined
+      calculatedBoundaryDuties.length > 0 ? calculatedBoundaryDuties : undefined,
+      rawNextMonthDuties.length > 0 ? rawNextMonthDuties : undefined
     );
 
   } catch (error) {
@@ -401,7 +406,8 @@ async function saveUploadData(
   year: number,
   warnings: string[],
   onProgress?: ProgressCallback,
-  boundaryDuties?: FlightDuty[]
+  boundaryDuties?: FlightDuty[],
+  nextMonthDuties?: FlightDuty[]
 ): Promise<ProcessingResult> {
   onProgress?.({ step: 'saving', progress: 70, message: 'Saving to database...', details: 'Storing flight duties and calculations' });
 
@@ -415,6 +421,21 @@ async function saveUploadData(
   }
 
   const savedFlightDuties = flightSaveResult.data || [];
+
+  // Save next-month inbound layover flights so the FK on layover_rest_periods is satisfied
+  // for cross-month layover pairing. These are saved with their actual date/month.
+  if (nextMonthDuties && nextMonthDuties.length > 0) {
+    // Set correct month/year from the flight's actual date
+    const correctedDuties = nextMonthDuties.map(d => ({
+      ...d,
+      month: d.date.getUTCMonth() + 1,
+      year: d.date.getUTCFullYear()
+    }));
+    const nextMonthSaveResult = await createFlightDuties(correctedDuties, userId);
+    if (nextMonthSaveResult.error) {
+      warnings.push(`Warning: Could not save next-month flights for layover pairing: ${nextMonthSaveResult.error}`);
+    }
+  }
 
   // Recalculate using the engine (position resolved internally per month)
   onProgress?.({ step: 'calculating', progress: 85, message: 'Calculating monthly totals...', details: 'Computing final salary breakdown with cross-month layover pairing' });
@@ -430,38 +451,45 @@ async function saveUploadData(
     };
   }
 
-  // Augment monthly totals with boundary duties (paid in this month but not saved as this month's duties).
-  // This is a temporary augmentation — gets corrected when the adjacent month is uploaded and triggers recalculation.
-  if (boundaryDuties && boundaryDuties.length > 0 && recalcResult.updatedCalculation) {
-    const calc = recalcResult.updatedCalculation.monthlyCalculation;
-    const extraFlightPay = boundaryDuties.reduce((sum, d) => sum + d.flightPay, 0);
-    const extraDutyHours = boundaryDuties.reduce((sum, d) => sum + d.dutyHours, 0);
-
-    calc.flightPay += extraFlightPay;
-    calc.totalDutyHours += extraDutyHours;
-    calc.totalVariable = calc.flightPay + calc.perDiemPay;
-    calc.totalSalary = calc.totalFixed + calc.totalVariable;
-
-    const persistResult = await upsertMonthlyCalculation(calc, userId);
-    if (persistResult.error) {
-      warnings.push(`Warning: Could not persist boundary duty augmentation: ${persistResult.error}`);
-    } else {
-      warnings.push(
-        `Boundary duty augmentation: added ${extraDutyHours.toFixed(1)}h / ${extraFlightPay.toFixed(0)} AED from ${boundaryDuties.length} ${boundaryDuties.length === 1 ? 'duty' : 'duties'}`
-      );
-    }
-  }
-
-  // Also recalculate the previous month for cross-month layover pairing
+  // Run boundary augmentation and previous month recalculation in parallel —
+  // they operate on different months and have no dependency on each other.
   const previousMonth = month === 1 ? 12 : month - 1;
   const previousYear = month === 1 ? year - 1 : year;
-  if (previousYear >= MIN_SUPPORTED_YEAR) {
-    const previousRecalc = await recalculateMonthlyTotals(userId, previousMonth, previousYear);
-    if (!previousRecalc.success) {
-      warnings.push(
-        `Warning: Uploaded month calculated, but failed to update previous month (${previousMonth}/${previousYear}): ${previousRecalc.errors.join(', ')}`
-      );
+
+  const boundaryAugmentPromise = (async () => {
+    // Augment monthly totals with boundary duties (paid in this month but not saved as this month's duties).
+    // This is a temporary augmentation — gets corrected when the adjacent month is uploaded.
+    if (boundaryDuties && boundaryDuties.length > 0 && recalcResult.updatedCalculation) {
+      const calc = recalcResult.updatedCalculation.monthlyCalculation;
+      const extraFlightPay = boundaryDuties.reduce((sum, d) => sum + d.flightPay, 0);
+      const extraDutyHours = boundaryDuties.reduce((sum, d) => sum + d.dutyHours, 0);
+
+      calc.flightPay += extraFlightPay;
+      calc.totalDutyHours += extraDutyHours;
+      calc.totalVariable = calc.flightPay + calc.perDiemPay;
+      calc.totalSalary = calc.totalFixed + calc.totalVariable;
+
+      const persistResult = await upsertMonthlyCalculation(calc, userId);
+      if (persistResult.error) {
+        warnings.push(`Warning: Could not persist boundary duty augmentation: ${persistResult.error}`);
+      } else {
+        warnings.push(
+          `Boundary duty augmentation: added ${extraDutyHours.toFixed(1)}h / ${extraFlightPay.toFixed(0)} AED from ${boundaryDuties.length} ${boundaryDuties.length === 1 ? 'duty' : 'duties'}`
+        );
+      }
     }
+  })();
+
+  const prevMonthRecalcPromise = previousYear >= MIN_SUPPORTED_YEAR
+    ? recalculateMonthlyTotals(userId, previousMonth, previousYear)
+    : Promise.resolve(null);
+
+  const [, previousRecalc] = await Promise.all([boundaryAugmentPromise, prevMonthRecalcPromise]);
+
+  if (previousRecalc && !previousRecalc.success) {
+    warnings.push(
+      `Warning: Uploaded month calculated, but failed to update previous month (${previousMonth}/${previousYear}): ${previousRecalc.errors.join(', ')}`
+    );
   }
 
   onProgress?.({ step: 'complete', progress: 100, message: 'Processing complete!', details: `Successfully processed ${flightDuties.length} flight duties` });

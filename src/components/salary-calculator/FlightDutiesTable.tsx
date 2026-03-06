@@ -145,7 +145,7 @@ export function FlightDutiesTable({
 
   // Helper to check if duty type is an off day type
   const isOffDayType = (dutyType: string) => {
-    return dutyType === 'off' || dutyType === 'rest' || dutyType === 'annual_leave';
+    return dutyType === 'off' || dutyType === 'rest' || dutyType === 'annual_leave' || dutyType === 'sick';
   };
 
   // Filter flight duties based on toggle state and layover pairing

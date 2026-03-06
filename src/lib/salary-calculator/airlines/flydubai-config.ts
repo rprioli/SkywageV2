@@ -34,7 +34,7 @@ export const FLYDUBAI_CSV_VALIDATION: CSVValidationRules = {
 export const FLYDUBAI_FLIGHT_PATTERN = /^FZ\d{1,4}$/;
 
 // Flydubai sector pattern (IATA codes with dash)
-export const FLYDUBAI_SECTOR_PATTERN = /^[A-Z]{3}\s*-\s*[A-Z]{3}$/;
+export const FLYDUBAI_SECTOR_PATTERN = /^\*?[A-Z]{3}\s*-\s*\*?[A-Z]{3}$/;
 
 // Time format patterns for Flydubai
 export const FLYDUBAI_TIME_FORMATS = {

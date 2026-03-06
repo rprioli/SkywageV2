@@ -44,6 +44,7 @@ export {
   detectNonWorkingDay,
   extractFlightNumbers,
   extractSectors,
+  extractSectorsWithFlags,
   validateFlightNumber,
   validateSector,
   isTurnaroundSequence,

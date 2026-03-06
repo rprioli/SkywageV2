@@ -36,6 +36,7 @@ import {
 } from './excel-parser';
 import { classifyFlightDuty, detectNonWorkingDay } from './flight-classifier';
 import { createTimeValue, parseTimeStringWithCrossDay, calculateDuration, getPaymentMonth } from './time-calculator';
+import { NON_PAYABLE_DUTY_TYPES } from './calculation-engine';
 
 /**
  * Main Flydubai Excel Parser Class
@@ -45,6 +46,7 @@ export class FlydubaiExcelParser {
   private context: ExcelParsingContext | null = null;
   private flexibleStructure: FlexibleExcelStructure | null = null;
   private _boundaryDuties: FlightDuty[] = [];
+  private _nextMonthDuties: FlightDuty[] = [];
 
   constructor(config: ExcelParsingConfig = DEFAULT_EXCEL_CONFIG) {
     this.config = config;
@@ -148,7 +150,8 @@ export class FlydubaiExcelParser {
         totalRows: this.context.totalRows,
         processedRows: excelFlightDuties.length,
         employeeInfo,
-        boundaryDuties: this._boundaryDuties.length > 0 ? this._boundaryDuties : undefined
+        boundaryDuties: this._boundaryDuties.length > 0 ? this._boundaryDuties : undefined,
+        nextMonthDuties: this._nextMonthDuties.length > 0 ? this._nextMonthDuties : undefined
       };
 
     } catch (error) {
@@ -407,6 +410,7 @@ export class FlydubaiExcelParser {
     // Check for rest and annual leave before generic off
     if (dutiesUpper.includes('REST DAY') || detailsUpper.includes('REST DAY')) return 'rest';
     if (dutiesUpper.includes('ANNUAL LEAVE') || detailsUpper.includes('ANNUAL LEAVE')) return 'annual_leave';
+    if (dutiesUpper.includes('SICK')) return 'sick';
     if (dutiesUpper.includes('OFF')) return 'off';
 
     // Business Promotion detection
@@ -443,6 +447,7 @@ export class FlydubaiExcelParser {
     position?: Position
   ): FlightDuty[] {
     this._boundaryDuties = [];
+    this._nextMonthDuties = [];
     const flightDuties: FlightDuty[] = [];
 
     for (const excelDuty of excelDuties) {
@@ -481,13 +486,22 @@ export class FlydubaiExcelParser {
     }
 
     // Pass 2 (boundary): from rejected duties, find payable ones whose UTC payment month matches the target
-    const nonPayableTypes = new Set(['off', 'rest', 'annual_leave', 'sby']);
     this._boundaryDuties = rejectedDuties.filter(duty => {
-      if (nonPayableTypes.has(duty.dutyType)) return false;
+      if (NON_PAYABLE_DUTY_TYPES.has(duty.dutyType)) return false;
       if (!duty.reportTime) return false;
 
       const payment = getPaymentMonth(duty.date, duty.reportTime);
       return payment.month === month && payment.year === year;
+    });
+
+    // Pass 3 (lookahead): from rejected duties, find next-month layover flights
+    // for cross-month layover pairing (not saved to DB, only used for rest period matching)
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+    this._nextMonthDuties = rejectedDuties.filter(duty => {
+      const dutyMonth = duty.date.getUTCMonth() + 1;
+      const dutyYear = duty.date.getUTCFullYear();
+      return dutyMonth === nextMonth && dutyYear === nextYear && duty.dutyType === 'layover';
     });
 
     if (this.context && filteredDuties.length !== flightDuties.length) {
@@ -643,18 +657,23 @@ export class FlydubaiExcelParser {
     // Generate unique ID
     const id = this.generateFlightId(excelDuty, date);
 
+    // Strip * prefix from sectors and capture flagged status
+    const hasFlaggedSectors = excelDuty.sectors.some(s => s.includes('*'));
+    const cleanSectors = excelDuty.sectors.map(s => s.replace(/\*/g, ''));
+
     // Create FlightDuty object
     const flightDuty: FlightDuty = {
       id,
       date,
       dutyType: excelDuty.dutyType,
       flightNumbers: excelDuty.flightNumbers,
-      sectors: excelDuty.sectors,
+      sectors: cleanSectors,
       reportTime,
       debriefTime,
       dutyHours: actualDutyHours, // Use calculated hours for recurrent training
       flightPay: 0, // Will be calculated
       isCrossDay: excelDuty.isCrossDay, // Use detected cross-day value
+      hasFlaggedSectors,
       dataSource: 'csv' as DataSource,
       originalData: {
         rawData: excelDuty.originalData.row,

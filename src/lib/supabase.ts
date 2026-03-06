@@ -132,7 +132,7 @@ export type Database = {
           // New schema columns (salary calculator) - optional for backward compatibility
           flight_numbers?: string[];
           sectors?: string[];
-          duty_type?: 'turnaround' | 'layover' | 'asby' | 'sby' | 'off' | 'business_promotion' | 'recurrent';
+          duty_type?: 'turnaround' | 'layover' | 'asby' | 'sby' | 'off' | 'business_promotion' | 'recurrent' | 'rest' | 'annual_leave' | 'sick';
           report_time?: string;
           debrief_time?: string;
           duty_hours?: number;
@@ -167,7 +167,7 @@ export type Database = {
           // New schema columns (salary calculator)
           flight_numbers?: string[];
           sectors?: string[];
-          duty_type?: 'turnaround' | 'layover' | 'asby' | 'sby' | 'off' | 'business_promotion' | 'recurrent';
+          duty_type?: 'turnaround' | 'layover' | 'asby' | 'sby' | 'off' | 'business_promotion' | 'recurrent' | 'rest' | 'annual_leave' | 'sick';
           report_time?: string;
           debrief_time?: string;
           duty_hours?: number;
@@ -202,7 +202,7 @@ export type Database = {
           // New schema columns (salary calculator)
           flight_numbers?: string[];
           sectors?: string[];
-          duty_type?: 'turnaround' | 'layover' | 'asby' | 'sby' | 'off' | 'business_promotion' | 'recurrent';
+          duty_type?: 'turnaround' | 'layover' | 'asby' | 'sby' | 'off' | 'business_promotion' | 'recurrent' | 'rest' | 'annual_leave' | 'sick';
           report_time?: string;
           debrief_time?: string;
           duty_hours?: number;

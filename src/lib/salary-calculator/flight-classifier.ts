@@ -59,6 +59,11 @@ export function detectNonWorkingDay(
     return { isNonWorking: true, dutyType: 'off', reason: 'OFF day detected' };
   }
 
+  // Check for SICK day
+  if (dutiesUpper === 'SICK' || dutiesUpper.includes('SICK')) {
+    return { isNonWorking: true, dutyType: 'sick', reason: 'SICK day detected' };
+  }
+
   return { isNonWorking: false, dutyType: null };
 }
 
@@ -330,18 +335,34 @@ export function extractFlightNumbers(duties: string): string[] {
 }
 
 /**
- * Extracts sectors from details string
+ * Extracts sectors from details string, detecting flagged sectors (asterisk prefix)
+ * Returns both cleaned sectors and a flag indicating if any sector had the * prefix
  */
-export function extractSectors(details: string): string[] {
+export function extractSectorsWithFlags(details: string): { sectors: string[], hasFlaggedSectors: boolean } {
   if (!details || typeof details !== 'string') {
-    return [];
+    return { sectors: [], hasFlaggedSectors: false };
   }
 
-  // Common sector patterns: DXB - CMB, CMB - DXB, etc.
-  const sectorPattern = /\b[A-Z]{3}\s*-\s*[A-Z]{3}\b/g;
+  // Match sector patterns with optional * prefix on airport codes
+  // Cannot use \b because * breaks word boundary matching
+  const sectorPattern = /\*?[A-Z]{3}\s*-\s*\*?[A-Z]{3}/g;
   const matches = details.match(sectorPattern);
-  
-  return matches ? matches.map(sector => sector.replace(/\s/g, '')) : [];
+
+  if (!matches) {
+    return { sectors: [], hasFlaggedSectors: false };
+  }
+
+  const hasFlaggedSectors = matches.some(sector => sector.includes('*'));
+  const sectors = matches.map(sector => sector.replace(/\*/g, '').replace(/\s/g, ''));
+
+  return { sectors, hasFlaggedSectors };
+}
+
+/**
+ * Extracts sectors from details string (convenience wrapper)
+ */
+export function extractSectors(details: string): string[] {
+  return extractSectorsWithFlags(details).sectors;
 }
 
 /**
@@ -383,7 +404,7 @@ export function isTurnaroundSequence(sectors: string[]): boolean {
   const airports: string[] = [];
   
   for (const sector of sectors) {
-    const parts = sector.split('-').map(part => part.trim().toUpperCase());
+    const parts = sector.split('-').map(part => part.trim().toUpperCase().replace(/^\*/, ''));
     if (parts.length === 2) {
       if (airports.length === 0) {
         airports.push(parts[0], parts[1]);
@@ -411,8 +432,8 @@ export function extractBaseAirport(sectors: string[]): string | null {
   }
 
   const firstSector = sectors[0];
-  const parts = firstSector.split('-').map(part => part.trim().toUpperCase());
-  
+  const parts = firstSector.split('-').map(part => part.trim().toUpperCase().replace(/^\*/, ''));
+
   return parts.length >= 1 ? parts[0] : null;
 }
 
@@ -425,7 +446,7 @@ export function hasInternationalSectors(sectors: string[]): boolean {
   const uaeAirports = ['DXB', 'AUH', 'SHJ', 'RKT', 'AAN', 'DWC'];
   
   for (const sector of sectors) {
-    const parts = sector.split('-').map(part => part.trim().toUpperCase());
+    const parts = sector.split('-').map(part => part.trim().toUpperCase().replace(/^\*/, ''));
     for (const airport of parts) {
       if (!uaeAirports.includes(airport)) {
         return true; // Found non-UAE airport
