@@ -35,6 +35,7 @@ import {
   FlexibleExcelStructure
 } from './excel-parser';
 import { classifyFlightDuty, detectNonWorkingDay } from './flight-classifier';
+import { buildSectorDetails } from './sector-time-parser';
 import { createTimeValue, parseTimeStringWithCrossDay, calculateDuration, getPaymentMonth } from './time-calculator';
 import { NON_PAYABLE_DUTY_TYPES } from './calculation-engine';
 
@@ -661,6 +662,14 @@ export class FlydubaiExcelParser {
     const hasFlaggedSectors = excelDuty.sectors.some(s => s.includes('*'));
     const cleanSectors = excelDuty.sectors.map(s => s.replace(/\*/g, ''));
 
+    // Build per-sector block time details from actualTimes column
+    const sectorDetails = buildSectorDetails(
+      excelDuty.flightNumbers,
+      cleanSectors,
+      excelDuty.actualTimes,
+      excelDuty.sectors
+    );
+
     // Create FlightDuty object
     const flightDuty: FlightDuty = {
       id,
@@ -674,6 +683,7 @@ export class FlydubaiExcelParser {
       flightPay: 0, // Will be calculated
       isCrossDay: excelDuty.isCrossDay, // Use detected cross-day value
       hasFlaggedSectors,
+      sectorDetails: sectorDetails.length > 0 ? sectorDetails : undefined,
       dataSource: 'csv' as DataSource,
       originalData: {
         rawData: excelDuty.originalData.row,

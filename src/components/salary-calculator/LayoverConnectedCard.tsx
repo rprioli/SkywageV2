@@ -23,6 +23,7 @@ import {
   formatDutyHours
 } from '@/lib/salary-calculator/card-data-mapper';
 import { EditTimesDialog } from './EditTimesDialog';
+import { SectorBlockDetails } from './flight-duty-card/SectorBlockDetails';
 import { updateFlightDuty } from '@/lib/database/flights';
 import { recalculateMonthlyTotals } from '@/lib/salary-calculator/recalculation-engine';
 import { getPositionRatesForDate } from '@/lib/salary-calculator/calculation-engine';
@@ -293,6 +294,11 @@ export function LayoverConnectedCard({
               </div>
             </div>
 
+            {/* Sector block times */}
+            {flightDuty.sectorDetails && flightDuty.sectorDetails.length > 0 && (
+              <SectorBlockDetails sectorDetails={flightDuty.sectorDetails} />
+            )}
+
             {/* Bottom space - show cross-month rest/per diem if available */}
             <div className="flex-1 flex items-end justify-center">
               {crossMonthRestPeriod && (
@@ -445,6 +451,11 @@ export function LayoverConnectedCard({
               </div>
               </div>
             </div>
+
+            {/* Sector block times */}
+            {currentDuty.sectorDetails && currentDuty.sectorDetails.length > 0 && (
+              <SectorBlockDetails sectorDetails={currentDuty.sectorDetails} />
+            )}
 
             {/* Bottom space reserved for layover details */}
             <div className="flex-1 flex items-end justify-center">

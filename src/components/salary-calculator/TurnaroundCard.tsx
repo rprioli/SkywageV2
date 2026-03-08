@@ -20,6 +20,7 @@ import { FlightDuty, TimeValue, Position } from '@/types/salary-calculator';
 import { mapFlightDutyToCardData } from '@/lib/salary-calculator/card-data-mapper';
 import { EditTimesDialog } from './EditTimesDialog';
 import { parseSectors } from './flight-duty-card/utils';
+import { SectorBlockDetails } from './flight-duty-card/SectorBlockDetails';
 import { isDoubleSectorTurnaroundPattern, extractTurnaroundDestinations } from '@/lib/salary-calculator/input-transformers';
 import { updateFlightDuty } from '@/lib/database/flights';
 import { recalculateMonthlyTotals } from '@/lib/salary-calculator/recalculation-engine';
@@ -277,6 +278,11 @@ export function TurnaroundCard({
             </div>
             </div>
           </div>
+
+          {/* Sector block times */}
+          {flightDuty.sectorDetails && flightDuty.sectorDetails.length > 0 && (
+            <SectorBlockDetails sectorDetails={flightDuty.sectorDetails} />
+          )}
 
           {/* Bottom spacer for consistent layout */}
           <div className="flex-1"></div>

@@ -18,6 +18,7 @@ import { MoreHorizontal, Trash2, Timer, BookOpen, Clock, Camera, Edit } from 'lu
 import { FlightDuty, TimeValue, Position } from '@/types/salary-calculator';
 import { mapFlightDutyToCardData } from '@/lib/salary-calculator/card-data-mapper';
 import { EditTimesDialog } from './EditTimesDialog';
+import { SectorBlockDetails } from './flight-duty-card/SectorBlockDetails';
 import { updateFlightDuty } from '@/lib/database/flights';
 import { recalculateMonthlyTotals } from '@/lib/salary-calculator/recalculation-engine';
 import { getPositionRatesForDate } from '@/lib/salary-calculator/calculation-engine';
@@ -307,6 +308,11 @@ export function StandardDutyCard({
               </div>
             )}
           </div>
+
+          {/* Sector block times */}
+          {flightDuty.sectorDetails && flightDuty.sectorDetails.length > 0 && (
+            <SectorBlockDetails sectorDetails={flightDuty.sectorDetails} />
+          )}
 
           {/* Bottom spacer for consistent layout */}
           <div className="flex-1"></div>

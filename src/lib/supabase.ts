@@ -146,6 +146,7 @@ export type Database = {
           year?: number;
           position_used?: 'CCM' | 'SCCM' | null;
           hourly_rate_used?: number | null;
+          sector_details?: unknown;
           created_at: string;
           updated_at: string;
         };
@@ -181,6 +182,7 @@ export type Database = {
           year: number;
           position_used?: 'CCM' | 'SCCM' | null;
           hourly_rate_used?: number | null;
+          sector_details?: unknown;
           created_at?: string;
           updated_at?: string;
         };
@@ -216,6 +218,7 @@ export type Database = {
           year?: number;
           position_used?: 'CCM' | 'SCCM' | null;
           hourly_rate_used?: number | null;
+          sector_details?: unknown;
           created_at?: string;
           updated_at?: string;
         };

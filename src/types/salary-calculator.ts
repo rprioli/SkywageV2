@@ -20,6 +20,18 @@ export interface TimeValue {
   totalHours: number; // Decimal representation
 }
 
+// Per-sector block time details (parsed from roster actualTimes column)
+export interface Sector {
+  flightNumber: string;
+  origin: string;
+  destination: string;
+  departureTime?: string; // HH:MM format
+  arrivalTime?: string; // HH:MM format
+  blockMinutes?: number; // computed from dep/arr
+  crossDay?: boolean; // arrival is next calendar day
+  isFlaggedSector: boolean; // had * prefix in roster
+}
+
 // Flight duty information
 export interface FlightDuty {
   id?: string;
@@ -34,6 +46,7 @@ export interface FlightDuty {
   flightPay: number; // AED
   isCrossDay: boolean;
   hasFlaggedSectors?: boolean;
+  sectorDetails?: Sector[];
   dataSource: DataSource;
   originalData?: Record<string, unknown>; // Store original CSV data
   lastEditedAt?: Date;

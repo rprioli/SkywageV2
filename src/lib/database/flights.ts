@@ -5,7 +5,7 @@
  */
 
 import { supabase, Database } from '@/lib/supabase';
-import { FlightDuty } from '@/types/salary-calculator';
+import { FlightDuty, Sector } from '@/types/salary-calculator';
 import { formatTimeValue, parseTimeString } from '@/lib/salary-calculator';
 
 // Database types
@@ -43,7 +43,8 @@ function flightDutyToInsert(flightDuty: FlightDuty, userId: string): FlightInser
     last_edited_at: flightDuty.lastEditedAt?.toISOString(),
     last_edited_by: flightDuty.lastEditedBy,
     month: flightDuty.month,
-    year: flightDuty.year
+    year: flightDuty.year,
+    sector_details: flightDuty.sectorDetails ?? null
   };
 
   return insertData;
@@ -109,6 +110,7 @@ export function rowToFlightDuty(row: FlightRow): FlightDuty {
     lastEditedBy: row.last_edited_by,
     month: row.month ?? new Date(row.date).getMonth() + 1,
     year: row.year ?? new Date(row.date).getFullYear(),
+    sectorDetails: row.sector_details ? (row.sector_details as Sector[]) : undefined,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at)
   };
