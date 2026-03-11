@@ -20,7 +20,8 @@
       "mcp__supabase__apply_migration",
       "mcp__excel__excel_describe_sheets",
       "mcp__excel__excel_read_sheet",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Read(//dev/**)"
     ]
   },
   "enableAllProjectMcpServers": true,
