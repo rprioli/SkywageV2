@@ -33,9 +33,9 @@ export function PrimaryPanel({
   onToggle,
 }: PrimaryPanelProps) {
   return (
-    <div className="relative px-6 pt-6 pb-5">
+    <div className="relative px-4 pt-4 pb-4">
       <div
-        className={`relative rounded-[30px] bg-white/60 border border-white/68 shadow-[inset_0_1px_0_rgba(255,255,255,0.90),0_12px_30px_rgba(58,55,128,0.08)] px-5 py-5 ${
+        className={`relative rounded-[30px] bg-white/60 border border-white/68 shadow-[inset_0_1px_0_rgba(255,255,255,0.90),0_12px_30px_rgba(58,55,128,0.08)] px-4 py-5 ${
           expandable ? 'cursor-pointer select-none' : ''
         }`}
         onClick={expandable && onToggle ? onToggle : undefined}
@@ -60,7 +60,7 @@ export function PrimaryPanel({
           {payBadge}
         </div>
 
-        <div className="mt-5 flex flex-wrap items-center gap-2">
+        <div className="mt-5 flex flex-wrap items-center gap-1.5">
           {tags}
         </div>
 

@@ -75,7 +75,7 @@ export function LayoverCardV2({
         tags={
           <>
             <Tag>Layover</Tag>
-            <Tag>{restDuration} Rest</Tag>
+            <span className="hidden sm:contents"><Tag>{restDuration} Rest</Tag></span>
             <Tag>{perDiem} Per Diem</Tag>
           </>
         }
@@ -96,6 +96,7 @@ export function LayoverCardV2({
         <FlightsPanel
           tags={
             <>
+              <span className="contents sm:hidden"><Tag>{restDuration} Rest</Tag></span>
               <Tag>{sector.dutyTime}</Tag>
               <Tag>{sector.blockTime}</Tag>
             </>
