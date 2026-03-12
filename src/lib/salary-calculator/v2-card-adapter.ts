@@ -102,7 +102,17 @@ export function buildTimesNode(
 
 export function mapTurnaroundToV2Props(duty: FlightDuty): TurnaroundCardV2Props {
   const isDoubleSector = isDoubleSectorTurnaroundPattern(duty.sectors);
-  const destCodes = extractTurnaroundDestinations(duty.sectors);
+
+  // Orphaned layovers routed here: show arrival airport (e.g. DXB for NQZ→DXB)
+  // instead of the outstation, matching paired layover inbound display
+  let destCodes: string[];
+  if (duty.dutyType === 'layover') {
+    const airports = extractAirportCodes(duty.sectors);
+    const arrival = airports[airports.length - 1] ?? 'DXB';
+    destCodes = [arrival];
+  } else {
+    destCodes = extractTurnaroundDestinations(duty.sectors);
+  }
 
   const destinations: TurnaroundDestination[] = destCodes.map(code => ({
     iata: code,
@@ -133,6 +143,7 @@ export function mapTurnaroundToV2Props(duty: FlightDuty): TurnaroundCardV2Props 
     dutyTime: `${formatDutyHours(duty.dutyHours)} Duty`,
     blockTime: totalBlock > 0 ? `${formatBlockMinutes(totalBlock)} Block` : '',
     isDoubleSector,
+    ...(duty.dutyType === 'layover' && { dutyLabel: 'Layover' }),
   };
 }
 

@@ -10,7 +10,7 @@ export type Position = 'CCM' | 'SCCM';
 export type DutyType = 'turnaround' | 'layover' | 'asby' | 'recurrent' | 'sby' | 'off' | 'business_promotion' | 'rest' | 'annual_leave' | 'sick';
 
 // Data source tracking
-export type DataSource = 'csv' | 'manual' | 'edited';
+export type DataSource = 'csv' | 'manual' | 'edited' | 'cross_month_pairing';
 
 // Time representation for calculations
 export interface TimeValue {
@@ -128,7 +128,7 @@ export interface CSVParseResult {
   processedRows: number;
   /** Duties whose local date falls outside the target month but whose UTC payment month matches it */
   boundaryDuties?: FlightDuty[];
-  /** Next-month layover flights for cross-month layover pairing (saved to DB to satisfy FK on layover_rest_periods) */
+  /** Next-month layover flights for cross-month layover pairing (saved as data_source='cross_month_pairing' placeholders) */
   nextMonthDuties?: FlightDuty[];
 }
 

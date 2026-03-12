@@ -144,6 +144,11 @@ export function FlightDutiesTable({
     const inboundLayoverIds = new Set(layoverPairs.map(pair => pair.inbound.id));
 
     return flightDuties.filter(duty => {
+      // Hide cross-month pairing placeholders (auto-created for per-diem calculation)
+      if (duty.dataSource === 'cross_month_pairing') {
+        return false;
+      }
+
       // Filter off days based on toggle state
       if (isOffDayType(duty.dutyType) && !showOffDays) {
         return false;

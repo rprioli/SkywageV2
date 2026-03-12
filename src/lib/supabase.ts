@@ -138,7 +138,7 @@ export type Database = {
           duty_hours?: number;
           flight_pay?: number;
           is_cross_day?: boolean;
-          data_source?: 'csv' | 'manual' | 'edited';
+          data_source?: 'csv' | 'manual' | 'edited' | 'cross_month_pairing';
           original_data?: unknown;
           last_edited_at?: string;
           last_edited_by?: string;
@@ -174,7 +174,7 @@ export type Database = {
           duty_hours?: number;
           flight_pay?: number;
           is_cross_day?: boolean;
-          data_source?: 'csv' | 'manual' | 'edited';
+          data_source?: 'csv' | 'manual' | 'edited' | 'cross_month_pairing';
           original_data?: unknown;
           last_edited_at?: string;
           last_edited_by?: string;
@@ -210,7 +210,7 @@ export type Database = {
           duty_hours?: number;
           flight_pay?: number;
           is_cross_day?: boolean;
-          data_source?: 'csv' | 'manual' | 'edited';
+          data_source?: 'csv' | 'manual' | 'edited' | 'cross_month_pairing';
           original_data?: unknown;
           last_edited_at?: string;
           last_edited_by?: string;

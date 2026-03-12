@@ -49,7 +49,7 @@ export interface ExcelParseResult {
   employeeInfo?: ExcelEmployeeInfo;
   /** Duties whose local date falls outside the target month but whose UTC payment month matches it */
   boundaryDuties?: FlightDuty[];
-  /** Next-month layover flights for cross-month layover pairing (saved to DB to satisfy FK on layover_rest_periods) */
+  /** Next-month layover flights for cross-month layover pairing (saved as data_source='cross_month_pairing' placeholders) */
   nextMonthDuties?: FlightDuty[];
 }
 

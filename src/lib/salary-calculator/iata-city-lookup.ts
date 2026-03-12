@@ -17,11 +17,16 @@ const IATA_CITY_MAP: Record<string, string> = {
   JED: 'Jeddah, Saudi Arabia',
   DMM: 'Dammam, Saudi Arabia',
   MED: 'Medina, Saudi Arabia',
+  YNB: 'Yanbu, Saudi Arabia',
+  AHB: 'Abha, Saudi Arabia',
+  TUU: 'Tabuk, Saudi Arabia',
   SLL: 'Salalah, Oman',
+  SPX: 'Sphinx, Egypt',
 
   // Middle East
   AMM: 'Amman, Jordan',
   AQJ: 'Aqaba, Jordan',
+  TLV: 'Tel Aviv, Israel',
   BGW: 'Baghdad, Iraq',
   BSR: 'Basra, Iraq',
   NJF: 'Najaf, Iraq',
@@ -38,6 +43,7 @@ const IATA_CITY_MAP: Record<string, string> = {
   // Egypt & North Africa
   CAI: 'Cairo, Egypt',
   ALY: 'Alexandria, Egypt',
+  HBE: 'Alexandria, Egypt',
   SSH: 'Sharm El Sheikh, Egypt',
   HRG: 'Hurghada, Egypt',
   LXR: 'Luxor, Egypt',
@@ -57,6 +63,8 @@ const IATA_CITY_MAP: Record<string, string> = {
   EBB: 'Entebbe, Uganda',
   JUB: 'Juba, South Sudan',
   DJI: 'Djibouti',
+  ASM: 'Asmara, Eritrea',
+  HGA: 'Hargeisa, Somalia',
 
   // South Asia
   DEL: 'Delhi, India',
@@ -77,6 +85,10 @@ const IATA_CITY_MAP: Record<string, string> = {
   SIA: 'Sialkot, Pakistan',
   MUX: 'Multan, Pakistan',
   FSD: 'Faisalabad, Pakistan',
+  UET: 'Quetta, Pakistan',
+  SKT: 'Sialkot, Pakistan',
+  LYP: 'Faisalabad, Pakistan',
+  KBL: 'Kabul, Afghanistan',
   CMB: 'Colombo, Sri Lanka',
   KTM: 'Kathmandu, Nepal',
   DAC: 'Dhaka, Bangladesh',
@@ -94,6 +106,7 @@ const IATA_CITY_MAP: Record<string, string> = {
   GYD: 'Baku, Azerbaijan',
   TBS: 'Tbilisi, Georgia',
   EVN: 'Yerevan, Armenia',
+  MSQ: 'Minsk, Belarus',
 
   // Russia
   SVO: 'Moscow, Russia',

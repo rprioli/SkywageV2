@@ -34,6 +34,7 @@ export interface TurnaroundCardV2Props {
   dutyTime: string;
   blockTime: string;
   isDoubleSector?: boolean;
+  dutyLabel?: string;
   actions?: React.ReactNode;
   bulkMode?: boolean;
   isSelected?: boolean;
@@ -48,6 +49,7 @@ export function TurnaroundCardV2({
   dutyTime,
   blockTime,
   isDoubleSector = false,
+  dutyLabel = 'Turnaround',
   actions,
   bulkMode = false,
   isSelected = false,
@@ -69,7 +71,7 @@ export function TurnaroundCardV2({
         actions={actions}
         tags={
           <>
-            <Tag>Turnaround</Tag>
+            <Tag>{dutyLabel}</Tag>
             {isDoubleSector && <Tag>Double Sector</Tag>}
           </>
         }

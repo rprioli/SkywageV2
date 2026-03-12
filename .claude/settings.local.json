@@ -25,7 +25,8 @@
       "Bash(find /c/Users/rprio/OneDrive/Desktop/skywagev2/src/app -type d -name \"*test*\" -o -name \"*demo*\" -o -name \"*v2*\" 2>/dev/null | head -20)",
       "Bash(wc -l /c/Users/rprio/OneDrive/Desktop/skywagev2/src/components/salary-calculator/*.tsx | tail -1)",
       "Bash(find /c/Users/rprio/OneDrive/Desktop/skywagev2/src -name \"*mapper*\" -o -name \"*adapter*\" 2>/dev/null | head -20)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "mcp__excel__excel_screen_capture"
     ]
   },
   "enableAllProjectMcpServers": true,

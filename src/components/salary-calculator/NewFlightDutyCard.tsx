@@ -64,7 +64,9 @@ export function NewFlightDutyCard({
   switch (flightDuty.dutyType) {
     case 'layover':
       if (!hasLayoverRestPeriod && !hasInMonthLayoverPair) {
-        return <SimpleDutyCardV2Wrapper {...commonProps} />;
+        // Orphaned layover (e.g., inbound-only with outbound in previous month):
+        // render as turnaround card so flight number and timings are displayed
+        return <TurnaroundCardV2Wrapper {...commonProps} />;
       }
       return <LayoverCardV2Wrapper {...commonProps} />;
 

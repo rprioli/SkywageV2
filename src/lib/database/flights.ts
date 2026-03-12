@@ -535,7 +535,8 @@ export async function checkExistingFlightData(
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('month', month)
-      .eq('year', year);
+      .eq('year', year)
+      .neq('data_source', 'cross_month_pairing');
 
     if (error) {
       return { exists: false, count: 0, error: error.message };
@@ -552,6 +553,33 @@ export async function checkExistingFlightData(
       count: 0,
       error: (error as Error).message
     };
+  }
+}
+
+/**
+ * Deletes cross-month pairing placeholder flights for a specific month and year.
+ * Called before saving new pairing placeholders or when a real roster is uploaded.
+ */
+export async function deleteCrossMonthPairingFlights(
+  userId: string,
+  month: number,
+  year: number
+): Promise<{ error: string | null }> {
+  try {
+    const { error } = await supabase
+      .from('flights')
+      .delete()
+      .eq('user_id', userId)
+      .eq('month', month)
+      .eq('year', year)
+      .eq('data_source', 'cross_month_pairing');
+
+    if (error) {
+      return { error: error.message };
+    }
+    return { error: null };
+  } catch (error) {
+    return { error: (error as Error).message };
   }
 }
 
