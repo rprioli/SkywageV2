@@ -14,6 +14,7 @@ interface PrimaryPanelProps {
   payBadge?: React.ReactNode;
   tags: React.ReactNode;
   nav?: React.ReactNode;
+  actions?: React.ReactNode;
   expandable?: boolean;
   expanded?: boolean;
   onToggle?: () => void;
@@ -26,6 +27,7 @@ export function PrimaryPanel({
   payBadge,
   tags,
   nav,
+  actions,
   expandable = false,
   expanded = false,
   onToggle,
@@ -38,6 +40,7 @@ export function PrimaryPanel({
         }`}
         onClick={expandable && onToggle ? onToggle : undefined}
       >
+        {actions}
         {nav}
 
         <div className="flex items-start justify-between gap-4">

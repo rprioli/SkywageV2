@@ -22,6 +22,9 @@ const BP_FIXED_HOURS = 5;
 /** Duty types that have no flight pay and don't count toward monthly totals */
 export const NON_PAYABLE_DUTY_TYPES = new Set<DutyType>(['off', 'rest', 'annual_leave', 'sby', 'sick']);
 
+/** Off-day duty types hidden by default in the UI (excludes sby which is non-payable but not an "off day") */
+export const OFF_DAY_TYPES = new Set<DutyType>(['off', 'rest', 'annual_leave', 'sick']);
+
 // Historical salary rates (effective until June 2025)
 export const FLYDUBAI_RATES_LEGACY: { [K in Position]: SalaryRates } = {
   CCM: {

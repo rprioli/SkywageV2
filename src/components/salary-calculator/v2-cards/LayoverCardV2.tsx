@@ -36,12 +36,22 @@ export interface LayoverCardV2Props {
   sectors: LayoverSectorData[];
   restDuration: string;
   perDiem: string;
+  actions?: React.ReactNode;
+  bulkMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelection?: () => void;
+  onSectorChange?: (idx: number) => void;
 }
 
 export function LayoverCardV2({
   sectors,
   restDuration,
   perDiem,
+  actions,
+  bulkMode = false,
+  isSelected = false,
+  onToggleSelection,
+  onSectorChange,
 }: LayoverCardV2Props) {
   const [idx, setIdx] = useState(0);
   const [expanded, setExpanded] = useState(false);
@@ -49,13 +59,19 @@ export function LayoverCardV2({
   const canPrev = idx > 0;
   const canNext = idx < sectors.length - 1;
 
+  const navigate = (newIdx: number) => {
+    setIdx(newIdx);
+    onSectorChange?.(newIdx);
+  };
+
   return (
-    <CardShell>
+    <CardShell bulkMode={bulkMode} isSelected={isSelected} onToggleSelection={onToggleSelection}>
       <PrimaryPanel
         date={sector.date}
         title={sector.iata}
         subtitle={sector.city}
         payBadge={<PayBadge>{sector.pay}</PayBadge>}
+        actions={actions}
         tags={
           <>
             <Tag>Layover</Tag>
@@ -67,8 +83,8 @@ export function LayoverCardV2({
           <SectorNav
             canPrev={canPrev}
             canNext={canNext}
-            onPrev={() => setIdx(i => i - 1)}
-            onNext={() => setIdx(i => i + 1)}
+            onPrev={() => navigate(idx - 1)}
+            onNext={() => navigate(idx + 1)}
           />
         }
         expandable

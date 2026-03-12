@@ -6,8 +6,8 @@
  * Following existing component patterns in the codebase
  */
 
-import { useState } from 'react';
-import { FlightDuty, Position, LayoverRestPeriod } from '@/types/salary-calculator';
+import { useState, useMemo } from 'react';
+import { FlightDuty, DutyType, Position, LayoverRestPeriod } from '@/types/salary-calculator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -28,11 +28,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { FlightDutyCard } from './FlightDutyCard';
 import { NewFlightDutyCard } from './NewFlightDutyCard';
-import { OffDayCard } from './OffDayCard';
-import { FEATURE_FLAGS } from '@/lib/feature-flags';
 import { identifyLayoverPairs } from '@/lib/salary-calculator/card-data-mapper';
+import { OFF_DAY_TYPES } from '@/lib/salary-calculator/calculation-engine';
 
 interface FlightDutiesTableProps {
   flightDuties: FlightDuty[];
@@ -42,7 +40,6 @@ interface FlightDutiesTableProps {
   onBulkDelete?: (flightDuties: FlightDuty[]) => void;
   onDeleteAll?: () => void;
   showActions?: boolean;
-  useNewCardDesign?: boolean; // Feature flag for new card design
   userId?: string;
   position?: Position;
   onEditComplete?: () => void;
@@ -58,7 +55,6 @@ export function FlightDutiesTable({
   onBulkDelete,
   onDeleteAll,
   showActions = true,
-  useNewCardDesign = FEATURE_FLAGS.NEW_FLIGHT_CARDS,
   userId,
   position,
   onEditComplete,
@@ -77,9 +73,6 @@ export function FlightDutiesTable({
   const [showOffDaysInternal, setShowOffDaysInternal] = useState(false);
   const isExternallyControlled = showOffDaysExternal !== undefined;
   const showOffDays = isExternallyControlled ? showOffDaysExternal : showOffDaysInternal;
-
-
-
 
 
 
@@ -105,7 +98,7 @@ export function FlightDutiesTable({
   };
 
   const selectAllVisible = () => {
-    const visibleIds = new Set(flightDuties.map(flight => flight.id).filter((id): id is string => id !== undefined));
+    const visibleIds = new Set(filteredFlightDuties.map(flight => flight.id).filter((id): id is string => id !== undefined));
     setSelectedFlights(visibleIds);
   };
 
@@ -143,17 +136,10 @@ export function FlightDutiesTable({
     }
   };
 
-  // Helper to check if duty type is an off day type
-  const isOffDayType = (dutyType: string) => {
-    return dutyType === 'off' || dutyType === 'rest' || dutyType === 'annual_leave' || dutyType === 'sick';
-  };
+  const isOffDayType = (dutyType: string) => OFF_DAY_TYPES.has(dutyType as DutyType);
 
   // Filter flight duties based on toggle state and layover pairing
-  const getFilteredFlightDuties = () => {
-    if (!useNewCardDesign) {
-      return flightDuties;
-    }
-
+  const filteredFlightDuties = useMemo(() => {
     const layoverPairs = identifyLayoverPairs(flightDuties);
     const inboundLayoverIds = new Set(layoverPairs.map(pair => pair.inbound.id));
 
@@ -170,13 +156,10 @@ export function FlightDutiesTable({
 
       return true;
     });
-  };
+  }, [flightDuties, showOffDays]);
 
-  const filteredFlightDuties = getFilteredFlightDuties();
   const isAllVisibleSelected = filteredFlightDuties.length > 0 && filteredFlightDuties.every(flight => flight.id && selectedFlights.has(flight.id));
   const isSomeSelected = selectedFlights.size > 0;
-
-
 
   if (loading) {
     return <LoadingSkeleton />;
@@ -198,8 +181,6 @@ export function FlightDutiesTable({
 
   // Check if we have duties but they're all filtered out
   const isFilteredEmpty = filteredFlightDuties.length === 0 && flightDuties.length > 0;
-
-
 
   return (
     <Card className="border-0 shadow-none bg-transparent">
@@ -272,12 +253,8 @@ export function FlightDutiesTable({
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-
-
             </div>
           </div>
-
-
 
           {/* Bulk Actions Bar - Fixed height to prevent layout shift */}
           {bulkMode && (
@@ -345,34 +322,20 @@ export function FlightDutiesTable({
                 style={{ animationDelay: `${index * 50}ms` }}
                 className="animate-fade-in"
               >
-                {isOffDayType(duty.dutyType) ? (
-                  // Render simplified off day card for off/rest/annual_leave
-                  <OffDayCard flightDuty={duty} />
-                ) : useNewCardDesign ? (
-                  <NewFlightDutyCard
-                    flightDuty={duty}
-                    layoverRestPeriods={layoverRestPeriods}
-                    allFlightDuties={flightDuties} // Use original array for layover pairing
-                    onDelete={onDelete}
-                    showActions={showActions}
-                    bulkMode={bulkMode}
-                    isSelected={duty.id ? selectedFlights.has(duty.id) : false}
-                    onToggleSelection={toggleFlightSelection}
-                    userId={userId}
-                    position={position}
-                    onEditComplete={onEditComplete}
-                  />
-                ) : (
-                  <FlightDutyCard
-                    flightDuty={duty}
-                    allFlightDuties={flightDuties}
-                    onDelete={onDelete}
-                    showActions={showActions}
-                    bulkMode={bulkMode}
-                    isSelected={duty.id ? selectedFlights.has(duty.id) : false}
-                    onToggleSelection={toggleFlightSelection}
-                  />
-                )}
+                <NewFlightDutyCard
+                  flightDuty={duty}
+                  layoverRestPeriods={layoverRestPeriods}
+                  allFlightDuties={flightDuties}
+                  onDelete={onDelete}
+                  showActions={showActions}
+                  bulkMode={bulkMode}
+                  isSelected={duty.id ? selectedFlights.has(duty.id) : false}
+                  onToggleSelection={toggleFlightSelection}
+                  userId={userId}
+                  position={position}
+                  onEditComplete={onEditComplete}
+                  showOffDays={showOffDays}
+                />
               </div>
             ))}
           </div>

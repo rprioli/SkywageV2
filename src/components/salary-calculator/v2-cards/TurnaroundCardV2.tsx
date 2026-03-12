@@ -34,6 +34,10 @@ export interface TurnaroundCardV2Props {
   dutyTime: string;
   blockTime: string;
   isDoubleSector?: boolean;
+  actions?: React.ReactNode;
+  bulkMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelection?: () => void;
 }
 
 export function TurnaroundCardV2({
@@ -44,6 +48,10 @@ export function TurnaroundCardV2({
   dutyTime,
   blockTime,
   isDoubleSector = false,
+  actions,
+  bulkMode = false,
+  isSelected = false,
+  onToggleSelection,
 }: TurnaroundCardV2Props) {
   const [idx, setIdx] = useState(0);
   const [expanded, setExpanded] = useState(false);
@@ -52,12 +60,13 @@ export function TurnaroundCardV2({
   const canNext = idx < destinations.length - 1;
 
   return (
-    <CardShell>
+    <CardShell bulkMode={bulkMode} isSelected={isSelected} onToggleSelection={onToggleSelection}>
       <PrimaryPanel
         date={date}
         title={dest.iata}
         subtitle={dest.city}
         payBadge={<PayBadge>{pay}</PayBadge>}
+        actions={actions}
         tags={
           <>
             <Tag>Turnaround</Tag>

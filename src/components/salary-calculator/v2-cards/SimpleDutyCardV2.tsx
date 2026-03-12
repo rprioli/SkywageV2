@@ -18,6 +18,10 @@ export interface SimpleDutyCardV2Props {
   icon: LucideIcon;
   pay?: string;
   tags: string[];
+  actions?: React.ReactNode;
+  bulkMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelection?: () => void;
 }
 
 export function SimpleDutyCardV2({
@@ -27,13 +31,18 @@ export function SimpleDutyCardV2({
   icon: Icon,
   pay,
   tags,
+  actions,
+  bulkMode = false,
+  isSelected = false,
+  onToggleSelection,
 }: SimpleDutyCardV2Props) {
   return (
-    <CardShell>
+    <CardShell bulkMode={bulkMode} isSelected={isSelected} onToggleSelection={onToggleSelection}>
       <PrimaryPanel
         date={date}
         title={label}
         subtitle={subtitle}
+        actions={actions}
         payBadge={
           pay ? (
             <PayBadge>{pay}</PayBadge>
