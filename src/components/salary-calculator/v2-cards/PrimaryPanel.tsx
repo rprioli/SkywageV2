@@ -35,7 +35,7 @@ export function PrimaryPanel({
   return (
     <div className="relative px-6 pt-6 pb-5">
       <div
-        className={`relative rounded-[30px] bg-white/40 backdrop-blur-[24px] border border-white/68 shadow-[inset_0_1px_0_rgba(255,255,255,0.90),0_12px_30px_rgba(58,55,128,0.08)] px-5 py-5 ${
+        className={`relative rounded-[30px] bg-white/60 border border-white/68 shadow-[inset_0_1px_0_rgba(255,255,255,0.90),0_12px_30px_rgba(58,55,128,0.08)] px-5 py-5 ${
           expandable ? 'cursor-pointer select-none' : ''
         }`}
         onClick={expandable && onToggle ? onToggle : undefined}

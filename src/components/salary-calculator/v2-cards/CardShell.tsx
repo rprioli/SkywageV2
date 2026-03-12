@@ -26,7 +26,7 @@ export function CardShell({
 
   return (
     <div
-      className={`relative w-full rounded-[36px] bg-white/64 backdrop-blur-[30px] border border-white/60 shadow-[0_24px_80px_rgba(58,55,128,0.14),inset_0_1px_0_rgba(255,255,255,0.84)] overflow-hidden ${selectionRing} ${cursor} ${className}`}
+      className={`relative isolate w-full rounded-[36px] bg-white/64 backdrop-blur-[30px] border border-white/60 shadow-[0_24px_80px_rgba(58,55,128,0.14),inset_0_1px_0_rgba(255,255,255,0.84)] overflow-hidden ${selectionRing} ${cursor} ${className}`}
       onClick={bulkMode && onToggleSelection ? onToggleSelection : undefined}
     >
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.56)_0%,rgba(255,255,255,0.18)_100%)] pointer-events-none" />

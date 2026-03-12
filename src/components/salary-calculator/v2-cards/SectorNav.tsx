@@ -16,22 +16,24 @@ interface SectorNavProps {
 
 export function SectorNav({ canPrev, canNext, onPrev, onNext }: SectorNavProps) {
   return (
-    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 isolate">
       <button
+        type="button"
         onClick={(e) => { e.stopPropagation(); onPrev(); }}
         disabled={!canPrev}
-        className="text-[#3A3780]/40 disabled:opacity-15 hover:enabled:text-[#4C49ED] transition-colors"
+        className="text-[#3A3780]/40 disabled:opacity-30 hover:enabled:text-[#4C49ED] transition-colors"
         aria-label="Previous sector"
       >
-        <ChevronLeft size={26} strokeWidth={1.75} />
+        <ChevronLeft size={26} strokeWidth={1.75} aria-hidden="true" />
       </button>
       <button
+        type="button"
         onClick={(e) => { e.stopPropagation(); onNext(); }}
         disabled={!canNext}
-        className="text-[#3A3780]/40 disabled:opacity-15 hover:enabled:text-[#4C49ED] transition-colors"
+        className="text-[#3A3780]/40 disabled:opacity-30 hover:enabled:text-[#4C49ED] transition-colors"
         aria-label="Next sector"
       >
-        <ChevronRight size={26} strokeWidth={1.75} />
+        <ChevronRight size={26} strokeWidth={1.75} aria-hidden="true" />
       </button>
     </div>
   );

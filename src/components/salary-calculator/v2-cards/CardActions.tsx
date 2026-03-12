@@ -26,13 +26,14 @@ export function CardActions({ onEdit, onDelete }: CardActionsProps) {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="absolute right-3 top-3 z-10 rounded-full p-1.5 text-[#3A3780]/50 hover:text-[#3A3780] hover:bg-white/60 transition-colors"
+          aria-label="More actions"
+          className="absolute right-3 bottom-3 z-10 rounded-full p-1.5 text-[#3A3780]/50 hover:text-[#3A3780] hover:bg-white/60 transition-colors"
           onClick={(e) => e.stopPropagation()}
         >
-          <MoreHorizontal size={16} />
+          <MoreHorizontal size={16} aria-hidden="true" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-[140px]">
+      <DropdownMenuContent align="end" side="top" className="min-w-[140px]">
         {onEdit && (
           <DropdownMenuItem onClick={onEdit}>
             <Pencil className="mr-2 h-4 w-4" />
