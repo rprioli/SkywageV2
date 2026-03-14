@@ -92,6 +92,11 @@ export function flightDutyToFormData(flightDuty: FlightDuty): ManualFlightEntryD
     isCrossDay: flightDuty.isCrossDay || false
   };
 
+  // Populate deadhead sector flags from sectorDetails
+  if (flightDuty.sectorDetails?.some(s => s.isDeadhead)) {
+    formData.deadheadSectors = flightDuty.sectorDetails.map(s => s.isDeadhead === true);
+  }
+
   // Ensure we have at least empty strings for form fields
   if (formData.flightNumbers.length === 0) {
     formData.flightNumbers = [''];
@@ -100,7 +105,7 @@ export function flightDutyToFormData(flightDuty: FlightDuty): ManualFlightEntryD
   if (formData.sectors.length === 0) {
     formData.sectors = [''];
   }
-  
+
   return formData;
 }
 

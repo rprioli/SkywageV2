@@ -5,6 +5,7 @@
 
 import {
   FlightDuty,
+  Sector,
   Position
 } from '@/types/salary-calculator';
 import {
@@ -20,6 +21,17 @@ import {
   transformSectors
 } from '../input-transformers';
 import { FEATURE_FLAGS } from '@/lib/feature-flags';
+
+/** Builds a single deadhead Sector object for manual entries */
+function buildDeadheadSector(flightNumber: string, origin: string, destination: string): Sector {
+  return {
+    flightNumber,
+    origin,
+    destination,
+    isFlaggedSector: true,
+    isDeadhead: true,
+  };
+}
 
 /**
  * Legacy conversion function - backup for rollback safety
@@ -280,6 +292,15 @@ export function convertToFlightDuty(
       );
       const outboundFlightPay = calculateFlightPay(outboundDutyHours, position);
 
+      const outboundIsDeadhead = data.deadheadSectors?.[0] === true;
+      const outboundSectorDetails: Sector[] | undefined = outboundIsDeadhead
+        ? [buildDeadheadSector(
+            transformFlightNumbers([data.flightNumbers[0]])[0] || '',
+            data.sectors[0] || '',
+            data.sectors[1] || '',
+          )]
+        : undefined;
+
       const outboundDuty: FlightDuty = {
         id: `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         userId,
@@ -295,6 +316,8 @@ export function convertToFlightDuty(
         flightPay: outboundFlightPay,
         isCrossDay: data.isCrossDayOutbound || false,
         dataSource: 'manual',
+        ...(outboundIsDeadhead && { hasDeadheadSectors: true, hasFlaggedSectors: true }),
+        ...(outboundSectorDetails && { sectorDetails: outboundSectorDetails }),
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -319,6 +342,15 @@ export function convertToFlightDuty(
       );
       const inboundFlightPay = calculateFlightPay(inboundDutyHours, position);
 
+      const inboundIsDeadhead = data.deadheadSectors?.[1] === true;
+      const inboundSectorDetails: Sector[] | undefined = inboundIsDeadhead
+        ? [buildDeadheadSector(
+            transformFlightNumbers([data.flightNumbers[1]])[0] || '',
+            data.sectors[2] || '',
+            data.sectors[3] || '',
+          )]
+        : undefined;
+
       const inboundDuty: FlightDuty = {
         id: `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         userId,
@@ -334,6 +366,8 @@ export function convertToFlightDuty(
         flightPay: inboundFlightPay,
         isCrossDay: data.isCrossDayInbound || false,
         dataSource: 'manual',
+        ...(inboundIsDeadhead && { hasDeadheadSectors: true, hasFlaggedSectors: true }),
+        ...(inboundSectorDetails && { sectorDetails: inboundSectorDetails }),
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -410,6 +444,23 @@ export function convertToFlightDuty(
     const flightNumbers = transformFlightNumbers(data.flightNumbers);
     const sectors = transformSectors(data.sectors);
 
+    // Build DHD sector details for manual entries with deadhead flags
+    const hasAnyDeadhead = data.deadheadSectors?.some(d => d === true) ?? false;
+    let manualSectorDetails: Sector[] | undefined;
+    if (hasAnyDeadhead && data.dutyType === 'turnaround') {
+      manualSectorDetails = flightNumbers.map((fn, i) => {
+        const sectorParts = (sectors[i] || '').split('-').map(s => s.trim());
+        const isDhd = data.deadheadSectors?.[i] === true;
+        return {
+          flightNumber: fn,
+          origin: sectorParts[0] || '',
+          destination: sectorParts[1] || '',
+          isFlaggedSector: isDhd,
+          ...(isDhd && { isDeadhead: true }),
+        };
+      });
+    }
+
     const flightDuty: FlightDuty = {
       id: `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       userId,
@@ -425,6 +476,8 @@ export function convertToFlightDuty(
       flightPay,
       isCrossDay: data.isCrossDay,
       dataSource: 'manual',
+      ...(hasAnyDeadhead && { hasDeadheadSectors: true, hasFlaggedSectors: true }),
+      ...(manualSectorDetails && { sectorDetails: manualSectorDetails }),
       createdAt: new Date(),
       updatedAt: new Date()
     };

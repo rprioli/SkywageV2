@@ -39,6 +39,7 @@ export interface ManualFlightEntryData {
   debriefTimeOutbound?: string; // HH:MM format - outbound debrief time for layover
   isCrossDayOutbound?: boolean; // Whether outbound debrief is next day (auto-detected)
   isCrossDayInbound?: boolean; // Whether inbound debrief is next day (auto-detected)
+  deadheadSectors?: boolean[]; // Per-sector DHD flags (parallel to sectors array)
 }
 
 // Field-level validation result

@@ -12,7 +12,7 @@ import { CardShell } from './CardShell';
 import { PrimaryPanel, PayBadge } from './PrimaryPanel';
 import { SectorNav } from './SectorNav';
 import { Collapsible } from './Collapsible';
-import { FlightsPanel, Tag } from './FlightsPanel';
+import { FlightsPanel, Tag, DhdTag } from './FlightsPanel';
 import { FlightRow } from './FlightRow';
 
 export interface LayoverFlight {
@@ -30,6 +30,8 @@ export interface LayoverSectorData {
   flights: LayoverFlight[];
   dutyTime: string;
   blockTime: string;
+  hasDeadhead?: boolean;
+  dhdBlockTime?: string;
 }
 
 export interface LayoverCardV2Props {
@@ -77,6 +79,7 @@ export function LayoverCardV2({
             <Tag>Layover</Tag>
             <span className="hidden sm:contents"><Tag>{restDuration} Rest</Tag></span>
             <Tag>{perDiem} Per Diem</Tag>
+            {sector.hasDeadhead && <DhdTag>DHD</DhdTag>}
           </>
         }
         nav={
@@ -98,7 +101,11 @@ export function LayoverCardV2({
             <>
               <span className="contents sm:hidden"><Tag>{restDuration} Rest</Tag></span>
               <Tag>{sector.dutyTime}</Tag>
-              <Tag>{sector.blockTime}</Tag>
+              {sector.hasDeadhead && sector.dhdBlockTime ? (
+                <DhdTag>{sector.dhdBlockTime}</DhdTag>
+              ) : (
+                sector.blockTime && <Tag>{sector.blockTime}</Tag>
+              )}
             </>
           }
         >

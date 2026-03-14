@@ -26,7 +26,11 @@
       "Bash(wc -l /c/Users/rprio/OneDrive/Desktop/skywagev2/src/components/salary-calculator/*.tsx | tail -1)",
       "Bash(find /c/Users/rprio/OneDrive/Desktop/skywagev2/src -name \"*mapper*\" -o -name \"*adapter*\" 2>/dev/null | head -20)",
       "Bash(npx tsc:*)",
-      "mcp__excel__excel_screen_capture"
+      "mcp__excel__excel_screen_capture",
+      "Bash(git log:*)",
+      "Skill(spec)",
+      "Bash(ls node_modules/.bin/jest* node_modules/.bin/ts-jest* 2>/dev/null; npm ls jest ts-jest 2>/dev/null | head -10)",
+      "Bash(git diff:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

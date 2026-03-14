@@ -82,7 +82,8 @@ export function FlightEntryForm({
     reportTimeInbound: initialData?.reportTimeInbound || '',
     debriefTimeOutbound: initialData?.debriefTimeOutbound || '',
     isCrossDayOutbound: initialData?.isCrossDayOutbound || false,
-    isCrossDayInbound: initialData?.isCrossDayInbound || false
+    isCrossDayInbound: initialData?.isCrossDayInbound || false,
+    deadheadSectors: initialData?.deadheadSectors || []
   });
 
   // Track whether form submission has been attempted
@@ -143,7 +144,8 @@ export function FlightEntryForm({
         reportTimeInbound: initialData.reportTimeInbound || '',
         debriefTimeOutbound: initialData.debriefTimeOutbound || '',
         isCrossDayOutbound: initialData.isCrossDayOutbound || false,
-        isCrossDayInbound: initialData.isCrossDayInbound || false
+        isCrossDayInbound: initialData.isCrossDayInbound || false,
+        deadheadSectors: initialData.deadheadSectors || []
       });
       
       // Extract destination(s) from sectors for turnaround/layover edit mode
@@ -289,10 +291,11 @@ export function FlightEntryForm({
     setFormData(prev => {
       const newData = { ...prev, dutyType };
 
-      // Clear flight numbers and sectors for ASBY, Recurrent, SBY, OFF, Business Promotion
+      // Clear flight numbers, sectors, and DHD flags for ASBY, Recurrent, SBY, OFF, Business Promotion
       if (dutyType === 'asby' || dutyType === 'recurrent' || dutyType === 'sby' || dutyType === 'off' || dutyType === 'business_promotion') {
         newData.flightNumbers = [];
         newData.sectors = [];
+        newData.deadheadSectors = [];
       } else if (dutyType === 'layover') {
         // Ensure two flights; sectors derived from destination
         newData.flightNumbers = [prev.flightNumbers[0] || '', prev.flightNumbers[1] || ''];
@@ -393,7 +396,8 @@ export function FlightEntryForm({
       reportTimeInbound: '',
       debriefTimeOutbound: '',
       isCrossDayOutbound: false,
-      isCrossDayInbound: false
+      isCrossDayInbound: false,
+      deadheadSectors: []
     });
     setDestination(''); // Clear destinations
     setDestination2('');
@@ -677,25 +681,43 @@ export function FlightEntryForm({
 
               {/* Outbound Flight Details */}
               <div className="space-y-4">
-                <FlightNumberInput
-                  value={formData.flightNumbers[0] || ''}
-                  onChange={value => {
-                    const newNumbers = [...formData.flightNumbers];
-                    newNumbers[0] = value;
-                    // Auto-suggest inbound flight number (+1) when outbound is complete (3-4 digits)
-                    const isComplete = value.length >= 3 && value.length <= 4;
-                    if (isComplete) {
-                      const numValue = parseInt(value, 10);
-                      if (!isNaN(numValue)) {
-                        newNumbers[1] = (numValue + 1).toString();
-                      }
-                    }
-                    handleFieldChange('flightNumbers', newNumbers);
-                  }}
-                  placeholder="123"
-                  disabled={isFormDisabled}
-                  label="Flight Number"
-                />
+                <div className="flex items-end gap-3">
+                  <div className="flex-1">
+                    <FlightNumberInput
+                      value={formData.flightNumbers[0] || ''}
+                      onChange={value => {
+                        const newNumbers = [...formData.flightNumbers];
+                        newNumbers[0] = value;
+                        // Auto-suggest inbound flight number (+1) when outbound is complete (3-4 digits)
+                        const isComplete = value.length >= 3 && value.length <= 4;
+                        if (isComplete) {
+                          const numValue = parseInt(value, 10);
+                          if (!isNaN(numValue)) {
+                            newNumbers[1] = (numValue + 1).toString();
+                          }
+                        }
+                        handleFieldChange('flightNumbers', newNumbers);
+                      }}
+                      placeholder="123"
+                      disabled={isFormDisabled}
+                      label="Flight Number"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5 pb-0.5">
+                    <Switch
+                      id="dhd-outbound"
+                      checked={formData.deadheadSectors?.[0] || false}
+                      onCheckedChange={(checked) => {
+                        const newDhd = [...(formData.deadheadSectors || [])];
+                        newDhd[0] = !!checked;
+                        handleFieldChange('deadheadSectors', newDhd);
+                      }}
+                      disabled={isFormDisabled}
+                      className="h-4 w-7 data-[state=checked]:bg-red-500"
+                    />
+                    <Label htmlFor="dhd-outbound" className="text-xs font-medium text-muted-foreground">DHD</Label>
+                  </div>
+                </div>
 
                 {/* Outbound Times */}
                 <div className="grid grid-cols-2 gap-4">
@@ -751,20 +773,39 @@ export function FlightEntryForm({
                   )}
                 </div>
 
-                <FlightNumberInput
-                  value={formData.flightNumbers[1] || ''}
-                  onChange={value => {
-                    const newNumbers = [...formData.flightNumbers];
-                    while (newNumbers.length <= 1) {
-                      newNumbers.push('');
-                    }
-                    newNumbers[1] = value;
-                    handleFieldChange('flightNumbers', newNumbers);
-                  }}
-                  placeholder="124"
-                  disabled={isFormDisabled}
-                  label="Flight Number"
-                />
+                <div className="flex items-end gap-3">
+                  <div className="flex-1">
+                    <FlightNumberInput
+                      value={formData.flightNumbers[1] || ''}
+                      onChange={value => {
+                        const newNumbers = [...formData.flightNumbers];
+                        while (newNumbers.length <= 1) {
+                          newNumbers.push('');
+                        }
+                        newNumbers[1] = value;
+                        handleFieldChange('flightNumbers', newNumbers);
+                      }}
+                      placeholder="124"
+                      disabled={isFormDisabled}
+                      label="Flight Number"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1.5 pb-0.5">
+                    <Switch
+                      id="dhd-inbound"
+                      checked={formData.deadheadSectors?.[1] || false}
+                      onCheckedChange={(checked) => {
+                        const newDhd = [...(formData.deadheadSectors || [])];
+                        while (newDhd.length <= 1) newDhd.push(false);
+                        newDhd[1] = !!checked;
+                        handleFieldChange('deadheadSectors', newDhd);
+                      }}
+                      disabled={isFormDisabled}
+                      className="h-4 w-7 data-[state=checked]:bg-red-500"
+                    />
+                    <Label htmlFor="dhd-inbound" className="text-xs font-medium text-muted-foreground">DHD</Label>
+                  </div>
+                </div>
 
                 {/* Inbound Times */}
                 <div className="grid grid-cols-2 gap-4">

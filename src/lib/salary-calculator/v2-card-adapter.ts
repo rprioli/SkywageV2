@@ -42,6 +42,26 @@ function totalBlockMinutes(sectorDetails: Sector[]): number {
   return sectorDetails.reduce((sum, s) => sum + (s.blockMinutes ?? 0), 0);
 }
 
+/** Sums block minutes for deadhead sectors only */
+function deadheadBlockMinutes(sectorDetails: Sector[]): number {
+  return sectorDetails
+    .filter(s => s.isDeadhead && s.blockMinutes != null)
+    .reduce((sum, s) => sum + s.blockMinutes!, 0);
+}
+
+/** Computes the DHD-corrected block time label (half of deadhead block minutes) */
+function computeDhdBlockTimeLabel(duty: FlightDuty): { hasDeadhead: boolean; dhdBlockTime?: string } {
+  const hasSectorDetails = duty.sectorDetails && duty.sectorDetails.length > 0;
+  const hasDeadhead = duty.hasDeadheadSectors === true && hasSectorDetails;
+  if (!hasDeadhead) return { hasDeadhead: false };
+
+  const dhdMinutes = deadheadBlockMinutes(duty.sectorDetails!);
+  if (dhdMinutes > 0) {
+    return { hasDeadhead: true, dhdBlockTime: `${formatBlockMinutes(Math.round(dhdMinutes / 2))} Block` };
+  }
+  return { hasDeadhead: true };
+}
+
 /** Returns the outstation (non-DXB) airport from a layover flight's sectors */
 function getLayoverDestination(sectors: string[]): string {
   for (const sector of sectors) {
@@ -135,6 +155,8 @@ export function mapTurnaroundToV2Props(duty: FlightDuty): TurnaroundCardV2Props 
     ? totalBlockMinutes(duty.sectorDetails!)
     : 0;
 
+  const dhd = computeDhdBlockTimeLabel(duty);
+
   return {
     date: formatDateShort(duty.date),
     destinations,
@@ -144,6 +166,7 @@ export function mapTurnaroundToV2Props(duty: FlightDuty): TurnaroundCardV2Props 
     blockTime: totalBlock > 0 ? `${formatBlockMinutes(totalBlock)} Block` : '',
     isDoubleSector,
     ...(duty.dutyType === 'layover' && { dutyLabel: 'Layover' }),
+    ...(dhd.hasDeadhead && dhd.dhdBlockTime && { hasDeadhead: true, dhdBlockTime: dhd.dhdBlockTime }),
   };
 }
 
@@ -240,6 +263,8 @@ function buildLayoverSectorData(duty: FlightDuty, isOutbound: boolean): LayoverS
 
   const totalBlock = hasSectorDetails ? totalBlockMinutes(sd!) : 0;
 
+  const dhd = computeDhdBlockTimeLabel(duty);
+
   return {
     iata: destCode,
     city: lookupCity(destCode),
@@ -248,6 +273,7 @@ function buildLayoverSectorData(duty: FlightDuty, isOutbound: boolean): LayoverS
     flights,
     dutyTime: `${formatDutyHours(duty.dutyHours)} Duty`,
     blockTime: totalBlock > 0 ? `${formatBlockMinutes(totalBlock)} Block` : '',
+    ...(dhd.hasDeadhead && dhd.dhdBlockTime && { hasDeadhead: true, dhdBlockTime: dhd.dhdBlockTime }),
   };
 }
 

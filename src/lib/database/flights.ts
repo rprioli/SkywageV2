@@ -111,6 +111,12 @@ export function rowToFlightDuty(row: FlightRow): FlightDuty {
     month: row.month ?? new Date(row.date).getMonth() + 1,
     year: row.year ?? new Date(row.date).getFullYear(),
     sectorDetails: row.sector_details ? (row.sector_details as Sector[]) : undefined,
+    hasFlaggedSectors: row.sector_details
+      ? (row.sector_details as Sector[]).some(s => s.isFlaggedSector)
+      : undefined,
+    hasDeadheadSectors: row.sector_details
+      ? (row.sector_details as Sector[]).some(s => s.isDeadhead)
+      : undefined,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at)
   };

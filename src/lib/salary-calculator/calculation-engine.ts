@@ -211,15 +211,28 @@ export function calculateFlightDuty(
     }
 
     // Calculate duty hours — BP uses fixed 5 hours for both pay and totals
-    const dutyHours = flightDuty.dutyType === 'business_promotion'
+    let dutyHours = flightDuty.dutyType === 'business_promotion'
       ? BP_FIXED_HOURS
       : calculateDutyHours(flightDuty);
+
+    // Apply DHD deduction: subtract 50% of deadhead block time from payable hours
+    if (flightDuty.hasDeadheadSectors && flightDuty.sectorDetails) {
+      const dhdBlockMinutes = flightDuty.sectorDetails
+        .filter(s => s.isDeadhead && s.blockMinutes != null)
+        .reduce((sum, s) => sum + s.blockMinutes!, 0);
+
+      if (dhdBlockMinutes > 0) {
+        dutyHours = Math.max(0, dutyHours - (dhdBlockMinutes / 2 / 60));
+      } else {
+        warnings.push('DHD sectors detected but block minutes unavailable — calculated as regular duty');
+      }
+    }
 
     // Validate duty hours
     if (dutyHours <= 0) {
       errors.push('Duty hours must be greater than 0');
     }
-    
+
     if (dutyHours > 24) {
       warnings.push(`Duty hours (${dutyHours.toFixed(2)}) exceed 24 hours - please verify`);
     }

@@ -11,7 +11,7 @@ import { CardShell } from './CardShell';
 import { PrimaryPanel, PayBadge } from './PrimaryPanel';
 import { SectorNav } from './SectorNav';
 import { Collapsible } from './Collapsible';
-import { FlightsPanel, Tag } from './FlightsPanel';
+import { FlightsPanel, Tag, DhdTag } from './FlightsPanel';
 import { FlightRow } from './FlightRow';
 
 export interface TurnaroundDestination {
@@ -35,6 +35,8 @@ export interface TurnaroundCardV2Props {
   blockTime: string;
   isDoubleSector?: boolean;
   dutyLabel?: string;
+  hasDeadhead?: boolean;
+  dhdBlockTime?: string;
   actions?: React.ReactNode;
   bulkMode?: boolean;
   isSelected?: boolean;
@@ -50,6 +52,8 @@ export function TurnaroundCardV2({
   blockTime,
   isDoubleSector = false,
   dutyLabel = 'Turnaround',
+  hasDeadhead,
+  dhdBlockTime,
   actions,
   bulkMode = false,
   isSelected = false,
@@ -73,6 +77,7 @@ export function TurnaroundCardV2({
           <>
             <Tag>{dutyLabel}</Tag>
             {isDoubleSector && <Tag>Double Sector</Tag>}
+            {hasDeadhead && <DhdTag>DHD</DhdTag>}
           </>
         }
         nav={
@@ -95,7 +100,11 @@ export function TurnaroundCardV2({
           tags={
             <>
               <Tag>{dutyTime}</Tag>
-              <Tag>{blockTime}</Tag>
+              {hasDeadhead && dhdBlockTime ? (
+                <DhdTag>{dhdBlockTime}</DhdTag>
+              ) : (
+                blockTime && <Tag>{blockTime}</Tag>
+              )}
             </>
           }
         >

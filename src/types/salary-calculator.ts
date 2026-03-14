@@ -30,6 +30,7 @@ export interface Sector {
   blockMinutes?: number; // computed from dep/arr
   crossDay?: boolean; // arrival is next calendar day
   isFlaggedSector: boolean; // had * prefix in roster
+  isDeadhead?: boolean; // confirmed DHD: * prefix + D indicator
 }
 
 // Flight duty information
@@ -46,6 +47,7 @@ export interface FlightDuty {
   flightPay: number; // AED
   isCrossDay: boolean;
   hasFlaggedSectors?: boolean;
+  hasDeadheadSectors?: boolean;
   sectorDetails?: Sector[];
   dataSource: DataSource;
   originalData?: Record<string, unknown>; // Store original CSV data

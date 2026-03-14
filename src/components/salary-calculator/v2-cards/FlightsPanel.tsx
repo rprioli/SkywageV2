@@ -3,7 +3,7 @@
  * Uses min-height + flex justify-between so cards with fewer rows match taller ones.
  */
 
-import { TAG_CLASS } from './constants';
+import { TAG_CLASS, DHD_TAG_CLASS } from './constants';
 
 interface FlightsPanelProps {
   children: React.ReactNode;
@@ -25,4 +25,8 @@ export function FlightsPanel({ children, tags }: FlightsPanelProps) {
 
 export function Tag({ children }: { children: React.ReactNode }) {
   return <span className={TAG_CLASS}>{children}</span>;
+}
+
+export function DhdTag({ children }: { children: React.ReactNode }) {
+  return <span className={DHD_TAG_CLASS}>{children}</span>;
 }

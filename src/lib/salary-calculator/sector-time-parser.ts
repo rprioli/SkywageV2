@@ -107,12 +107,19 @@ export function buildSectorDetails(
   flightNumbers: string[],
   cleanSectors: string[],
   actualTimesStr: string | undefined,
-  rawSectors: string[]
+  rawSectors: string[],
+  indicators?: string
 ): Sector[] {
   if (!actualTimesStr || !actualTimesStr.trim()) return [];
 
   const parsedTimes = parseSectorActualTimes(actualTimesStr);
   if (parsedTimes.length === 0) return [];
+
+  // Parse indicator tokens for DHD confirmation (e.g., "D,R,M" → ["D", "R", "M"])
+  const indicatorTokens = indicators
+    ? indicators.split(',').map(t => t.trim())
+    : [];
+  const hasDIndicator = indicatorTokens.includes('D');
 
   const count = Math.min(flightNumbers.length, cleanSectors.length);
   const sectors: Sector[] = [];
@@ -122,6 +129,7 @@ export function buildSectorDetails(
     const origin = sectorParts[0] || '';
     const destination = sectorParts[1] || '';
     const isFlaggedSector = rawSectors[i] ? rawSectors[i].includes('*') : false;
+    const isDeadhead = isFlaggedSector && hasDIndicator;
 
     const timing = parsedTimes[i];
     const sector: Sector = {
@@ -129,6 +137,7 @@ export function buildSectorDetails(
       origin,
       destination,
       isFlaggedSector,
+      ...(isDeadhead && { isDeadhead }),
     };
 
     if (timing) {

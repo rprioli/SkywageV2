@@ -667,8 +667,12 @@ export class FlydubaiExcelParser {
       excelDuty.flightNumbers,
       cleanSectors,
       excelDuty.actualTimes,
-      excelDuty.sectors
+      excelDuty.sectors,
+      excelDuty.indicators
     );
+
+    // Derive confirmed deadhead status from sector details
+    const hasDeadheadSectors = sectorDetails.some(s => s.isDeadhead === true);
 
     // Create FlightDuty object
     const flightDuty: FlightDuty = {
@@ -683,6 +687,7 @@ export class FlydubaiExcelParser {
       flightPay: 0, // Will be calculated
       isCrossDay: excelDuty.isCrossDay, // Use detected cross-day value
       hasFlaggedSectors,
+      ...(hasDeadheadSectors && { hasDeadheadSectors }),
       sectorDetails: sectorDetails.length > 0 ? sectorDetails : undefined,
       dataSource: 'csv' as DataSource,
       originalData: {
