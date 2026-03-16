@@ -92,9 +92,21 @@ export function flightDutyToFormData(flightDuty: FlightDuty): ManualFlightEntryD
     isCrossDay: flightDuty.isCrossDay || false
   };
 
-  // Populate deadhead sector flags from sectorDetails
+  // Populate deadhead sector flags and times from sectorDetails
   if (flightDuty.sectorDetails?.some(s => s.isDeadhead)) {
     formData.deadheadSectors = flightDuty.sectorDetails.map(s => s.isDeadhead === true);
+
+    const hasAnyTimes = flightDuty.sectorDetails.some(
+      s => s.departureTime && s.arrivalTime
+    );
+    if (hasAnyTimes) {
+      formData.deadheadDepartureTimes = flightDuty.sectorDetails.map(
+        s => s.departureTime || ''
+      );
+      formData.deadheadArrivalTimes = flightDuty.sectorDetails.map(
+        s => s.arrivalTime || ''
+      );
+    }
   }
 
   // Ensure we have at least empty strings for form fields

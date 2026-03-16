@@ -13,7 +13,8 @@ export type {
 
 // Conversion utilities
 export {
-  convertToFlightDuty
+  convertToFlightDuty,
+  buildDeadheadSector
 } from './conversion';
 
 // Suggestions utilities

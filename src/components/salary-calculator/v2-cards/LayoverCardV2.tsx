@@ -20,6 +20,7 @@ export interface LayoverFlight {
   route: string;
   times: React.ReactNode;
   blockTime?: string;
+  isDeadhead?: boolean;
 }
 
 export interface LayoverSectorData {
@@ -31,7 +32,6 @@ export interface LayoverSectorData {
   dutyTime: string;
   blockTime: string;
   hasDeadhead?: boolean;
-  dhdBlockTime?: string;
 }
 
 export interface LayoverCardV2Props {
@@ -101,11 +101,7 @@ export function LayoverCardV2({
             <>
               <span className="contents sm:hidden"><Tag>{restDuration} Rest</Tag></span>
               <Tag>{sector.dutyTime}</Tag>
-              {sector.hasDeadhead && sector.dhdBlockTime ? (
-                <DhdTag>{sector.dhdBlockTime}</DhdTag>
-              ) : (
-                sector.blockTime && <Tag>{sector.blockTime}</Tag>
-              )}
+              {sector.blockTime && <Tag>{sector.blockTime}</Tag>}
             </>
           }
         >
@@ -116,6 +112,7 @@ export function LayoverCardV2({
               route={f.route}
               times={f.times}
               blockTime={f.blockTime}
+              isDeadhead={f.isDeadhead}
             />
           ))}
         </FlightsPanel>

@@ -24,6 +24,7 @@ export interface TurnaroundSector {
   route: string;
   times: React.ReactNode;
   blockTime: string;
+  isDeadhead?: boolean;
 }
 
 export interface TurnaroundCardV2Props {
@@ -36,7 +37,6 @@ export interface TurnaroundCardV2Props {
   isDoubleSector?: boolean;
   dutyLabel?: string;
   hasDeadhead?: boolean;
-  dhdBlockTime?: string;
   actions?: React.ReactNode;
   bulkMode?: boolean;
   isSelected?: boolean;
@@ -53,7 +53,6 @@ export function TurnaroundCardV2({
   isDoubleSector = false,
   dutyLabel = 'Turnaround',
   hasDeadhead,
-  dhdBlockTime,
   actions,
   bulkMode = false,
   isSelected = false,
@@ -100,11 +99,7 @@ export function TurnaroundCardV2({
           tags={
             <>
               <Tag>{dutyTime}</Tag>
-              {hasDeadhead && dhdBlockTime ? (
-                <DhdTag>{dhdBlockTime}</DhdTag>
-              ) : (
-                blockTime && <Tag>{blockTime}</Tag>
-              )}
+              {blockTime && <Tag>{blockTime}</Tag>}
             </>
           }
         >
@@ -115,6 +110,7 @@ export function TurnaroundCardV2({
               route={s.route}
               times={s.times}
               blockTime={s.blockTime}
+              isDeadhead={s.isDeadhead}
             />
           ))}
         </FlightsPanel>
