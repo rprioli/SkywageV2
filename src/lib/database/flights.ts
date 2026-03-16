@@ -5,7 +5,7 @@
  */
 
 import { supabase, Database } from '@/lib/supabase';
-import { FlightDuty } from '@/types/salary-calculator';
+import { FlightDuty, Sector } from '@/types/salary-calculator';
 import { formatTimeValue, parseTimeString } from '@/lib/salary-calculator';
 
 // Database types
@@ -43,7 +43,8 @@ function flightDutyToInsert(flightDuty: FlightDuty, userId: string): FlightInser
     last_edited_at: flightDuty.lastEditedAt?.toISOString(),
     last_edited_by: flightDuty.lastEditedBy,
     month: flightDuty.month,
-    year: flightDuty.year
+    year: flightDuty.year,
+    sector_details: flightDuty.sectorDetails ?? null
   };
 
   return insertData;
@@ -109,6 +110,13 @@ export function rowToFlightDuty(row: FlightRow): FlightDuty {
     lastEditedBy: row.last_edited_by,
     month: row.month ?? new Date(row.date).getMonth() + 1,
     year: row.year ?? new Date(row.date).getFullYear(),
+    sectorDetails: row.sector_details ? (row.sector_details as Sector[]) : undefined,
+    hasFlaggedSectors: row.sector_details
+      ? (row.sector_details as Sector[]).some(s => s.isFlaggedSector)
+      : undefined,
+    hasDeadheadSectors: row.sector_details
+      ? (row.sector_details as Sector[]).some(s => s.isDeadhead)
+      : undefined,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at)
   };
@@ -533,7 +541,8 @@ export async function checkExistingFlightData(
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
       .eq('month', month)
-      .eq('year', year);
+      .eq('year', year)
+      .neq('data_source', 'cross_month_pairing');
 
     if (error) {
       return { exists: false, count: 0, error: error.message };
@@ -550,6 +559,33 @@ export async function checkExistingFlightData(
       count: 0,
       error: (error as Error).message
     };
+  }
+}
+
+/**
+ * Deletes cross-month pairing placeholder flights for a specific month and year.
+ * Called before saving new pairing placeholders or when a real roster is uploaded.
+ */
+export async function deleteCrossMonthPairingFlights(
+  userId: string,
+  month: number,
+  year: number
+): Promise<{ error: string | null }> {
+  try {
+    const { error } = await supabase
+      .from('flights')
+      .delete()
+      .eq('user_id', userId)
+      .eq('month', month)
+      .eq('year', year)
+      .eq('data_source', 'cross_month_pairing');
+
+    if (error) {
+      return { error: error.message };
+    }
+    return { error: null };
+  } catch (error) {
+    return { error: (error as Error).message };
   }
 }
 

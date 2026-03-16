@@ -50,6 +50,9 @@ export function validateManualEntryRealTime(
     debriefTimeOutbound: data.debriefTimeOutbound || '',
     isCrossDayOutbound: data.isCrossDayOutbound || false,
     isCrossDayInbound: data.isCrossDayInbound || false,
+    deadheadSectors: data.deadheadSectors || [],
+    deadheadDepartureTimes: data.deadheadDepartureTimes || [],
+    deadheadArrivalTimes: data.deadheadArrivalTimes || [],
   };
 
   return validateManualEntry(completeData, position, selectedYear);

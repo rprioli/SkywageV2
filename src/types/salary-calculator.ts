@@ -10,7 +10,7 @@ export type Position = 'CCM' | 'SCCM';
 export type DutyType = 'turnaround' | 'layover' | 'asby' | 'recurrent' | 'sby' | 'off' | 'business_promotion' | 'rest' | 'annual_leave' | 'sick';
 
 // Data source tracking
-export type DataSource = 'csv' | 'manual' | 'edited';
+export type DataSource = 'csv' | 'manual' | 'edited' | 'cross_month_pairing';
 
 // Time representation for calculations
 export interface TimeValue {
@@ -18,6 +18,19 @@ export interface TimeValue {
   minutes: number;
   totalMinutes: number;
   totalHours: number; // Decimal representation
+}
+
+// Per-sector block time details (parsed from roster actualTimes column)
+export interface Sector {
+  flightNumber: string;
+  origin: string;
+  destination: string;
+  departureTime?: string; // HH:MM format
+  arrivalTime?: string; // HH:MM format
+  blockMinutes?: number; // computed from dep/arr
+  crossDay?: boolean; // arrival is next calendar day
+  isFlaggedSector: boolean; // had * prefix in roster
+  isDeadhead?: boolean; // confirmed DHD: * prefix + D indicator
 }
 
 // Flight duty information
@@ -34,6 +47,8 @@ export interface FlightDuty {
   flightPay: number; // AED
   isCrossDay: boolean;
   hasFlaggedSectors?: boolean;
+  hasDeadheadSectors?: boolean;
+  sectorDetails?: Sector[];
   dataSource: DataSource;
   originalData?: Record<string, unknown>; // Store original CSV data
   lastEditedAt?: Date;
@@ -115,7 +130,7 @@ export interface CSVParseResult {
   processedRows: number;
   /** Duties whose local date falls outside the target month but whose UTC payment month matches it */
   boundaryDuties?: FlightDuty[];
-  /** Next-month layover flights for cross-month layover pairing (saved to DB to satisfy FK on layover_rest_periods) */
+  /** Next-month layover flights for cross-month layover pairing (saved as data_source='cross_month_pairing' placeholders) */
   nextMonthDuties?: FlightDuty[];
 }
 

@@ -196,12 +196,20 @@ export {
   findEmployeeInfoFlexible
 } from './excel-parser';
 
+// Sector time parsing utilities
+export {
+  parseSectorActualTimes,
+  buildSectorDetails,
+  calculateBlockMinutes
+} from './sector-time-parser';
+
 // Type exports
 export type {
   Position,
   DutyType,
   DataSource,
   TimeValue,
+  Sector,
   FlightDuty,
   LayoverRestPeriod,
   MonthlyCalculation,

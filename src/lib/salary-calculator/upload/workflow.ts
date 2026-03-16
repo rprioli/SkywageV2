@@ -13,7 +13,7 @@ import {
   calculateMonthlySalary,
   calculateLayoverRestPeriods
 } from '@/lib/salary-calculator';
-import { createFlightDuties } from '@/lib/database/flights';
+import { createFlightDuties, deleteCrossMonthPairingFlights } from '@/lib/database/flights';
 import {
   createLayoverRestPeriods,
   upsertMonthlyCalculation
@@ -411,6 +411,10 @@ async function saveUploadData(
 ): Promise<ProcessingResult> {
   onProgress?.({ step: 'saving', progress: 70, message: 'Saving to database...', details: 'Storing flight duties and calculations' });
 
+  // Clean up any pairing placeholders for the target month left by a previous
+  // adjacent-month upload, so the real roster replaces them cleanly.
+  await deleteCrossMonthPairingFlights(userId, month, year);
+
   const flightSaveResult = await createFlightDuties(flightDuties, userId);
   if (flightSaveResult.error) {
     return {
@@ -422,14 +426,22 @@ async function saveUploadData(
 
   const savedFlightDuties = flightSaveResult.data || [];
 
-  // Save next-month inbound layover flights so the FK on layover_rest_periods is satisfied
-  // for cross-month layover pairing. These are saved with their actual date/month.
+  // Save next-month inbound layover flights as pairing placeholders so the
+  // recalculation engine can pair cross-month layovers for per-diem calculation.
+  // These are marked with data_source='cross_month_pairing' so the UI hides them
+  // and they get cleaned up when the real roster for that month is uploaded.
   if (nextMonthDuties && nextMonthDuties.length > 0) {
-    // Set correct month/year from the flight's actual date
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+
+    // Remove any existing pairing placeholders for the next month first
+    await deleteCrossMonthPairingFlights(userId, nextMonth, nextYear);
+
     const correctedDuties = nextMonthDuties.map(d => ({
       ...d,
       month: d.date.getUTCMonth() + 1,
-      year: d.date.getUTCFullYear()
+      year: d.date.getUTCFullYear(),
+      dataSource: 'cross_month_pairing' as const
     }));
     const nextMonthSaveResult = await createFlightDuties(correctedDuties, userId);
     if (nextMonthSaveResult.error) {

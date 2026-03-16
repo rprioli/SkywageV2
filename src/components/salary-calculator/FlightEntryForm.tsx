@@ -82,7 +82,10 @@ export function FlightEntryForm({
     reportTimeInbound: initialData?.reportTimeInbound || '',
     debriefTimeOutbound: initialData?.debriefTimeOutbound || '',
     isCrossDayOutbound: initialData?.isCrossDayOutbound || false,
-    isCrossDayInbound: initialData?.isCrossDayInbound || false
+    isCrossDayInbound: initialData?.isCrossDayInbound || false,
+    deadheadSectors: initialData?.deadheadSectors || [],
+    deadheadDepartureTimes: initialData?.deadheadDepartureTimes || [],
+    deadheadArrivalTimes: initialData?.deadheadArrivalTimes || [],
   });
 
   // Track whether form submission has been attempted
@@ -143,9 +146,12 @@ export function FlightEntryForm({
         reportTimeInbound: initialData.reportTimeInbound || '',
         debriefTimeOutbound: initialData.debriefTimeOutbound || '',
         isCrossDayOutbound: initialData.isCrossDayOutbound || false,
-        isCrossDayInbound: initialData.isCrossDayInbound || false
+        isCrossDayInbound: initialData.isCrossDayInbound || false,
+        deadheadSectors: initialData.deadheadSectors || [],
+        deadheadDepartureTimes: initialData.deadheadDepartureTimes || [],
+        deadheadArrivalTimes: initialData.deadheadArrivalTimes || [],
       });
-      
+
       // Extract destination(s) from sectors for turnaround/layover edit mode
       if ((initialData.dutyType === 'turnaround' || initialData.dutyType === 'layover') && initialData.sectors && initialData.sectors.length > 0) {
         const destinations = extractTurnaroundDestinations(initialData.sectors);
@@ -281,6 +287,84 @@ export function FlightEntryForm({
     }));
   };
 
+  // Handle DHD toggle — single atomic state update for toggle + clear times
+  const handleDhdToggle = (sectorIndex: number, checked: boolean) => {
+    setFormData(prev => {
+      const newDhd = [...(prev.deadheadSectors || [])];
+      while (newDhd.length <= sectorIndex) newDhd.push(false);
+      newDhd[sectorIndex] = !!checked;
+      const updates: Partial<ManualFlightEntryData> = { deadheadSectors: newDhd };
+
+      if (!checked) {
+        const newDep = [...(prev.deadheadDepartureTimes || [])];
+        const newArr = [...(prev.deadheadArrivalTimes || [])];
+        // Always clear this sector's times
+        if (newDep.length > sectorIndex) newDep[sectorIndex] = '';
+        if (newArr.length > sectorIndex) newArr[sectorIndex] = '';
+        const anyStillDhd = newDhd.some(d => d === true);
+        updates.deadheadDepartureTimes = anyStillDhd ? newDep : [];
+        updates.deadheadArrivalTimes = anyStillDhd ? newArr : [];
+      }
+      return { ...prev, ...updates };
+    });
+  };
+
+  // Whether any sector has DHD toggled (triggers all-sector time fields)
+  const hasAnyDhd = formData.deadheadSectors?.some(d => d === true) ?? false;
+
+  // Render sector departure/arrival time fields for a given sector index
+  // Shows for ALL sectors when any DHD is toggled (turnaround or layover)
+  const renderSectorTimeFields = (sectorIndex: number) => {
+    const isDhd = formData.deadheadSectors?.[sectorIndex] || false;
+    if (!isDhd && !hasAnyDhd) return null;
+
+    const depLabel = isDhd ? 'DHD Departure' : 'Departure';
+    const arrLabel = isDhd ? 'DHD Arrival' : 'Arrival';
+
+    return (
+      <div className="grid grid-cols-2 gap-3">
+        <TimeInput
+          value={formData.deadheadDepartureTimes?.[sectorIndex] || ''}
+          onChange={value => {
+            const newDep = [...(formData.deadheadDepartureTimes || [])];
+            while (newDep.length <= sectorIndex) newDep.push('');
+            newDep[sectorIndex] = value;
+            handleFieldChange('deadheadDepartureTimes', newDep);
+          }}
+          disabled={isFormDisabled}
+          error={validation.fieldErrors[`dhdDepartureTime_${sectorIndex}`] && submitAttempted ? validation.fieldErrors[`dhdDepartureTime_${sectorIndex}`] : undefined}
+          label={depLabel}
+        />
+        <TimeInput
+          value={formData.deadheadArrivalTimes?.[sectorIndex] || ''}
+          onChange={value => {
+            const newArr = [...(formData.deadheadArrivalTimes || [])];
+            while (newArr.length <= sectorIndex) newArr.push('');
+            newArr[sectorIndex] = value;
+            handleFieldChange('deadheadArrivalTimes', newArr);
+          }}
+          disabled={isFormDisabled}
+          error={validation.fieldErrors[`dhdArrivalTime_${sectorIndex}`] && submitAttempted ? validation.fieldErrors[`dhdArrivalTime_${sectorIndex}`] : undefined}
+          label={arrLabel}
+        />
+      </div>
+    );
+  };
+
+  // Render a DHD toggle switch for a given sector index
+  const renderDhdToggle = (sectorIndex: number, id: string) => (
+    <div className="flex items-center gap-1.5 pb-0.5">
+      <Switch
+        id={id}
+        checked={formData.deadheadSectors?.[sectorIndex] || false}
+        onCheckedChange={(checked) => handleDhdToggle(sectorIndex, !!checked)}
+        disabled={isFormDisabled}
+        className="h-4 w-7 data-[state=checked]:bg-red-500"
+      />
+      <Label htmlFor={id} className="text-xs font-medium text-muted-foreground">DHD</Label>
+    </div>
+  );
+
   // Handle duty type change - adjust form fields accordingly
   const handleDutyTypeChange = (dutyType: DutyType) => {
     // Reset submit attempted state when duty type changes
@@ -289,10 +373,13 @@ export function FlightEntryForm({
     setFormData(prev => {
       const newData = { ...prev, dutyType };
 
-      // Clear flight numbers and sectors for ASBY, Recurrent, SBY, OFF, Business Promotion
+      // Clear flight numbers, sectors, and DHD flags for ASBY, Recurrent, SBY, OFF, Business Promotion
       if (dutyType === 'asby' || dutyType === 'recurrent' || dutyType === 'sby' || dutyType === 'off' || dutyType === 'business_promotion') {
         newData.flightNumbers = [];
         newData.sectors = [];
+        newData.deadheadSectors = [];
+        newData.deadheadDepartureTimes = [];
+        newData.deadheadArrivalTimes = [];
       } else if (dutyType === 'layover') {
         // Ensure two flights; sectors derived from destination
         newData.flightNumbers = [prev.flightNumbers[0] || '', prev.flightNumbers[1] || ''];
@@ -393,7 +480,10 @@ export function FlightEntryForm({
       reportTimeInbound: '',
       debriefTimeOutbound: '',
       isCrossDayOutbound: false,
-      isCrossDayInbound: false
+      isCrossDayInbound: false,
+      deadheadSectors: [],
+      deadheadDepartureTimes: [],
+      deadheadArrivalTimes: [],
     });
     setDestination(''); // Clear destinations
     setDestination2('');
@@ -677,25 +767,31 @@ export function FlightEntryForm({
 
               {/* Outbound Flight Details */}
               <div className="space-y-4">
-                <FlightNumberInput
-                  value={formData.flightNumbers[0] || ''}
-                  onChange={value => {
-                    const newNumbers = [...formData.flightNumbers];
-                    newNumbers[0] = value;
-                    // Auto-suggest inbound flight number (+1) when outbound is complete (3-4 digits)
-                    const isComplete = value.length >= 3 && value.length <= 4;
-                    if (isComplete) {
-                      const numValue = parseInt(value, 10);
-                      if (!isNaN(numValue)) {
-                        newNumbers[1] = (numValue + 1).toString();
-                      }
-                    }
-                    handleFieldChange('flightNumbers', newNumbers);
-                  }}
-                  placeholder="123"
-                  disabled={isFormDisabled}
-                  label="Flight Number"
-                />
+                <div className="flex items-end gap-3">
+                  <div className="flex-1">
+                    <FlightNumberInput
+                      value={formData.flightNumbers[0] || ''}
+                      onChange={value => {
+                        const newNumbers = [...formData.flightNumbers];
+                        newNumbers[0] = value;
+                        // Auto-suggest inbound flight number (+1) when outbound is complete (3-4 digits)
+                        const isComplete = value.length >= 3 && value.length <= 4;
+                        if (isComplete) {
+                          const numValue = parseInt(value, 10);
+                          if (!isNaN(numValue)) {
+                            newNumbers[1] = (numValue + 1).toString();
+                          }
+                        }
+                        handleFieldChange('flightNumbers', newNumbers);
+                      }}
+                      placeholder="123"
+                      disabled={isFormDisabled}
+                      label="Flight Number"
+                    />
+                  </div>
+                  {renderDhdToggle(0, 'dhd-outbound')}
+                </div>
+                {renderSectorTimeFields(0)}
 
                 {/* Outbound Times */}
                 <div className="grid grid-cols-2 gap-4">
@@ -751,20 +847,26 @@ export function FlightEntryForm({
                   )}
                 </div>
 
-                <FlightNumberInput
-                  value={formData.flightNumbers[1] || ''}
-                  onChange={value => {
-                    const newNumbers = [...formData.flightNumbers];
-                    while (newNumbers.length <= 1) {
-                      newNumbers.push('');
-                    }
-                    newNumbers[1] = value;
-                    handleFieldChange('flightNumbers', newNumbers);
-                  }}
-                  placeholder="124"
-                  disabled={isFormDisabled}
-                  label="Flight Number"
-                />
+                <div className="flex items-end gap-3">
+                  <div className="flex-1">
+                    <FlightNumberInput
+                      value={formData.flightNumbers[1] || ''}
+                      onChange={value => {
+                        const newNumbers = [...formData.flightNumbers];
+                        while (newNumbers.length <= 1) {
+                          newNumbers.push('');
+                        }
+                        newNumbers[1] = value;
+                        handleFieldChange('flightNumbers', newNumbers);
+                      }}
+                      placeholder="124"
+                      disabled={isFormDisabled}
+                      label="Flight Number"
+                    />
+                  </div>
+                  {renderDhdToggle(1, 'dhd-inbound')}
+                </div>
+                {renderSectorTimeFields(1)}
 
                 {/* Inbound Times */}
                 <div className="grid grid-cols-2 gap-4">
@@ -868,51 +970,63 @@ export function FlightEntryForm({
                   {/* Standard Flight Numbers (2) */}
                   <div className="space-y-3">
                     <label className="block text-sm font-medium">Flight Numbers</label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="relative">
-                        <div className="input-icon-left">
-                          <Plane className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                        <Input
-                          type="text"
-                          value={formData.flightNumbers[0] || ''}
-                          onChange={e => {
-                            const newValue = e.target.value.replace(/[^0-9]/g, '');
-                            const newNumbers = [...formData.flightNumbers];
-                            newNumbers[0] = newValue;
-                            const isComplete = newValue.length >= 3 && newValue.length <= 4;
-                            if (isComplete) {
-                              const numValue = parseInt(newValue, 10);
-                              if (!isNaN(numValue)) {
-                                newNumbers[1] = (numValue + 1).toString();
+                    {/* Sector 0 (outbound) */}
+                    <div className="space-y-2">
+                      <div className="flex items-end gap-2">
+                        <div className="flex-1 relative">
+                          <div className="input-icon-left">
+                            <Plane className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <Input
+                            type="text"
+                            value={formData.flightNumbers[0] || ''}
+                            onChange={e => {
+                              const newValue = e.target.value.replace(/[^0-9]/g, '');
+                              const newNumbers = [...formData.flightNumbers];
+                              newNumbers[0] = newValue;
+                              const isComplete = newValue.length >= 3 && newValue.length <= 4;
+                              if (isComplete) {
+                                const numValue = parseInt(newValue, 10);
+                                if (!isNaN(numValue)) {
+                                  newNumbers[1] = (numValue + 1).toString();
+                                }
                               }
-                            }
-                            handleFieldChange('flightNumbers', newNumbers);
-                          }}
-                          placeholder="123"
-                          disabled={isFormDisabled}
-                          className="input-with-left-icon"
-                          maxLength={4}
-                        />
-                      </div>
-                      <div className="relative">
-                        <div className="input-icon-left">
-                          <Plane className="h-4 w-4 text-muted-foreground" />
+                              handleFieldChange('flightNumbers', newNumbers);
+                            }}
+                            placeholder="123"
+                            disabled={isFormDisabled}
+                            className="input-with-left-icon"
+                            maxLength={4}
+                          />
                         </div>
-                        <Input
-                          type="text"
-                          value={formData.flightNumbers[1] || ''}
-                          onChange={e => {
-                            const newNumbers = [...formData.flightNumbers];
-                            newNumbers[1] = e.target.value.replace(/[^0-9]/g, '');
-                            handleFieldChange('flightNumbers', newNumbers);
-                          }}
-                          placeholder="124"
-                          disabled={isFormDisabled}
-                          className="input-with-left-icon"
-                          maxLength={4}
-                        />
+                        {renderDhdToggle(0, 'dhd-turnaround-0')}
                       </div>
+                      {renderSectorTimeFields(0)}
+                    </div>
+                    {/* Sector 1 (return) */}
+                    <div className="space-y-2">
+                      <div className="flex items-end gap-2">
+                        <div className="flex-1 relative">
+                          <div className="input-icon-left">
+                            <Plane className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <Input
+                            type="text"
+                            value={formData.flightNumbers[1] || ''}
+                            onChange={e => {
+                              const newNumbers = [...formData.flightNumbers];
+                              newNumbers[1] = e.target.value.replace(/[^0-9]/g, '');
+                              handleFieldChange('flightNumbers', newNumbers);
+                            }}
+                            placeholder="124"
+                            disabled={isFormDisabled}
+                            className="input-with-left-icon"
+                            maxLength={4}
+                          />
+                        </div>
+                        {renderDhdToggle(1, 'dhd-turnaround-1')}
+                      </div>
+                      {renderSectorTimeFields(1)}
                     </div>
                     {validation.fieldErrors.flightNumbers && submitAttempted && (
                       <p className="text-destructive text-sm">{validation.fieldErrors.flightNumbers}</p>
@@ -977,52 +1091,64 @@ export function FlightEntryForm({
                     </div>
 
                     {/* First Leg Flight Numbers */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="relative">
-                        <div className="input-icon-left">
-                          <Plane className="h-4 w-4 text-muted-foreground" />
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <div className="flex items-end gap-2">
+                          <div className="flex-1 relative">
+                            <div className="input-icon-left">
+                              <Plane className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <Input
+                              type="text"
+                              value={formData.flightNumbers[0] || ''}
+                              onChange={e => {
+                                const newValue = e.target.value.replace(/[^0-9]/g, '');
+                                const newNumbers = [...formData.flightNumbers];
+                                while (newNumbers.length < 4) newNumbers.push('');
+                                newNumbers[0] = newValue;
+                                const isComplete = newValue.length >= 3 && newValue.length <= 4;
+                                if (isComplete) {
+                                  const numValue = parseInt(newValue, 10);
+                                  if (!isNaN(numValue)) {
+                                    newNumbers[1] = (numValue + 1).toString();
+                                  }
+                                }
+                                handleFieldChange('flightNumbers', newNumbers);
+                              }}
+                              placeholder="123"
+                              disabled={isFormDisabled}
+                              className="input-with-left-icon"
+                              maxLength={4}
+                            />
+                          </div>
+                          {renderDhdToggle(0, 'dhd-double-0')}
                         </div>
-                        <Input
-                          type="text"
-                          value={formData.flightNumbers[0] || ''}
-                          onChange={e => {
-                            const newValue = e.target.value.replace(/[^0-9]/g, '');
-                            const newNumbers = [...formData.flightNumbers];
-                            while (newNumbers.length < 4) newNumbers.push('');
-                            newNumbers[0] = newValue;
-                            const isComplete = newValue.length >= 3 && newValue.length <= 4;
-                            if (isComplete) {
-                              const numValue = parseInt(newValue, 10);
-                              if (!isNaN(numValue)) {
-                                newNumbers[1] = (numValue + 1).toString();
-                              }
-                            }
-                            handleFieldChange('flightNumbers', newNumbers);
-                          }}
-                          placeholder="123"
-                          disabled={isFormDisabled}
-                          className="input-with-left-icon"
-                          maxLength={4}
-                        />
+                        {renderSectorTimeFields(0)}
                       </div>
-                      <div className="relative">
-                        <div className="input-icon-left">
-                          <Plane className="h-4 w-4 text-muted-foreground" />
+                      <div className="space-y-2">
+                        <div className="flex items-end gap-2">
+                          <div className="flex-1 relative">
+                            <div className="input-icon-left">
+                              <Plane className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <Input
+                              type="text"
+                              value={formData.flightNumbers[1] || ''}
+                              onChange={e => {
+                                const newNumbers = [...formData.flightNumbers];
+                                while (newNumbers.length < 4) newNumbers.push('');
+                                newNumbers[1] = e.target.value.replace(/[^0-9]/g, '');
+                                handleFieldChange('flightNumbers', newNumbers);
+                              }}
+                              placeholder="124"
+                              disabled={isFormDisabled}
+                              className="input-with-left-icon"
+                              maxLength={4}
+                            />
+                          </div>
+                          {renderDhdToggle(1, 'dhd-double-1')}
                         </div>
-                        <Input
-                          type="text"
-                          value={formData.flightNumbers[1] || ''}
-                          onChange={e => {
-                            const newNumbers = [...formData.flightNumbers];
-                            while (newNumbers.length < 4) newNumbers.push('');
-                            newNumbers[1] = e.target.value.replace(/[^0-9]/g, '');
-                            handleFieldChange('flightNumbers', newNumbers);
-                          }}
-                          placeholder="124"
-                          disabled={isFormDisabled}
-                          className="input-with-left-icon"
-                          maxLength={4}
-                        />
+                        {renderSectorTimeFields(1)}
                       </div>
                     </div>
                   </div>
@@ -1080,52 +1206,64 @@ export function FlightEntryForm({
                     </div>
 
                     {/* Second Leg Flight Numbers */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="relative">
-                        <div className="input-icon-left">
-                          <Plane className="h-4 w-4 text-muted-foreground" />
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <div className="flex items-end gap-2">
+                          <div className="flex-1 relative">
+                            <div className="input-icon-left">
+                              <Plane className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <Input
+                              type="text"
+                              value={formData.flightNumbers[2] || ''}
+                              onChange={e => {
+                                const newValue = e.target.value.replace(/[^0-9]/g, '');
+                                const newNumbers = [...formData.flightNumbers];
+                                while (newNumbers.length < 4) newNumbers.push('');
+                                newNumbers[2] = newValue;
+                                const isComplete = newValue.length >= 3 && newValue.length <= 4;
+                                if (isComplete) {
+                                  const numValue = parseInt(newValue, 10);
+                                  if (!isNaN(numValue)) {
+                                    newNumbers[3] = (numValue + 1).toString();
+                                  }
+                                }
+                                handleFieldChange('flightNumbers', newNumbers);
+                              }}
+                              placeholder="345"
+                              disabled={isFormDisabled}
+                              className="input-with-left-icon"
+                              maxLength={4}
+                            />
+                          </div>
+                          {renderDhdToggle(2, 'dhd-double-2')}
                         </div>
-                        <Input
-                          type="text"
-                          value={formData.flightNumbers[2] || ''}
-                          onChange={e => {
-                            const newValue = e.target.value.replace(/[^0-9]/g, '');
-                            const newNumbers = [...formData.flightNumbers];
-                            while (newNumbers.length < 4) newNumbers.push('');
-                            newNumbers[2] = newValue;
-                            const isComplete = newValue.length >= 3 && newValue.length <= 4;
-                            if (isComplete) {
-                              const numValue = parseInt(newValue, 10);
-                              if (!isNaN(numValue)) {
-                                newNumbers[3] = (numValue + 1).toString();
-                              }
-                            }
-                            handleFieldChange('flightNumbers', newNumbers);
-                          }}
-                          placeholder="345"
-                          disabled={isFormDisabled}
-                          className="input-with-left-icon"
-                          maxLength={4}
-                        />
+                        {renderSectorTimeFields(2)}
                       </div>
-                      <div className="relative">
-                        <div className="input-icon-left">
-                          <Plane className="h-4 w-4 text-muted-foreground" />
+                      <div className="space-y-2">
+                        <div className="flex items-end gap-2">
+                          <div className="flex-1 relative">
+                            <div className="input-icon-left">
+                              <Plane className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <Input
+                              type="text"
+                              value={formData.flightNumbers[3] || ''}
+                              onChange={e => {
+                                const newNumbers = [...formData.flightNumbers];
+                                while (newNumbers.length < 4) newNumbers.push('');
+                                newNumbers[3] = e.target.value.replace(/[^0-9]/g, '');
+                                handleFieldChange('flightNumbers', newNumbers);
+                              }}
+                              placeholder="346"
+                              disabled={isFormDisabled}
+                              className="input-with-left-icon"
+                              maxLength={4}
+                            />
+                          </div>
+                          {renderDhdToggle(3, 'dhd-double-3')}
                         </div>
-                        <Input
-                          type="text"
-                          value={formData.flightNumbers[3] || ''}
-                          onChange={e => {
-                            const newNumbers = [...formData.flightNumbers];
-                            while (newNumbers.length < 4) newNumbers.push('');
-                            newNumbers[3] = e.target.value.replace(/[^0-9]/g, '');
-                            handleFieldChange('flightNumbers', newNumbers);
-                          }}
-                          placeholder="346"
-                          disabled={isFormDisabled}
-                          className="input-with-left-icon"
-                          maxLength={4}
-                        />
+                        {renderSectorTimeFields(3)}
                       </div>
                     </div>
                   </div>

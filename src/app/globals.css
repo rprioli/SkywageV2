@@ -290,7 +290,7 @@
 
   /* Uniform flight card height */
   .flight-card-uniform-height {
-    height: 150px;
+    min-height: 150px;
   }
 
   /* Main content area - consistent flex behavior for perfect alignment */

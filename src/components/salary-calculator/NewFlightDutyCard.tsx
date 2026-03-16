@@ -1,18 +1,14 @@
 'use client';
 
 /**
- * New Flight Duty Card Component - Redesigned with uniform heights and improved layout
- * Routes to appropriate card type based on duty type
- * Phase 3: Added userId and position props for edit functionality
- * Phase 3: Added showOffDays prop for roster comparison view
+ * NewFlightDutyCard — Routes FlightDuty to the appropriate v2 glassmorphic card.
  */
 
 import React from 'react';
 import { FlightDuty, Position, LayoverRestPeriod } from '@/types/salary-calculator';
-import { LayoverConnectedCard } from './LayoverConnectedCard';
-import { TurnaroundCard } from './TurnaroundCard';
-import { StandardDutyCard } from './StandardDutyCard';
-import { OffDayCard } from './OffDayCard';
+import { TurnaroundCardV2Wrapper } from './v2-cards/TurnaroundCardV2Wrapper';
+import { LayoverCardV2Wrapper } from './v2-cards/LayoverCardV2Wrapper';
+import { SimpleDutyCardV2Wrapper } from './v2-cards/SimpleDutyCardV2Wrapper';
 import { findLayoverPair } from '@/lib/salary-calculator/card-data-mapper';
 
 interface NewFlightDutyCardProps {
@@ -27,7 +23,7 @@ interface NewFlightDutyCardProps {
   userId?: string;
   position?: Position;
   onEditComplete?: () => void;
-  showOffDays?: boolean; // New prop for roster comparison
+  showOffDays?: boolean;
 }
 
 export function NewFlightDutyCard({
@@ -49,11 +45,8 @@ export function NewFlightDutyCard({
     return rp.outboundFlightId === flightDuty.id || rp.inboundFlightId === flightDuty.id;
   });
 
-  // If this layover flight does not have an in-month pair and does not have a persisted rest period
-  // (e.g., inbound segment that belongs to a previous month), render it as a standard duty card.
   const hasInMonthLayoverPair = Boolean(findLayoverPair(flightDuty, allFlightDuties));
 
-  // Route to appropriate card type based on duty type
   const commonProps = {
     flightDuty,
     allFlightDuties,
@@ -71,26 +64,26 @@ export function NewFlightDutyCard({
   switch (flightDuty.dutyType) {
     case 'layover':
       if (!hasLayoverRestPeriod && !hasInMonthLayoverPair) {
-        return <StandardDutyCard {...commonProps} />;
+        // Orphaned layover (e.g., inbound-only with outbound in previous month):
+        // render as turnaround card so flight number and timings are displayed
+        return <TurnaroundCardV2Wrapper {...commonProps} />;
       }
-
-      return <LayoverConnectedCard {...commonProps} />;
+      return <LayoverCardV2Wrapper {...commonProps} />;
 
     case 'turnaround':
-      return <TurnaroundCard {...commonProps} />;
+      return <TurnaroundCardV2Wrapper {...commonProps} />;
 
     case 'off':
     case 'rest':
     case 'annual_leave':
     case 'sick':
-      // Show off/rest/annual leave/sick days only in roster comparison view
-      return showOffDays ? <OffDayCard flightDuty={flightDuty} /> : null;
+      return showOffDays ? <SimpleDutyCardV2Wrapper {...commonProps} /> : null;
 
     case 'asby':
     case 'recurrent':
     case 'sby':
     case 'business_promotion':
     default:
-      return <StandardDutyCard {...commonProps} />;
+      return <SimpleDutyCardV2Wrapper {...commonProps} />;
   }
 }

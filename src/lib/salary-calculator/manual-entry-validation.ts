@@ -39,6 +39,9 @@ export interface ManualFlightEntryData {
   debriefTimeOutbound?: string; // HH:MM format - outbound debrief time for layover
   isCrossDayOutbound?: boolean; // Whether outbound debrief is next day (auto-detected)
   isCrossDayInbound?: boolean; // Whether inbound debrief is next day (auto-detected)
+  deadheadSectors?: boolean[]; // Per-sector DHD flags (parallel to sectors array)
+  deadheadDepartureTimes?: string[]; // HH:MM format, parallel to deadheadSectors
+  deadheadArrivalTimes?: string[]; // HH:MM format, parallel to deadheadSectors
 }
 
 // Field-level validation result
@@ -573,6 +576,46 @@ export function validateManualEntry(
         errors.push(timeValidation.error!);
       } else if (timeValidation.warning) {
         warnings.push(timeValidation.warning);
+      }
+    }
+  }
+
+  // Validate DHD departure/arrival times when DHD is toggled
+  if (data.dutyType === 'turnaround' || data.dutyType === 'layover') {
+    const hasAnyDhd = data.deadheadSectors?.some(d => d === true) ?? false;
+
+    if (hasAnyDhd) {
+      // Require dep/arr times for ALL sectors when any is DHD
+      const sectorCount = data.dutyType === 'layover'
+        ? 2 // layover always has 2 sectors (outbound + inbound)
+        : data.flightNumbers.filter(fn => fn.trim() !== '').length;
+      for (let i = 0; i < sectorCount; i++) {
+        const depTime = data.deadheadDepartureTimes?.[i];
+        const arrTime = data.deadheadArrivalTimes?.[i];
+        const label = data.deadheadSectors?.[i] ? 'DHD departure' : 'Departure';
+        const arrLabel = data.deadheadSectors?.[i] ? 'DHD arrival' : 'Arrival';
+
+        if (!depTime) {
+          fieldErrors[`dhdDepartureTime_${i}`] = `${label} time is required`;
+          errors.push(`Sector ${i + 1}: ${label} time is required`);
+        } else {
+          const depVal = validateTime(depTime, `${label} time`);
+          if (!depVal.valid) {
+            fieldErrors[`dhdDepartureTime_${i}`] = depVal.error!;
+            errors.push(depVal.error!);
+          }
+        }
+
+        if (!arrTime) {
+          fieldErrors[`dhdArrivalTime_${i}`] = `${arrLabel} time is required`;
+          errors.push(`Sector ${i + 1}: ${arrLabel} time is required`);
+        } else {
+          const arrVal = validateTime(arrTime, `${arrLabel} time`);
+          if (!arrVal.valid) {
+            fieldErrors[`dhdArrivalTime_${i}`] = arrVal.error!;
+            errors.push(arrVal.error!);
+          }
+        }
       }
     }
   }

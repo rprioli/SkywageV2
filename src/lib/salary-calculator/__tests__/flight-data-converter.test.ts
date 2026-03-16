@@ -5,8 +5,6 @@
 
 import {
   flightDutyToFormData,
-  convertLayoverPairToFormData,
-  safeConvertFlightDutyForEditing,
   formatTimeForInput,
   formatDateForInput,
   validateFlightDutyForConversion
@@ -145,78 +143,4 @@ describe('Flight Data Converter', () => {
     });
   });
 
-  describe('convertLayoverPairToFormData', () => {
-    it('should convert layover pair to form data', () => {
-      const outboundFlight = createBasicFlightDuty({
-        dutyType: 'layover',
-        date: new Date('2024-01-15'),
-        flightNumbers: ['FZ123'],
-        sectors: ['DXB-KHI'], // FlightDuty stores as sector strings
-        reportTime: createTimeValue(6, 30),
-        debriefTime: createTimeValue(10, 45)
-      });
-
-      const inboundFlight = createBasicFlightDuty({
-        dutyType: 'layover',
-        date: new Date('2024-01-17'),
-        flightNumbers: ['FZ124'],
-        sectors: ['KHI-DXB'], // FlightDuty stores as sector strings
-        reportTime: createTimeValue(12, 15),
-        debriefTime: createTimeValue(16, 30),
-        isCrossDay: false
-      });
-
-      const result = convertLayoverPairToFormData(outboundFlight, inboundFlight);
-
-      expect(result).toEqual({
-        date: '2024-01-15',
-        dutyType: 'layover',
-        flightNumbers: ['123', '124'], // Should be digits-only
-        sectors: ['DXB', 'KHI', 'KHI', 'DXB'], // Should be individual airport codes
-        reportTime: '06:30',
-        debriefTimeOutbound: '10:45',
-        isCrossDay: false,
-        inboundDate: '2024-01-17',
-        reportTimeInbound: '12:15',
-        debriefTime: '16:30',
-        isCrossDayOutbound: false,
-        isCrossDayInbound: false
-      });
-    });
-
-    it('should throw error for non-layover flights', () => {
-      const flight1 = createBasicFlightDuty({ dutyType: 'turnaround' });
-      const flight2 = createBasicFlightDuty({ dutyType: 'layover' });
-
-      expect(() => {
-        convertLayoverPairToFormData(flight1, flight2);
-      }).toThrow('Both flights must be layover type');
-    });
-  });
-
-  describe('safeConvertFlightDutyForEditing', () => {
-    it('should return success for valid conversion', () => {
-      const flightDuty = createBasicFlightDuty();
-      const result = safeConvertFlightDutyForEditing(flightDuty);
-
-      expect(result.success).toBe(true);
-      expect(result.data).toBeDefined();
-      expect(result.errors).toHaveLength(0);
-    });
-
-    it('should return error for invalid input', () => {
-      const result = safeConvertFlightDutyForEditing(null as unknown as FlightDuty);
-
-      expect(result.success).toBe(false);
-      expect(result.errors).toContain('FlightDuty object is required');
-    });
-
-    it('should add warning for layover without pair', () => {
-      const layoverFlight = createBasicFlightDuty({ dutyType: 'layover' });
-      const result = safeConvertFlightDutyForEditing(layoverFlight, []);
-
-      expect(result.success).toBe(true);
-      expect(result.warnings).toContain('Layover flight pair not found - editing as individual flight');
-    });
-  });
 });

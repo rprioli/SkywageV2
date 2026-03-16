@@ -138,7 +138,7 @@ export type Database = {
           duty_hours?: number;
           flight_pay?: number;
           is_cross_day?: boolean;
-          data_source?: 'csv' | 'manual' | 'edited';
+          data_source?: 'csv' | 'manual' | 'edited' | 'cross_month_pairing';
           original_data?: unknown;
           last_edited_at?: string;
           last_edited_by?: string;
@@ -146,6 +146,7 @@ export type Database = {
           year?: number;
           position_used?: 'CCM' | 'SCCM' | null;
           hourly_rate_used?: number | null;
+          sector_details?: unknown;
           created_at: string;
           updated_at: string;
         };
@@ -173,7 +174,7 @@ export type Database = {
           duty_hours?: number;
           flight_pay?: number;
           is_cross_day?: boolean;
-          data_source?: 'csv' | 'manual' | 'edited';
+          data_source?: 'csv' | 'manual' | 'edited' | 'cross_month_pairing';
           original_data?: unknown;
           last_edited_at?: string;
           last_edited_by?: string;
@@ -181,6 +182,7 @@ export type Database = {
           year: number;
           position_used?: 'CCM' | 'SCCM' | null;
           hourly_rate_used?: number | null;
+          sector_details?: unknown;
           created_at?: string;
           updated_at?: string;
         };
@@ -208,7 +210,7 @@ export type Database = {
           duty_hours?: number;
           flight_pay?: number;
           is_cross_day?: boolean;
-          data_source?: 'csv' | 'manual' | 'edited';
+          data_source?: 'csv' | 'manual' | 'edited' | 'cross_month_pairing';
           original_data?: unknown;
           last_edited_at?: string;
           last_edited_by?: string;
@@ -216,6 +218,7 @@ export type Database = {
           year?: number;
           position_used?: 'CCM' | 'SCCM' | null;
           hourly_rate_used?: number | null;
+          sector_details?: unknown;
           created_at?: string;
           updated_at?: string;
         };

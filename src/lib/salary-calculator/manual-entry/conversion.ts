@@ -5,6 +5,7 @@
 
 import {
   FlightDuty,
+  Sector,
   Position
 } from '@/types/salary-calculator';
 import {
@@ -20,6 +21,37 @@ import {
   transformSectors
 } from '../input-transformers';
 import { FEATURE_FLAGS } from '@/lib/feature-flags';
+import { calculateBlockMinutes } from '../sector-time-parser';
+
+/** Builds a single deadhead Sector object for manual entries */
+export function buildDeadheadSector(
+  flightNumber: string,
+  origin: string,
+  destination: string,
+  departureTime?: string,
+  arrivalTime?: string
+): Sector {
+  const sector: Sector = {
+    flightNumber,
+    origin,
+    destination,
+    isFlaggedSector: true,
+    isDeadhead: true,
+  };
+
+  if (departureTime && arrivalTime) {
+    sector.departureTime = departureTime;
+    sector.arrivalTime = arrivalTime;
+    sector.blockMinutes = calculateBlockMinutes(departureTime, arrivalTime, false, false);
+  }
+
+  return sector;
+}
+
+/** Applies DHD deduction: subtracts 50% of deadhead block time from duty hours */
+function applyDhdDeduction(dutyHours: number, dhdBlockMinutes: number): number {
+  return Math.max(0, dutyHours - (dhdBlockMinutes / 2 / 60));
+}
 
 /**
  * Legacy conversion function - backup for rollback safety
@@ -278,7 +310,42 @@ export function convertToFlightDuty(
         outboundDebriefTime.timeValue, 
         data.isCrossDayOutbound
       );
-      const outboundFlightPay = calculateFlightPay(outboundDutyHours, position);
+      let outboundFlightPay = calculateFlightPay(outboundDutyHours, position);
+
+      const outboundIsDeadhead = data.deadheadSectors?.[0] === true;
+      const layoverHasAnyDhd = data.deadheadSectors?.some(d => d === true) ?? false;
+      const outboundDepTime = data.deadheadDepartureTimes?.[0];
+      const outboundArrTime = data.deadheadArrivalTimes?.[0];
+
+      let outboundSectorDetails: Sector[] | undefined;
+      if (outboundIsDeadhead) {
+        outboundSectorDetails = [buildDeadheadSector(
+          transformFlightNumbers([data.flightNumbers[0]])[0] || '',
+          data.sectors[0] || '',
+          data.sectors[1] || '',
+          outboundDepTime,
+          outboundArrTime,
+        )];
+      } else if (layoverHasAnyDhd && outboundDepTime && outboundArrTime) {
+        // Non-DHD sector but other sector is DHD — include block times for display
+        outboundSectorDetails = [{
+          flightNumber: transformFlightNumbers([data.flightNumbers[0]])[0] || '',
+          origin: data.sectors[0] || '',
+          destination: data.sectors[1] || '',
+          isFlaggedSector: false,
+          departureTime: outboundDepTime,
+          arrivalTime: outboundArrTime,
+          blockMinutes: calculateBlockMinutes(outboundDepTime, outboundArrTime, false, false),
+        }];
+      }
+
+      // Apply DHD deduction to outbound flight pay
+      if (outboundIsDeadhead && outboundSectorDetails?.[0]?.blockMinutes) {
+        outboundFlightPay = calculateFlightPay(
+          applyDhdDeduction(outboundDutyHours, outboundSectorDetails[0].blockMinutes),
+          position, outboundYear, outboundMonth
+        );
+      }
 
       const outboundDuty: FlightDuty = {
         id: `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -295,6 +362,8 @@ export function convertToFlightDuty(
         flightPay: outboundFlightPay,
         isCrossDay: data.isCrossDayOutbound || false,
         dataSource: 'manual',
+        ...(outboundIsDeadhead && { hasDeadheadSectors: true, hasFlaggedSectors: true }),
+        ...(outboundSectorDetails && { sectorDetails: outboundSectorDetails }),
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -317,7 +386,41 @@ export function convertToFlightDuty(
         inboundDebriefTime.timeValue, 
         data.isCrossDayInbound
       );
-      const inboundFlightPay = calculateFlightPay(inboundDutyHours, position);
+      let inboundFlightPay = calculateFlightPay(inboundDutyHours, position);
+
+      const inboundIsDeadhead = data.deadheadSectors?.[1] === true;
+      const inboundDepTime = data.deadheadDepartureTimes?.[1];
+      const inboundArrTime = data.deadheadArrivalTimes?.[1];
+
+      let inboundSectorDetails: Sector[] | undefined;
+      if (inboundIsDeadhead) {
+        inboundSectorDetails = [buildDeadheadSector(
+          transformFlightNumbers([data.flightNumbers[1]])[0] || '',
+          data.sectors[2] || '',
+          data.sectors[3] || '',
+          inboundDepTime,
+          inboundArrTime,
+        )];
+      } else if (layoverHasAnyDhd && inboundDepTime && inboundArrTime) {
+        // Non-DHD sector but other sector is DHD — include block times for display
+        inboundSectorDetails = [{
+          flightNumber: transformFlightNumbers([data.flightNumbers[1]])[0] || '',
+          origin: data.sectors[2] || '',
+          destination: data.sectors[3] || '',
+          isFlaggedSector: false,
+          departureTime: inboundDepTime,
+          arrivalTime: inboundArrTime,
+          blockMinutes: calculateBlockMinutes(inboundDepTime, inboundArrTime, false, false),
+        }];
+      }
+
+      // Apply DHD deduction to inbound flight pay
+      if (inboundIsDeadhead && inboundSectorDetails?.[0]?.blockMinutes) {
+        inboundFlightPay = calculateFlightPay(
+          applyDhdDeduction(inboundDutyHours, inboundSectorDetails[0].blockMinutes),
+          position, inboundYear, inboundMonth
+        );
+      }
 
       const inboundDuty: FlightDuty = {
         id: `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -334,6 +437,8 @@ export function convertToFlightDuty(
         flightPay: inboundFlightPay,
         isCrossDay: data.isCrossDayInbound || false,
         dataSource: 'manual',
+        ...(inboundIsDeadhead && { hasDeadheadSectors: true, hasFlaggedSectors: true }),
+        ...(inboundSectorDetails && { sectorDetails: inboundSectorDetails }),
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -410,6 +515,38 @@ export function convertToFlightDuty(
     const flightNumbers = transformFlightNumbers(data.flightNumbers);
     const sectors = transformSectors(data.sectors);
 
+    // Build DHD sector details for manual entries with deadhead flags
+    const hasAnyDeadhead = data.deadheadSectors?.some(d => d === true) ?? false;
+    let manualSectorDetails: Sector[] | undefined;
+    let turnaroundDhdBlockMinutes = 0;
+    if (hasAnyDeadhead && data.dutyType === 'turnaround') {
+      manualSectorDetails = flightNumbers.map((fn, i) => {
+        const sectorParts = (sectors[i] || '').split('-').map(s => s.trim());
+        const isDhd = data.deadheadSectors?.[i] === true;
+        const depTime = data.deadheadDepartureTimes?.[i];
+        const arrTime = data.deadheadArrivalTimes?.[i];
+        const blockMinutes = depTime && arrTime
+          ? calculateBlockMinutes(depTime, arrTime, false, false)
+          : undefined;
+        if (isDhd && blockMinutes != null) turnaroundDhdBlockMinutes += blockMinutes;
+        return {
+          flightNumber: fn,
+          origin: sectorParts[0] || '',
+          destination: sectorParts[1] || '',
+          isFlaggedSector: isDhd,
+          ...(isDhd && { isDeadhead: true }),
+          ...(blockMinutes != null && { departureTime: depTime, arrivalTime: arrTime, blockMinutes }),
+        };
+      });
+    }
+
+    // Apply DHD deduction to flight pay
+    if (turnaroundDhdBlockMinutes > 0) {
+      flightPay = calculateFlightPay(
+        applyDhdDeduction(dutyHours, turnaroundDhdBlockMinutes), position, year, month
+      );
+    }
+
     const flightDuty: FlightDuty = {
       id: `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       userId,
@@ -425,6 +562,8 @@ export function convertToFlightDuty(
       flightPay,
       isCrossDay: data.isCrossDay,
       dataSource: 'manual',
+      ...(hasAnyDeadhead && { hasDeadheadSectors: true, hasFlaggedSectors: true }),
+      ...(manualSectorDetails && { sectorDetails: manualSectorDetails }),
       createdAt: new Date(),
       updatedAt: new Date()
     };

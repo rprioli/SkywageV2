@@ -4,6 +4,7 @@
  */
 
 export { SectorDisplay } from './SectorDisplay';
+export { SectorBlockDetails } from './SectorBlockDetails';
 export {
   formatCurrency,
   formatTime,
