@@ -12,6 +12,7 @@ import { NameUpdate } from '@/components/profile/NameUpdate';
 import { NationalityUpdate } from '@/components/profile/NationalityUpdate';
 import { PasswordUpdate } from '@/components/profile/PasswordUpdate';
 import { DeleteAccountSection } from '@/components/profile/DeleteAccountSection';
+import { ProfessionalDetailsSection } from './ProfessionalDetailsSection';
 import { AlertTriangle } from 'lucide-react';
 
 export const ProfileTab = () => {
@@ -78,6 +79,8 @@ export const ProfileTab = () => {
           <PasswordUpdate />
           <NationalityUpdate />
         </ProfileSettingsSection>
+
+        <ProfessionalDetailsSection />
 
         <ProfileSettingsSection title="Manage account">
           <DeleteAccountSection />

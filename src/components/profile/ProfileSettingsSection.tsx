@@ -18,7 +18,7 @@ export function ProfileSettingsSection({
       <CardHeader className="pb-4">
         <CardTitle className="text-xl font-bold text-brand-ink">{title}</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pb-4">
         <div className="divide-y divide-border">
           {children}
         </div>

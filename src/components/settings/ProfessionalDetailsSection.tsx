@@ -12,38 +12,28 @@ import { getProfile } from '@/lib/db';
 import { Position, SalaryRates } from '@/types/salary-calculator';
 import { Loader2, Info } from 'lucide-react';
 
-/**
- * Formats a number as AED currency
- */
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-AE', {
-    style: 'currency',
-    currency: 'AED',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
-};
+const currencyFormatter = new Intl.NumberFormat('en-AE', {
+  style: 'currency',
+  currency: 'AED',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+});
 
-/**
- * ProfessionalDetailsTab - Display professional details and salary rates
- * Shows read-only salary configuration based on user's airline and position
- */
-export const ProfessionalDetailsTab = () => {
+const formatCurrency = (amount: number): string => currencyFormatter.format(amount);
+
+export const ProfessionalDetailsSection = () => {
   const { user } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
-  
-  // Local position state that updates when position changes
+
   const [currentPosition, setCurrentPosition] = useState<Position | null>(null);
   const [positionLoading, setPositionLoading] = useState(false);
 
-  // Initialize position from profile
   useEffect(() => {
     if (profile?.position) {
       setCurrentPosition(profile.position as Position);
     }
   }, [profile?.position]);
 
-  // Listen for position updates from PositionUpdate component
   const refreshPosition = useCallback(async () => {
     if (!user?.id) return;
 
@@ -71,18 +61,16 @@ export const ProfessionalDetailsTab = () => {
     };
   }, [refreshPosition]);
 
-  // Get current rates based on today's date and user's position
   const rates: SalaryRates | null = useMemo(() => {
     if (!currentPosition) return null;
-    
+
     const now = new Date();
     const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1; // 1-indexed
+    const currentMonth = now.getMonth() + 1;
 
     return getPositionRatesForDate(currentPosition, currentYear, currentMonth);
   }, [currentPosition]);
 
-  // Check if airline is supported (currently only Flydubai)
   const isAirlineSupported = profile?.airline?.toLowerCase() === 'flydubai';
 
   const loading = profileLoading || positionLoading;
@@ -97,15 +85,9 @@ export const ProfessionalDetailsTab = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Role Section */}
-      <ProfileSettingsSection title="Role">
-        <PositionUpdate />
-      </ProfileSettingsSection>
-
-      {/* Compensation Section */}
-      <ProfileSettingsSection title="Compensation">
-        {!isAirlineSupported ? (
+    <ProfileSettingsSection title="Professional details">
+      <PositionUpdate />
+      {!isAirlineSupported ? (
           <div className="py-5">
             <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 border border-amber-200">
               <Info className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -127,7 +109,7 @@ export const ProfessionalDetailsTab = () => {
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-border">
+          <>
             <ProfileSettingsRow
               label="Base Salary"
               value={formatCurrency(rates.basicSalary)}
@@ -148,23 +130,18 @@ export const ProfessionalDetailsTab = () => {
               label="Per Diem Rate"
               value={`${formatCurrency(rates.perDiemRate)}/hr`}
             />
-          </div>
+            <div className="py-4">
+              <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                <p>
+                  These rates are based on your current position ({getPositionName(currentPosition || '')})
+                  and reflect the latest salary structure effective from July 2025.
+                  Rates may vary for calculations on months before this date.
+                </p>
+              </div>
+            </div>
+          </>
         )}
-      </ProfileSettingsSection>
-
-      {/* Rate Information Note */}
-      {isAirlineSupported && rates && (
-        <div className="px-1">
-          <div className="flex items-start gap-2 text-xs text-muted-foreground">
-            <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
-            <p>
-              These rates are based on your current position ({getPositionName(currentPosition || '')}) 
-              and reflect the latest salary structure effective from July 2025.
-              Rates may vary for calculations on months before this date.
-            </p>
-          </div>
-        </div>
-      )}
-    </div>
+    </ProfileSettingsSection>
   );
 };
