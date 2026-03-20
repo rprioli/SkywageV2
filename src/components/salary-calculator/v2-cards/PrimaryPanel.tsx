@@ -6,6 +6,7 @@
  */
 
 import { ExpandToggle } from './ExpandToggle';
+import { INNER_PANEL_CLASS } from './constants';
 
 interface PrimaryPanelProps {
   date: string;
@@ -33,9 +34,9 @@ export function PrimaryPanel({
   onToggle,
 }: PrimaryPanelProps) {
   return (
-    <div className="relative px-4 pt-4 pb-4">
+    <div className="relative">
       <div
-        className={`relative rounded-[30px] bg-white/60 border border-white/68 shadow-[inset_0_1px_0_rgba(255,255,255,0.90),0_12px_30px_rgba(58,55,128,0.08)] px-4 py-5 ${
+        className={`relative ${INNER_PANEL_CLASS} px-4 py-5 ${
           expandable ? 'cursor-pointer select-none' : ''
         }`}
         onClick={expandable && onToggle ? onToggle : undefined}
@@ -48,7 +49,7 @@ export function PrimaryPanel({
             <p className="text-[11px] font-medium tracking-[0.18em] uppercase text-slate-400">
               {date}
             </p>
-            <p className="text-[52px] leading-none font-semibold tracking-[-0.04em] text-[#3A3780]">
+            <p className="-ml-1 text-[52px] leading-none font-semibold tracking-[-0.04em] text-[#3A3780]">
               {title}
             </p>
             {subtitle && (
@@ -74,7 +75,7 @@ export function PrimaryPanel({
 
 export function PayBadge({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-full bg-[#4C49ED] text-white px-4 py-2.5 text-sm font-semibold shadow-[0_12px_24px_rgba(76,73,237,0.24)] ring-1 ring-white/22 whitespace-nowrap">
+    <div className="rounded-full bg-[#4C49ED] text-white px-4 py-3 text-sm font-semibold shadow-[0_14px_28px_rgba(85,84,255,0.26)] whitespace-nowrap">
       {children}
     </div>
   );
@@ -82,7 +83,7 @@ export function PayBadge({ children }: { children: React.ReactNode }) {
 
 export function IconBadge({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-full bg-[#4C49ED] text-white p-2.5 shadow-[0_12px_24px_rgba(76,73,237,0.24)] ring-1 ring-white/22">
+    <div className="rounded-full bg-[#4C49ED] text-white p-2.5 shadow-[0_14px_28px_rgba(85,84,255,0.26)]">
       {children}
     </div>
   );
