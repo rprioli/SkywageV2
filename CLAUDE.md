@@ -15,7 +15,7 @@ npm run start        # Start production server
 npm run lint         # ESLint
 ```
 
-No test runner is configured. Test files exist under `src/lib/__tests__/` and `src/lib/salary-calculator/__tests__/` for reference.
+No test runner is configured. Test files exist under `src/lib/__tests__/` and `src/lib/salary-calculator/__tests__/` for reference only.
 
 ## Tech Stack
 
@@ -68,13 +68,17 @@ All database helpers in `src/lib/database/*.ts` use these wrappers.
 
 ### Effective-Dated Position History
 
-`getUserPositionForMonth(userId, year, month)` in `src/lib/user-position-history.ts` is the **single source of truth** for position resolution. It queries `user_position_history` for the latest entry with effective date ≤ target month, falling back to `profiles.position`. All calculation workflows (upload, manual entry, recalculation, edits) must use this function — never read `profiles.position` directly for calculations.
+`getUserPositionForMonth(userId, year, month)` in `src/lib/user-position-history.ts` is the **single source of truth** for position resolution. It queries `user_position_history` for the latest entry with effective date <= target month, falling back to `profiles.position`. All calculation workflows (upload, manual entry, recalculation, edits) must use this function — never read `profiles.position` directly for calculations.
 
 ### Month Indexing
 
 - **Dashboard/UI**: 0-based (0 = January)
 - **Database**: 1-based (1 = January)
 - Conversion happens in hooks (e.g., `useFlightDuties`)
+
+### Data Source Tracking
+
+The `dataSource` field on flights tracks origin: `'csv' | 'manual' | 'edited' | 'cross_month_pairing'`. Audit snapshot fields (`position_used`, `hourly_rate_used`, `per_diem_rate_used`) on flights/calculations preserve historical accuracy.
 
 ### Salary Calculation Rules
 
@@ -83,9 +87,11 @@ Two rate eras determined by `getRatesForDate(year, month)`:
 - **Legacy** (pre-July 2025): CCM basic 3,275 / SCCM basic 4,275
 - **New** (July 2025+): CCM basic 3,405 / SCCM basic 4,446
 
-Key rates: CCM 50 AED/hr, SCCM 62 AED/hr, Per diem 8.82 AED/hr of layover rest, ASBY/Recurrent = 4hr fixed duty.
+Key rates: CCM 50 AED/hr, SCCM 62 AED/hr, Per diem 8.82 AED/hr of layover rest, ASBY/Recurrent = 4hr fixed duty. Deadhead (DHD) flights pay 50% of block time, not full duty hours.
 
-Duty types: turnaround, layover, asby, sby, recurrent, rest, off, annual_leave, business_promotion.
+Duty types: turnaround, layover, asby, sby, recurrent, rest, off, annual_leave, sick, business_promotion. Non-payable: off, rest, annual_leave, sby, sick.
+
+Fixed allowances: Housing (4,000/5,000 AED CCM/SCCM) + Transport (1,000 AED).
 
 ### Supabase Schema (Key Tables)
 
@@ -97,7 +103,19 @@ Duty types: turnaround, layover, asby, sby, recurrent, rest, off, annual_leave, 
 - **profiles** — User profile with airline, position, nationality
 - **friendships** — Friend requests and status
 
-Audit snapshot fields (`position_used`, `hourly_rate_used`, `per_diem_rate_used`) on flights/calculations preserve historical accuracy.
+## Commit Convention
+
+Use emoji-prefixed conventional commits:
+
+```
+✨ feat: description     # New feature
+🐛 fix: description      # Bug fix
+🎨 style: description    # UI/styling changes
+🔨 refactor: description # Code refactoring
+📝 docs: description     # Documentation
+```
+
+Use `git switch -c` for branches, not `git checkout`.
 
 ## Development Rules
 
@@ -109,4 +127,3 @@ Audit snapshot fields (`position_used`, `hourly_rate_used`, `per_diem_rate_used`
 - Stay focused on the requested task — don't touch unrelated code
 - Check for existing similar code before writing new code (avoid duplication)
 - When fixing bugs, exhaust existing implementation options before introducing new patterns; if a new pattern is needed, remove the old one
-- Use `git switch -c` for branches, not `git checkout`

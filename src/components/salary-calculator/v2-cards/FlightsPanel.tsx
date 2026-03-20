@@ -3,7 +3,7 @@
  * Uses min-height + flex justify-between so cards with fewer rows match taller ones.
  */
 
-import { TAG_CLASS, DHD_TAG_CLASS } from './constants';
+import { TAG_CLASS, DHD_TAG_CLASS, INNER_PANEL_CLASS } from './constants';
 
 interface FlightsPanelProps {
   children: React.ReactNode;
@@ -12,7 +12,7 @@ interface FlightsPanelProps {
 
 export function FlightsPanel({ children, tags }: FlightsPanelProps) {
   return (
-    <div className="relative mx-4 mb-4 rounded-[28px] bg-white/60 border border-white/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.88),0_14px_32px_rgba(58,55,128,0.08)] px-5 py-2.5 flex flex-col justify-between min-h-[108px]">
+    <div className={`relative mt-3 ${INNER_PANEL_CLASS} px-5 py-2.5 flex flex-col justify-between min-h-[108px]`}>
       <div className="space-y-0.5">
         {children}
       </div>

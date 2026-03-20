@@ -33,7 +33,6 @@ import { useFlightDuties } from '@/hooks/useFlightDuties';
 import { useMonthlyCalculations } from '@/hooks/useMonthlyCalculations';
 import { useLayoverRestPeriods } from '@/hooks/useLayoverRestPeriods';
 import { MonthSelector } from '@/components/dashboard/MonthSelector';
-import { DashboardMetricCards } from '@/components/dashboard/DashboardMetricCards';
 import { MIN_SUPPORTED_YEAR } from '@/lib/constants/dates';
 import { RosterUploadSection } from '@/components/dashboard/RosterUploadSection';
 import { ManualEntrySection } from '@/components/dashboard/ManualEntrySection';
@@ -342,22 +341,6 @@ export default function DashboardPage() {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-AE', {
-      style: 'currency',
-      currency: 'AED',
-      minimumFractionDigits: 0
-    }).format(amount);
-  };
-
-  // Compact currency format for mobile metric cards (removes "AED" prefix)
-  const formatCurrencyCompact = (amount: number) => {
-    return new Intl.NumberFormat('en-AE', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2
-    }).format(amount);
-  };
-
   // Memoized selected month data
   const selectedData = useMemo(() => {
     return {
@@ -443,35 +426,21 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Top Section - Monthly Overview + Side Cards */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
-        {/* Monthly Overview - Large Card (2/3 width on desktop) */}
-        <div className="xl:col-span-2">
-          <MonthSelector
-            allMonthlyCalculations={allCalculations}
-            selectedOverviewMonth={selectedOverviewMonth}
-            selectedYear={selectedYear}
-            onMonthChange={handleMonthChange}
-            onYearChange={handleYearChange}
-            onMonthSwitchingChange={handleMonthSwitchingChange}
-            onUserSelectedChange={handleUserSelectedChange}
-            loading={calculationsLoading}
-            selectedData={selectedData}
-          />
-        </div>
-
-        {/* Side Cards - stable desktop sizing (no container queries) */}
-        <div className="xl:h-full">
-          <DashboardMetricCards
-            dutyHours={selectedData.dutyHours}
-            flightPay={currentCalculation?.flightPay ?? 0}
-            perDiemPay={currentCalculation?.perDiemPay ?? 0}
-            isLoading={calculationsLoading || isMonthSwitching}
-            formatCurrency={formatCurrency}
-            formatCurrencyCompact={formatCurrencyCompact}
-          />
-        </div>
-      </div>
+      {/* Unified Salary Overview */}
+      <MonthSelector
+        allMonthlyCalculations={allCalculations}
+        selectedOverviewMonth={selectedOverviewMonth}
+        selectedYear={selectedYear}
+        onMonthChange={handleMonthChange}
+        onYearChange={handleYearChange}
+        onMonthSwitchingChange={handleMonthSwitchingChange}
+        onUserSelectedChange={handleUserSelectedChange}
+        loading={calculationsLoading}
+        selectedData={selectedData}
+        flightPay={currentCalculation?.flightPay ?? 0}
+        perDiemPay={currentCalculation?.perDiemPay ?? 0}
+        isMonthSwitching={isMonthSwitching}
+      />
 
       {/* Flight Duties Section */}
       {flightDuties.length > 0 ? (
