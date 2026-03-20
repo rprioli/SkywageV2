@@ -42,7 +42,15 @@
       "Bash(git push:*)",
       "Bash(git pull:*)",
       "Bash(git branch:*)",
-      "Bash(git check-ignore:*)"
+      "Bash(git check-ignore:*)",
+      "Bash(gh pr:*)",
+      "Bash(xargs -I {} basename {})",
+      "mcp__shadcn__search_items_in_registries",
+      "Bash(git add:*)",
+      "Bash(ls -la \"C:\\\\Users\\\\rprio\\\\OneDrive\\\\Desktop\\\\skywagev2\\\\src\\\\app\\\\\\(dashboard\\)\\\\help\")",
+      "Bash(ls C:/Users/rprio/OneDrive/Desktop/skywagev2/src/app/\\\\\\(dashboard\\\\\\)/help/)",
+      "Bash(cat src/components/help/faq-data.tsx src/components/help/HelpFAQ.tsx \"src/app/\\(dashboard\\)/help/page.tsx\")",
+      "Bash(grep -n \"''use client''\" C:/Users/rprio/OneDrive/Desktop/skywagev2/src/components/ui/card.tsx)"
     ]
   },
   "enableAllProjectMcpServers": true,
