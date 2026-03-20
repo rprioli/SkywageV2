@@ -31,17 +31,20 @@ branch: claude/feature/help-center-faq
 ### FAQ Categories and Questions
 
 **1. General**
+
 - What is Skywage?
 - Who is Skywage for?
 - Is my data private?
 - Is Skywage affiliated with Flydubai?
 
 **2. Getting Started**
+
 - How do I get started?
 - Where do I set my position?
 - What if I was promoted from CCM to SCCM during the year?
 
 **3. Uploading Your Roster**
+
 - What file formats can I upload?
 - What's the maximum file size?
 - Where do I get my roster file?
@@ -50,12 +53,14 @@ branch: claude/feature/help-center-faq
 - My roster uploaded but some flights look wrong. What happened?
 
 **4. Adding Flights Manually**
+
 - How do I add a flight manually?
 - What format should flight numbers be in?
 - What format should sectors be in?
 - Can I add multiple flights at once?
 
 **5. Salary Calculation**
+
 - How is my monthly salary calculated?
 - What are the current rates? (contains a table)
 - What counts as duty hours?
@@ -67,6 +72,7 @@ branch: claude/feature/help-center-faq
 - Why doesn't my Skywage total exactly match my payslip?
 
 **6. Friends & Roster Comparison**
+
 - What is the Friends feature?
 - How do I add a friend?
 - How many friends can I compare at once?
@@ -74,11 +80,13 @@ branch: claude/feature/help-center-faq
 - Can my friends see my salary figures?
 
 **7. Statistics**
+
 - What does the Statistics page show?
 - Can I compare across years?
 - Why is a month missing from my statistics?
 
 **8. Settings & Account**
+
 - How do I update my name or username?
 - How do I change my password?
 - How do I record a position change?
@@ -86,6 +94,7 @@ branch: claude/feature/help-center-faq
 - How do I delete my account?
 
 **9. Troubleshooting**
+
 - My salary looks lower than expected. What should I check?
 - A flight is showing the wrong duty type. Can I fix it?
 - I uploaded my roster but some flights are missing. Why?
@@ -114,7 +123,7 @@ branch: claude/feature/help-center-faq
 
 ## Open Questions
 
-- Should the FAQ content be available to unauthenticated users (e.g., on a public `/faq` route for the landing page)? For now, building it inside the dashboard layout (authenticated only). Can extract the component later for a public route.
+- Should the FAQ content be available to unauthenticated users (e.g., on a public `/faq` route for the landing page)? For now, building it inside the dashboard layout (authenticated only). Can extract the component later for a public route. - No, it should not. We will build another section later for the landing page.
 
 ## Testing Guidelines
 

@@ -38,6 +38,11 @@
 - `dhdBlockTime` prop was removed — block time is shown per-sector via `FlightRow.isDeadhead` red styling, not as a card-level label.
 - `handleDhdToggle` in FlightEntryForm.tsx must clear times per-sector when toggled off. The current implementation only clears when ALL sectors are un-toggled — stale data bug for partial-DHD duties. (Flagged in review 2026-03-16.)
 
+## Shared Layout Components (Page Headers & Section Wrappers)
+- `ProfileSettingsSection` (`src/components/profile/ProfileSettingsSection.tsx`) — generic card wrapper: `Card > CardHeader(title) > CardContent(children)` with `bg-white rounded-3xl !border-0 !shadow-none`. Should be used anywhere a titled card section appears (Profile, Settings, Help, etc.). Inner content is wrapped in `divide-y divide-border`.
+- `StatisticsHeader` (`src/app/(dashboard)/statistics/components/StatisticsHeader.tsx`) — page header + hamburger button for mobile. Still page-scoped but the identical 14-line hamburger block (`{!isDesktop && <Button ...>}`) is copy-pasted verbatim into dashboard, friends, settings, statistics, and help pages. Should be promoted to `src/components/dashboard/PageHeader.tsx` with `title`, `subtitle`, `isDesktop`, `isSidebarOpen`, `toggleSidebar` props.
+- When reviewing new page files: check for the hamburger button block and for manual Card/CardHeader/CardTitle duplication before flagging new code as clean.
+
 ## Component Patterns (v2 Cards)
 - Wrapper components (TurnaroundCardV2Wrapper, LayoverCardV2Wrapper, SimpleDutyCardV2Wrapper) follow a consistent bridge pattern: data mapping via useMemo, edit dialog via useState, actions via CardActions.
 - `useCardEditHandler` is the shared hook for edit-save logic across all wrapper components — calls `recalculateMonthlyTotals` after update.
