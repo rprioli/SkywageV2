@@ -31,7 +31,7 @@ export function ProfileSettingsRow({
         <div className="flex-1 min-w-0 mr-4">
           <p className="text-base font-bold text-brand-ink">{label}</p>
           {!isEditing && value && (
-            <div className="mt-1 text-sm text-muted-foreground truncate">
+            <div className="mt-1 text-sm text-muted-foreground">
               {value}
             </div>
           )}
