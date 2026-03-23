@@ -5,6 +5,7 @@
  */
 
 import { supabase, Database } from '@/lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Database types
 type FriendshipRow = Database['public']['Tables']['friendships']['Row'];
@@ -54,10 +55,11 @@ export interface PendingRequest {
  * Find a user by username using SECURITY DEFINER RPC
  */
 export async function findUserByUsername(
-  username: string
+  username: string,
+  client: SupabaseClient = supabase
 ): Promise<{ data: PublicProfile | null; error: string | null }> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .rpc('find_profile_by_username', { p_username: username.toLowerCase() });
 
     if (error) {
@@ -77,14 +79,15 @@ export async function findUserByUsername(
  * Get public profiles by IDs using SECURITY DEFINER RPC
  */
 async function getPublicProfilesByIds(
-  userIds: string[]
+  userIds: string[],
+  client: SupabaseClient = supabase
 ): Promise<{ data: PublicProfile[] | null; error: string | null }> {
   try {
     if (userIds.length === 0) {
       return { data: [], error: null };
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .rpc('get_profiles_public_by_ids', { p_ids: userIds });
 
     if (error) {
@@ -101,10 +104,11 @@ async function getPublicProfilesByIds(
  * Get all accepted friends for a user with their profile data
  */
 export async function getFriendsForUser(
-  userId: string
+  userId: string,
+  client: SupabaseClient = supabase
 ): Promise<{ data: FriendWithProfile[] | null; error: string | null }> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('friendships')
       .select(`
         id,
@@ -133,7 +137,7 @@ export async function getFriendsForUser(
     );
 
     // Fetch public profiles for all friends via RPC
-    const { data: profiles, error: profilesError } = await getPublicProfilesByIds(friendUserIds);
+    const { data: profiles, error: profilesError } = await getPublicProfilesByIds(friendUserIds, client);
 
     if (profilesError) {
       return { data: null, error: profilesError };
@@ -172,10 +176,11 @@ export async function getFriendsForUser(
  * Get pending friend requests (both sent and received)
  */
 export async function getPendingFriendRequests(
-  userId: string
+  userId: string,
+  client: SupabaseClient = supabase
 ): Promise<{ data: { sent: PendingRequest[]; received: PendingRequest[] } | null; error: string | null }> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('friendships')
       .select(`
         id,
@@ -206,7 +211,7 @@ export async function getPendingFriendRequests(
     ];
 
     // Fetch public profiles via RPC
-    const { data: profiles, error: profilesError } = await getPublicProfilesByIds(userIds);
+    const { data: profiles, error: profilesError } = await getPublicProfilesByIds(userIds, client);
 
     if (profilesError) {
       return { data: null, error: profilesError };
@@ -257,11 +262,12 @@ export async function getPendingFriendRequests(
  */
 export async function sendFriendRequest(
   requesterId: string,
-  receiverUsername: string
+  receiverUsername: string,
+  client: SupabaseClient = supabase
 ): Promise<{ data: FriendshipRow | null; error: string | null }> {
   try {
     // Find receiver by username using RPC
-    const { data: receiver, error: findError } = await findUserByUsername(receiverUsername);
+    const { data: receiver, error: findError } = await findUserByUsername(receiverUsername, client);
 
     if (findError) {
       return { data: null, error: findError };
@@ -277,7 +283,7 @@ export async function sendFriendRequest(
     }
 
     // Check if friendship already exists (in either direction)
-    const { data: existing, error: existingError } = await supabase
+    const { data: existing, error: existingError } = await client
       .from('friendships')
       .select('*')
       .or(`and(requester_id.eq.${requesterId},receiver_id.eq.${receiver.id}),and(requester_id.eq.${receiver.id},receiver_id.eq.${requesterId})`)
@@ -294,7 +300,7 @@ export async function sendFriendRequest(
         return { data: null, error: 'You are already friends with this user' };
       } else if (existing.status === 'rejected') {
         // Update existing rejected friendship to pending
-        const { data: updated, error: updateError } = await supabase
+        const { data: updated, error: updateError } = await client
           .from('friendships')
           .update({ status: 'pending', responded_at: null })
           .eq('id', existing.id)
@@ -310,7 +316,7 @@ export async function sendFriendRequest(
     }
 
     // Create new friendship
-    const { data: newFriendship, error: insertError } = await supabase
+    const { data: newFriendship, error: insertError } = await client
       .from('friendships')
       .insert({
         requester_id: requesterId,
@@ -336,11 +342,12 @@ export async function sendFriendRequest(
 export async function respondToFriendRequest(
   friendshipId: string,
   userId: string,
-  newStatus: 'accepted' | 'rejected'
+  newStatus: 'accepted' | 'rejected',
+  client: SupabaseClient = supabase
 ): Promise<{ data: FriendshipRow | null; error: string | null }> {
   try {
     // Verify the user is the receiver of this request
-    const { error: fetchError } = await supabase
+    const { error: fetchError } = await client
       .from('friendships')
       .select('*')
       .eq('id', friendshipId)
@@ -356,7 +363,7 @@ export async function respondToFriendRequest(
     }
 
     // Update the friendship status
-    const { data: updated, error: updateError } = await supabase
+    const { data: updated, error: updateError } = await client
       .from('friendships')
       .update({ status: newStatus })
       .eq('id', friendshipId)
@@ -378,11 +385,12 @@ export async function respondToFriendRequest(
  */
 export async function unfriend(
   friendshipId: string,
-  userId: string
+  userId: string,
+  client: SupabaseClient = supabase
 ): Promise<{ error: string | null }> {
   try {
     // Verify the user is part of this friendship
-    const { error: fetchError } = await supabase
+    const { error: fetchError } = await client
       .from('friendships')
       .select('*')
       .eq('id', friendshipId)
@@ -397,7 +405,7 @@ export async function unfriend(
     }
 
     // Delete the friendship
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await client
       .from('friendships')
       .delete()
       .eq('id', friendshipId);
@@ -416,10 +424,11 @@ export async function unfriend(
  * Get count of pending friend requests received by user
  */
 export async function getPendingRequestsCount(
-  userId: string
+  userId: string,
+  client: SupabaseClient = supabase
 ): Promise<{ data: number | null; error: string | null }> {
   try {
-    const { count, error } = await supabase
+    const { count, error } = await client
       .from('friendships')
       .select('*', { count: 'exact', head: true })
       .eq('receiver_id', userId)

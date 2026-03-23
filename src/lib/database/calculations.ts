@@ -5,6 +5,7 @@
  */
 
 import { supabase, Database } from '@/lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { MonthlyCalculation, LayoverRestPeriod } from '@/types/salary-calculator';
 
 // Database types
@@ -118,7 +119,8 @@ function rowToLayoverRestPeriod(row: LayoverRestPeriodRow): LayoverRestPeriod {
 export async function upsertMonthlyCalculation(
   calculation: MonthlyCalculation,
   userId: string,
-  positionUsed?: 'CCM' | 'SCCM'
+  positionUsed?: 'CCM' | 'SCCM',
+  client: SupabaseClient = supabase
 ): Promise<{ data: MonthlyCalculation | null; error: string | null }> {
   try {
     if (!calculation) {
@@ -130,8 +132,8 @@ export async function upsertMonthlyCalculation(
     }
 
     const insertData = monthlyCalculationToInsert(calculation, userId, positionUsed);
-    
-    const { data, error } = await supabase
+
+    const { data, error } = await client
       .from('monthly_calculations')
       .upsert(insertData, {
         onConflict: 'user_id,month,year'
@@ -155,10 +157,11 @@ export async function upsertMonthlyCalculation(
 export async function getMonthlyCalculation(
   userId: string,
   month: number,
-  year: number
+  year: number,
+  client: SupabaseClient = supabase
 ): Promise<{ data: MonthlyCalculation | null; error: string | null }> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('monthly_calculations')
       .select('*')
       .eq('user_id', userId)
@@ -184,10 +187,11 @@ export async function getMonthlyCalculation(
  * Gets all monthly calculations for a user
  */
 export async function getAllMonthlyCalculations(
-  userId: string
+  userId: string,
+  client: SupabaseClient = supabase
 ): Promise<{ data: MonthlyCalculation[] | null; error: string | null }> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('monthly_calculations')
       .select('*')
       .eq('user_id', userId)
@@ -212,7 +216,8 @@ export async function createLayoverRestPeriods(
   restPeriods: LayoverRestPeriod[],
   userId: string,
   snapshotPosition?: 'CCM' | 'SCCM',
-  snapshotPerDiemRate?: number
+  snapshotPerDiemRate?: number,
+  client: SupabaseClient = supabase
 ): Promise<{ data: LayoverRestPeriod[] | null; error: string | null }> {
   try {
     // Validate that all rest periods have valid flight IDs
@@ -233,7 +238,7 @@ export async function createLayoverRestPeriods(
 
 
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('layover_rest_periods')
       .insert(insertData)
       .select();
@@ -260,10 +265,11 @@ export async function createLayoverRestPeriods(
 export async function getLayoverRestPeriods(
   userId: string,
   month: number,
-  year: number
+  year: number,
+  client: SupabaseClient = supabase
 ): Promise<{ data: LayoverRestPeriod[] | null; error: string | null }> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('layover_rest_periods')
       .select('*')
       .eq('user_id', userId)
@@ -288,10 +294,11 @@ export async function getLayoverRestPeriods(
 export async function deleteLayoverRestPeriods(
   userId: string,
   month: number,
-  year: number
+  year: number,
+  client: SupabaseClient = supabase
 ): Promise<{ error: string | null }> {
   try {
-    const { error } = await supabase
+    const { error } = await client
       .from('layover_rest_periods')
       .delete()
       .eq('user_id', userId)
@@ -314,10 +321,11 @@ export async function deleteLayoverRestPeriods(
 export async function deleteMonthlyCalculation(
   userId: string,
   month: number,
-  year: number
+  year: number,
+  client: SupabaseClient = supabase
 ): Promise<{ deleted: boolean; error: string | null }> {
   try {
-    const { error } = await supabase
+    const { error } = await client
       .from('monthly_calculations')
       .delete()
       .eq('user_id', userId)
@@ -342,10 +350,11 @@ export async function getCalculationSummary(
   startMonth: number,
   startYear: number,
   endMonth: number,
-  endYear: number
+  endYear: number,
+  client: SupabaseClient = supabase
 ): Promise<{ data: MonthlyCalculation[] | null; error: string | null }> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('monthly_calculations')
       .select('*')
       .eq('user_id', userId)
