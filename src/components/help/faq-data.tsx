@@ -21,12 +21,6 @@ export const faqCategories: FAQCategory[] = [
         ),
       },
       {
-        question: 'Who is Skywage for?',
-        answer: (
-          <p>Skywage is designed exclusively for Flydubai Cabin Crew Members (CCM) and Senior Cabin Crew Members (SCCM). The salary rules, rates, and roster format are all configured for Flydubai. Other airlines and roles are not currently supported.</p>
-        ),
-      },
-      {
         question: 'Is my data private?',
         answer: (
           <p>Yes. Your roster data and salary figures are only visible to you. The only exception is the Friends feature, where you choose to share a roster comparison with specific friends you&apos;ve connected with.</p>
@@ -35,7 +29,13 @@ export const faqCategories: FAQCategory[] = [
       {
         question: 'Is Skywage affiliated with any airline?',
         answer: (
-          <p>No. Skywage is an independent tool built by crew, for crew.</p>
+          <p>No. Skywage is an independent tool built by aviation professionals.</p>
+        ),
+      },
+      {
+        question: "Can I use Skywage if my airline isn't Flydubai?",
+        answer: (
+          <p>Not currently. Support for other airlines may come in the future.</p>
         ),
       },
     ],
@@ -67,42 +67,25 @@ export const faqCategories: FAQCategory[] = [
           <div className="space-y-2">
             <p>The most common causes are:</p>
             <ul className="list-disc pl-5 space-y-1">
-              <li>The file isn&apos;t a genuine Flydubai roster export (wrong format or header)</li>
+              <li>The file isn&apos;t a genuine roster export file (wrong format or header)</li>
               <li>The file is empty or corrupted</li>
               <li>The month/year couldn&apos;t be detected from the file</li>
               <li>The file is larger than 10 MB</li>
             </ul>
-            <p>The error message will tell you specifically what went wrong. If the issue persists, try re-exporting from the eCrew portal.</p>
+            <p>If the issue persists, try re-exporting from the eCrew portal or contacting us.</p>
           </div>
         ),
       },
-    ],
-  },
-  {
-    title: 'Adding Flights Manually',
-    items: [
       {
-        question: 'How do I add a flight manually?',
+        question: 'Can I undo a roster upload?',
         answer: (
-          <p>Click <strong>Add Flight</strong> on the dashboard. Fill in the date, duty type, flight numbers, sectors, and report/debrief times. Skywage shows a live pay preview as you type, so you can verify before saving.</p>
+          <p>Not automatically, but you can delete individual flights from the dashboard or re-upload the same file. If you replaced an existing month&apos;s data by mistake, you&apos;ll need to re-upload the correct file or add the missing flights manually.</p>
         ),
       },
       {
-        question: 'What format should flight numbers be in?',
+        question: 'I uploaded my roster but some flights are missing. Why?',
         answer: (
-          <p>Flydubai flight numbers only — e.g., <code>FZ549</code> or <code>FZ1, FZ2</code> for multi-leg duties. The <code>FZ</code> prefix is required.</p>
-        ),
-      },
-      {
-        question: 'What format should sectors be in?',
-        answer: (
-          <p>IATA code pairs separated by a dash — e.g., <code>DXB-ZAG</code> or <code>DXB-ZAG-DXB</code> for a turnaround. Skywage validates the format as you type.</p>
-        ),
-      },
-      {
-        question: 'Can I add multiple flights at once?',
-        answer: (
-          <p>Yes. After saving a flight, you can immediately add the next one without closing the form.</p>
+          <p>The system reads the standard roster export format. If a row in the file has an unrecognised format or is missing required fields (date, times), it may be skipped. Check the upload error details for specifics.</p>
         ),
       },
     ],
@@ -131,37 +114,7 @@ export const faqCategories: FAQCategory[] = [
       {
         question: 'Can my friends see my salary figures?',
         answer: (
-          <p>The comparison grid shows duty type and flight pay per duty. Your full monthly total and personal salary breakdown are not shared.</p>
-        ),
-      },
-    ],
-  },
-  {
-    title: 'Statistics',
-    items: [
-      {
-        question: 'What does the Statistics page show?',
-        answer: (
-          <div className="space-y-2">
-            <p>Three main views:</p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li><strong>YTD Earnings</strong> — cumulative salary for the year with a line chart and year-over-year comparison</li>
-              <li><strong>Monthly Comparison</strong> — how your current month stacks up against previous months (earnings, hours, flight count)</li>
-              <li><strong>Duty Types Breakdown</strong> — which duty types earned you the most, with an efficiency metric (AED per hour) to show which duties are most profitable</li>
-            </ul>
-          </div>
-        ),
-      },
-      {
-        question: 'Can I compare across years?',
-        answer: (
-          <p>Yes. The year selector on the Statistics page lets you switch between any year that has data. The YTD card also shows the change vs the previous year.</p>
-        ),
-      },
-      {
-        question: 'Why is a month missing from my statistics?',
-        answer: (
-          <p>Statistics are only generated for months where you have flight data. If a month is empty, upload your roster or add flights for it.</p>
+          <p>No, your full monthly total and personal salary breakdown are not shared. The grid shows only duty type.</p>
         ),
       },
     ],
@@ -194,51 +147,9 @@ export const faqCategories: FAQCategory[] = [
         ),
       },
       {
-        question: 'How do I delete my account?',
+        question: 'Can I delete my account?',
         answer: (
-          <p>Go to <strong>Settings &rarr; Profile</strong> and scroll to the bottom. Select <strong>Delete Account</strong>. This is permanent and will remove all your data.</p>
-        ),
-      },
-    ],
-  },
-  {
-    title: 'Troubleshooting',
-    items: [
-      {
-        question: 'My salary looks lower than expected. What should I check?',
-        answer: (
-          <div className="space-y-2">
-            <ol className="list-decimal pl-5 space-y-1">
-              <li>Check your position is correct for that month (Settings &rarr; Profile)</li>
-              <li>Check your position history if you were promoted during the year</li>
-              <li>Look for any duties classified as unpaid types (SBY, rest, leave)</li>
-              <li>Check for missing flights — an incomplete roster will give an incomplete total</li>
-            </ol>
-          </div>
-        ),
-      },
-      {
-        question: 'A flight is showing the wrong duty type. Can I fix it?',
-        answer: (
-          <p>Yes. Click the edit icon on any flight in the dashboard table. You can change the duty type, times, and other details. The salary recalculates immediately on save.</p>
-        ),
-      },
-      {
-        question: 'I uploaded my roster but some flights are missing. Why?',
-        answer: (
-          <p>The parser reads the standard Flydubai roster export format. If a row in the file has an unrecognised format or is missing required fields (date, times), it may be skipped. Check the upload error details for specifics.</p>
-        ),
-      },
-      {
-        question: 'Can I undo a roster upload?',
-        answer: (
-          <p>Not automatically, but you can delete individual flights from the dashboard or re-upload the same file. If you replaced an existing month&apos;s data by mistake, you&apos;ll need to re-upload the correct file or add the missing flights manually.</p>
-        ),
-      },
-      {
-        question: "Can I use Skywage if my airline isn't Flydubai?",
-        answer: (
-          <p>Not currently. The salary rules, rates, and roster format are configured specifically for Flydubai. Support for other airlines may come in the future.</p>
+          <p>Yes. Go to <strong>Settings &rarr; Profile</strong> and scroll to the bottom. Select <strong>Delete Account</strong>. This is permanent and will remove all your data.</p>
         ),
       },
     ],
