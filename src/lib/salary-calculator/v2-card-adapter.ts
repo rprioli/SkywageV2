@@ -2,10 +2,13 @@
  * V2 Card Data Adapter
  * Maps FlightDuty objects into the pre-formatted props expected by v2 glassmorphic card components.
  * Pure functions — no side effects, no hooks, no database calls.
+ *
+ * Web-specific: uses React for buildTimesNode and component prop types.
+ * For platform-agnostic data mapping, see v2-card-data-mapper.ts.
  */
 
 import React from 'react';
-import { FlightDuty, Sector, TimeValue, DutyType } from '@/types/salary-calculator';
+import { FlightDuty, Sector, TimeValue } from '@/types/salary-calculator';
 import type {
   TurnaroundCardV2Props,
   TurnaroundDestination,
@@ -18,32 +21,20 @@ import { isDoubleSectorTurnaroundPattern, extractTurnaroundDestinations, extract
 import { formatCurrency, formatDutyHours } from './card-data-mapper';
 import { formatTime, getDutyTypeConfig, parseSectors } from '@/components/salary-calculator/flight-duty-card/utils';
 import { lookupCity } from './iata-city-lookup';
+import {
+  formatDateShort,
+  formatBlockMinutes,
+  effectiveBlockMinutes,
+  DUTY_TYPE_TAGS,
+  DUTY_LABEL,
+} from './v2-card-data-mapper';
+
+// Re-export pure helpers so existing imports from this module keep working
+export { formatDateShort, formatBlockMinutes } from './v2-card-data-mapper';
 
 const DXB_CITY = lookupCity('DXB');
 
-// ─── Shared helpers ─────────────────────────────────────────────────────────
-
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-/** Formats a Date to short display format: "27 Mar" */
-export function formatDateShort(date: Date): string {
-  return `${date.getDate()} ${MONTH_NAMES[date.getMonth()]}`;
-}
-
-/** Formats block minutes to display string: "2h 15m" */
-export function formatBlockMinutes(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return `${h}h ${m.toString().padStart(2, '0')}m`;
-}
-
-/** Sums all block minutes from sector details, halving DHD sectors */
-function effectiveBlockMinutes(sectorDetails: Sector[]): number {
-  return sectorDetails.reduce((sum, s) => {
-    if (s.blockMinutes == null) return sum;
-    return sum + (s.isDeadhead ? Math.round(s.blockMinutes / 2) : s.blockMinutes);
-  }, 0);
-}
+// ─── Web-specific helpers ───────────────────────────────────────────────────
 
 /** Returns the outstation (non-DXB) airport from a layover flight's sectors */
 function getLayoverDestination(sectors: string[]): string {
@@ -266,36 +257,6 @@ function buildLayoverSectorData(duty: FlightDuty, isOutbound: boolean): LayoverS
 }
 
 // ─── Simple duty mapper ─────────────────────────────────────────────────────
-
-/** Maps non-payable duty types to tag arrays */
-const DUTY_TYPE_TAGS: Partial<Record<DutyType, (duty: FlightDuty) => string[]>> = {
-  asby: (d) => ['Airport Standby', `${formatDutyHours(d.dutyHours)} Fixed`],
-  sby: () => ['Home Standby'],
-  recurrent: (d) => ['Recurrent Training', `${formatDutyHours(d.dutyHours)} Fixed`],
-  business_promotion: (d) => ['Business Promotion', `${formatDutyHours(d.dutyHours)} Duty`],
-  off: (d) => {
-    const od = d.originalData as { duties?: string; details?: string } | undefined;
-    const text = `${od?.duties ?? ''} ${od?.details ?? ''}`.toUpperCase();
-    return text.includes('ADDITIONAL DAY OFF') ? ['Additional Day Off'] : ['Day Off'];
-  },
-  rest: () => ['Rest Day'],
-  annual_leave: () => ['Annual Leave'],
-  sick: () => ['Sick Leave'],
-  layover: (d) => ['Layover', d.sectors.join(' \u2192 ')],
-};
-
-/** Label abbreviations for the v2 card title */
-const DUTY_LABEL: Partial<Record<DutyType, string>> = {
-  asby: 'ASBY',
-  sby: 'SBY',
-  recurrent: 'REC',
-  business_promotion: 'BP',
-  off: 'OFF',
-  rest: 'REST',
-  annual_leave: 'AL',
-  sick: 'SICK',
-  layover: 'LYR',
-};
 
 export function mapSimpleDutyToV2Props(duty: FlightDuty): SimpleDutyCardV2Props {
   const config = getDutyTypeConfig(duty.dutyType);

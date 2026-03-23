@@ -5,6 +5,7 @@
  */
 
 import { supabase, Database } from '@/lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { AuditTrailEntry } from '@/types/salary-calculator';
 
 // Database types
@@ -45,12 +46,13 @@ function rowToAuditTrailEntry(row: AuditTrailRow): AuditTrailEntry {
  * Creates an audit trail entry
  */
 export async function createAuditTrailEntry(
-  entry: AuditTrailEntry
+  entry: AuditTrailEntry,
+  client: SupabaseClient = supabase
 ): Promise<{ data: AuditTrailEntry | null; error: string | null }> {
   try {
     const insertData = auditTrailToInsert(entry);
-    
-    const { data, error } = await supabase
+
+    const { data, error } = await client
       .from('flight_audit_trail')
       .insert(insertData)
       .select()
@@ -71,10 +73,11 @@ export async function createAuditTrailEntry(
  */
 export async function getFlightAuditTrail(
   flightId: string,
-  userId: string
+  userId: string,
+  client: SupabaseClient = supabase
 ): Promise<{ data: AuditTrailEntry[] | null; error: string | null }> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('flight_audit_trail')
       .select('*')
       .eq('flight_id', flightId)
@@ -99,10 +102,11 @@ export async function getUserAuditTrail(
   userId: string,
   startDate?: Date,
   endDate?: Date,
-  limit: number = 100
+  limit: number = 100,
+  client: SupabaseClient = supabase
 ): Promise<{ data: AuditTrailEntry[] | null; error: string | null }> {
   try {
-    let query = supabase
+    let query = client
       .from('flight_audit_trail')
       .select('*')
       .eq('user_id', userId);
@@ -136,14 +140,15 @@ export async function getUserAuditTrail(
 export async function getMonthlyAuditTrail(
   userId: string,
   month: number,
-  year: number
+  year: number,
+  client: SupabaseClient = supabase
 ): Promise<{ data: AuditTrailEntry[] | null; error: string | null }> {
   try {
     // Calculate date range for the month
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);
 
-    return await getUserAuditTrail(userId, startDate, endDate);
+    return await getUserAuditTrail(userId, startDate, endDate, 100, client);
   } catch {
     return { data: null, error: 'Error fetching monthly audit trail' };
   }
@@ -155,18 +160,19 @@ export async function getMonthlyAuditTrail(
 export async function getAuditTrailStats(
   userId: string,
   month?: number,
-  year?: number
-): Promise<{ 
+  year?: number,
+  client: SupabaseClient = supabase
+): Promise<{
   data: {
     totalChanges: number;
     createdCount: number;
     deletedCount: number;
     lastActivity?: Date;
   } | null;
-  error: string | null 
+  error: string | null
 }> {
   try {
-    let query = supabase
+    let query = client
       .from('flight_audit_trail')
       .select('action, created_at')
       .eq('user_id', userId);
@@ -205,13 +211,14 @@ export async function getAuditTrailStats(
  */
 export async function cleanupAuditTrail(
   userId: string,
-  olderThanDays: number = 365
+  olderThanDays: number = 365,
+  client: SupabaseClient = supabase
 ): Promise<{ deletedCount: number; error: string | null }> {
   try {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('flight_audit_trail')
       .delete()
       .eq('user_id', userId)
@@ -233,8 +240,9 @@ export async function cleanupAuditTrail(
  */
 export async function getRecentActivity(
   userId: string,
-  limit: number = 10
-): Promise<{ 
+  limit: number = 10,
+  client: SupabaseClient = supabase
+): Promise<{
   data: {
     id: string;
     action: 'created' | 'updated' | 'deleted';
@@ -242,11 +250,11 @@ export async function getRecentActivity(
     changeReason?: string;
     createdAt: Date;
     summary: string;
-  }[] | null; 
-  error: string | null 
+  }[] | null;
+  error: string | null
 }> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('flight_audit_trail')
       .select('id, flight_id, action, change_reason, created_at, new_data, old_data')
       .eq('user_id', userId)

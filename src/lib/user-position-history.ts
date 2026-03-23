@@ -10,6 +10,7 @@
  */
 
 import { supabase } from './supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { updateProfile } from './db';
 import { Position } from '@/types/salary-calculator';
 
@@ -75,10 +76,11 @@ const rowToEntry = (row: HistoryRow): PositionHistoryEntry => ({
 export async function getUserPositionForMonth(
   userId: string,
   year: number,
-  month: number
+  month: number,
+  client: SupabaseClient = supabase
 ): Promise<Position> {
   // Query: latest history entry with effective date <= (year, month)
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from('user_position_history')
     .select('*')
     .eq('user_id', userId)
@@ -95,7 +97,7 @@ export async function getUserPositionForMonth(
   }
 
   // Fallback: read current position from profiles table (data integrity guard)
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile, error: profileError } = await client
     .from('profiles')
     .select('position')
     .eq('id', userId)
@@ -122,9 +124,10 @@ export async function getUserPositionForMonth(
  * (oldest first). Used to render the Role History UI.
  */
 export async function getUserPositionTimeline(
-  userId: string
+  userId: string,
+  client: SupabaseClient = supabase
 ): Promise<{ data: PositionHistoryEntry[]; error: string | null }> {
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from('user_position_history')
     .select('*')
     .eq('user_id', userId)
@@ -151,10 +154,11 @@ export async function addPositionChange(
   userId: string,
   position: Position,
   effectiveFromYear: number,
-  effectiveFromMonth: number
+  effectiveFromMonth: number,
+  client: SupabaseClient = supabase
 ): Promise<AddPositionChangeResult> {
   // Upsert: if the user already has an entry for this exact month, update it
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from('user_position_history')
     .upsert(
       {
@@ -173,7 +177,7 @@ export async function addPositionChange(
   }
 
   // Sync profiles.position to the latest effective position for the current month
-  await syncProfilesPosition(userId);
+  await syncProfilesPosition(userId, client);
 
   return {
     success: true,
@@ -190,14 +194,15 @@ export async function addPositionChange(
 export async function updatePositionChange(
   id: string,
   userId: string,
-  updates: { position?: Position; effectiveFromYear?: number; effectiveFromMonth?: number }
+  updates: { position?: Position; effectiveFromYear?: number; effectiveFromMonth?: number },
+  client: SupabaseClient = supabase
 ): Promise<AddPositionChangeResult> {
   const updatePayload: Record<string, unknown> = {};
   if (updates.position !== undefined) updatePayload.position = updates.position;
   if (updates.effectiveFromYear !== undefined) updatePayload.effective_from_year = updates.effectiveFromYear;
   if (updates.effectiveFromMonth !== undefined) updatePayload.effective_from_month = updates.effectiveFromMonth;
 
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from('user_position_history')
     .update(updatePayload)
     .eq('id', id)
@@ -210,7 +215,7 @@ export async function updatePositionChange(
   }
 
   // Sync profiles.position to the latest effective position for the current month
-  await syncProfilesPosition(userId);
+  await syncProfilesPosition(userId, client);
 
   return {
     success: true,
@@ -227,10 +232,11 @@ export async function updatePositionChange(
  */
 export async function deletePositionChange(
   id: string,
-  userId: string
+  userId: string,
+  client: SupabaseClient = supabase
 ): Promise<DeletePositionChangeResult> {
   // Fetch all entries to check if this is the only one
-  const { data: allEntries, error: fetchError } = await supabase
+  const { data: allEntries, error: fetchError } = await client
     .from('user_position_history')
     .select('id')
     .eq('user_id', userId);
@@ -246,7 +252,7 @@ export async function deletePositionChange(
     };
   }
 
-  const { error } = await supabase
+  const { error } = await client
     .from('user_position_history')
     .delete()
     .eq('id', id)
@@ -257,7 +263,7 @@ export async function deletePositionChange(
   }
 
   // Sync profiles.position to the latest effective position for the current month
-  await syncProfilesPosition(userId);
+  await syncProfilesPosition(userId, client);
 
   return { success: true, error: null };
 }
@@ -273,13 +279,16 @@ export async function deletePositionChange(
  * This keeps the dashboard, friends feature, and all display components consistent
  * with the timeline without requiring callers to think about it.
  */
-export async function syncProfilesPosition(userId: string): Promise<void> {
+export async function syncProfilesPosition(
+  userId: string,
+  client: SupabaseClient = supabase
+): Promise<void> {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
 
   try {
-    const currentPosition = await getUserPositionForMonth(userId, currentYear, currentMonth);
+    const currentPosition = await getUserPositionForMonth(userId, currentYear, currentMonth, client);
     await updateProfile(userId, { position: currentPosition });
   } catch {
     // Non-fatal: if sync fails, the next page load will still use the correct
@@ -302,9 +311,10 @@ export async function syncProfilesPosition(userId: string): Promise<void> {
 export async function getAffectedMonthsFrom(
   userId: string,
   effectiveYear: number,
-  effectiveMonth: number
+  effectiveMonth: number,
+  client: SupabaseClient = supabase
 ): Promise<Array<{ month: number; year: number }>> {
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from('monthly_calculations')
     .select('month, year')
     .eq('user_id', userId)

@@ -5,6 +5,7 @@
  */
 
 import { supabase, Database } from '@/lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { FlightDuty, Sector } from '@/types/salary-calculator';
 import { formatTimeValue, parseTimeString } from '@/lib/salary-calculator';
 
@@ -127,12 +128,13 @@ export function rowToFlightDuty(row: FlightRow): FlightDuty {
  */
 export async function createFlightDuty(
   flightDuty: FlightDuty,
-  userId: string
+  userId: string,
+  client: SupabaseClient = supabase
 ): Promise<{ data: FlightDuty | null; error: string | null }> {
   try {
     const insertData = flightDutyToInsert(flightDuty, userId);
-    
-    const { data, error } = await supabase
+
+    const { data, error } = await client
       .from('flights')
       .insert(insertData)
       .select()
@@ -153,11 +155,12 @@ export async function createFlightDuty(
  */
 export async function createFlightDuties(
   flightDuties: FlightDuty[],
-  userId: string
+  userId: string,
+  client: SupabaseClient = supabase
 ): Promise<{ data: FlightDuty[] | null; error: string | null }> {
   try {
     const insertData = flightDuties.map(duty => flightDutyToInsert(duty, userId));
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('flights')
       .insert(insertData)
       .select();
@@ -179,10 +182,11 @@ export async function createFlightDuties(
 export async function getFlightDutiesByMonth(
   userId: string,
   month: number,
-  year: number
+  year: number,
+  client: SupabaseClient = supabase
 ): Promise<{ data: FlightDuty[] | null; error: string | null }> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('flights')
       .select('*')
       .eq('user_id', userId)
@@ -218,7 +222,8 @@ export async function getFlightDutiesByMonthWithLookahead(
   userId: string,
   month: number,
   year: number,
-  lookaheadDays: number = 3
+  lookaheadDays: number = 3,
+  client: SupabaseClient = supabase
 ): Promise<{ data: FlightDuty[] | null; error: string | null }> {
   try {
     // Calculate month start and end dates in UTC
@@ -233,7 +238,7 @@ export async function getFlightDutiesByMonthWithLookahead(
     const startDateStr = monthStart.toISOString().split('T')[0];
     const endDateStr = lookaheadEnd.toISOString().split('T')[0];
     
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('flights')
       .select('*')
       .eq('user_id', userId)
@@ -266,10 +271,11 @@ export async function getFlightDutiesByMonthWithLookahead(
  */
 export async function getFlightDutiesByYear(
   userId: string,
-  year: number
+  year: number,
+  client: SupabaseClient = supabase
 ): Promise<{ data: FlightDuty[] | null; error: string | null }> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('flights')
       .select('*')
       .eq('user_id', userId)
@@ -301,10 +307,11 @@ export async function getFlightDutiesByYear(
  */
 export async function getFlightDutyById(
   flightId: string,
-  userId: string
+  userId: string,
+  client: SupabaseClient = supabase
 ): Promise<{ data: FlightDuty | null; error: string | null }> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('flights')
       .select('*')
       .eq('id', flightId)
@@ -337,11 +344,12 @@ export async function updateFlightDuty(
     isCrossDay: boolean;
   },
   userId: string,
-  changeReason?: string
+  changeReason?: string,
+  client: SupabaseClient = supabase
 ): Promise<{ data: FlightDuty | null; error: string | null }> {
   try {
     // Get current data for audit trail and original data preservation
-    const { data: currentData, error: fetchError } = await getFlightDutyById(flightId, userId);
+    const { data: currentData, error: fetchError } = await getFlightDutyById(flightId, userId, client);
 
     if (fetchError || !currentData) {
       return { data: null, error: fetchError || 'Flight duty not found' };
@@ -364,7 +372,7 @@ export async function updateFlightDuty(
     const debriefTimeStr = formatTimeValue(updates.debriefTime);
 
     // Update database with both old and new schema columns
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('flights')
       .update({
         // Old schema columns (for backward compatibility)
@@ -400,7 +408,7 @@ export async function updateFlightDuty(
       oldData: currentData,
       newData: rowToFlightDuty(data),
       changeReason
-    });
+    }, client);
 
     return { data: rowToFlightDuty(data), error: null };
   } catch (error) {
@@ -415,11 +423,12 @@ export async function updateFlightDuty(
 export async function revertFlightDuty(
   flightId: string,
   userId: string,
-  changeReason?: string
+  changeReason?: string,
+  client: SupabaseClient = supabase
 ): Promise<{ data: FlightDuty | null; error: string | null }> {
   try {
     // Get current data
-    const { data: currentData, error: fetchError } = await getFlightDutyById(flightId, userId);
+    const { data: currentData, error: fetchError } = await getFlightDutyById(flightId, userId, client);
 
     if (fetchError || !currentData) {
       return { data: null, error: fetchError || 'Flight duty not found' };
@@ -444,7 +453,7 @@ export async function revertFlightDuty(
     const debriefTimeStr = formatTimeValue(original.debriefTime);
 
     // Restore original values
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('flights')
       .update({
         // Old schema columns (for backward compatibility)
@@ -480,7 +489,7 @@ export async function revertFlightDuty(
       oldData: currentData,
       newData: rowToFlightDuty(data),
       changeReason: changeReason || 'Reverted to original values'
-    });
+    }, client);
 
     return { data: rowToFlightDuty(data), error: null };
   } catch (error) {
@@ -494,13 +503,14 @@ export async function revertFlightDuty(
 export async function deleteFlightDuty(
   flightId: string,
   userId: string,
-  changeReason?: string
+  changeReason?: string,
+  client: SupabaseClient = supabase
 ): Promise<{ error: string | null }> {
   try {
     // Get current data for audit trail
-    const { data: currentData } = await getFlightDutyById(flightId, userId);
+    const { data: currentData } = await getFlightDutyById(flightId, userId, client);
 
-    const { error } = await supabase
+    const { error } = await client
       .from('flights')
       .delete()
       .eq('id', flightId)
@@ -518,7 +528,7 @@ export async function deleteFlightDuty(
         action: 'deleted',
         oldData: currentData,
         changeReason
-      });
+      }, client);
     }
 
     return { error: null };
@@ -533,10 +543,11 @@ export async function deleteFlightDuty(
 export async function checkExistingFlightData(
   userId: string,
   month: number,
-  year: number
+  year: number,
+  client: SupabaseClient = supabase
 ): Promise<{ exists: boolean; count: number; error: string | null }> {
   try {
-    const { error, count } = await supabase
+    const { error, count } = await client
       .from('flights')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
@@ -569,10 +580,11 @@ export async function checkExistingFlightData(
 export async function deleteCrossMonthPairingFlights(
   userId: string,
   month: number,
-  year: number
+  year: number,
+  client: SupabaseClient = supabase
 ): Promise<{ error: string | null }> {
   try {
-    const { error } = await supabase
+    const { error } = await client
       .from('flights')
       .delete()
       .eq('user_id', userId)
@@ -596,11 +608,12 @@ export async function deleteFlightDataByMonth(
   userId: string,
   month: number,
   year: number,
-  changeReason?: string
+  changeReason?: string,
+  client: SupabaseClient = supabase
 ): Promise<{ deletedCount: number; error: string | null }> {
   try {
     // First get all flights for audit trail
-    const { data: existingFlights } = await supabase
+    const { data: existingFlights } = await client
       .from('flights')
       .select('*')
       .eq('user_id', userId)
@@ -608,7 +621,7 @@ export async function deleteFlightDataByMonth(
       .eq('year', year);
 
     // Delete all flights for the month
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('flights')
       .delete()
       .eq('user_id', userId)
@@ -629,7 +642,7 @@ export async function deleteFlightDataByMonth(
           action: 'deleted',
           oldData: rowToFlightDuty(flight),
           changeReason: changeReason || `Monthly roster replacement - ${month}/${year}`
-        })
+        }, client)
       );
 
       await Promise.all(auditPromises);
@@ -660,11 +673,12 @@ export async function updateFlightDutyComputedValues(
     hourlyRateUsed?: number;
   },
   userId: string,
-  changeReason?: string
+  changeReason?: string,
+  client: SupabaseClient = supabase
 ): Promise<{ success: boolean; error: string | null }> {
   try {
     // Get current data for audit trail
-    const { data: currentData, error: fetchError } = await getFlightDutyById(flightId, userId);
+    const { data: currentData, error: fetchError } = await getFlightDutyById(flightId, userId, client);
 
     if (fetchError || !currentData) {
       return { success: false, error: fetchError || 'Flight duty not found' };
@@ -685,7 +699,7 @@ export async function updateFlightDutyComputedValues(
     if (updates.positionUsed !== undefined) updatePayload.position_used = updates.positionUsed;
     if (updates.hourlyRateUsed !== undefined) updatePayload.hourly_rate_used = updates.hourlyRateUsed;
 
-    const { error } = await supabase
+    const { error } = await client
       .from('flights')
       .update(updatePayload)
       .eq('id', flightId)
@@ -703,7 +717,7 @@ export async function updateFlightDutyComputedValues(
       oldData: { dutyHours: currentData.dutyHours, flightPay: currentData.flightPay },
       newData: updates,
       changeReason: changeReason || 'System recalculation'
-    });
+    }, client);
 
     return { success: true, error: null };
   } catch (error) {
@@ -721,9 +735,9 @@ async function createAuditTrailEntry(entry: {
   oldData?: unknown;
   newData?: unknown;
   changeReason?: string;
-}): Promise<void> {
+}, client: SupabaseClient = supabase): Promise<void> {
   try {
-    await supabase
+    await client
       .from('flight_audit_trail')
       .insert({
         flight_id: entry.flightId,

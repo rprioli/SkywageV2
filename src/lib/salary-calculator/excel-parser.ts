@@ -23,29 +23,33 @@ import { parseExcelDate } from './date-utilities';
 // Re-export types for convenience
 export type { FlexibleExcelStructure };
 
+/** Function type for reading a File into an ArrayBuffer */
+export type ReadFileAsArrayBuffer = (file: File) => Promise<ArrayBuffer>;
+
+/** Default browser implementation using FileReader API */
+export const browserReadFileAsArrayBuffer: ReadFileAsArrayBuffer = (file: File): Promise<ArrayBuffer> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target?.result as ArrayBuffer);
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsArrayBuffer(file);
+  });
+};
+
 /**
  * Reads Excel file and returns workbook
  */
-export function readExcelFile(file: File): Promise<XLSX.WorkBook> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        resolve(workbook);
-      } catch (error) {
-        reject(new Error(`Failed to read Excel file: ${(error as Error).message}`));
-      }
-    };
-    
-    reader.onerror = () => {
-      reject(new Error('Failed to read file'));
-    };
-    
-    reader.readAsArrayBuffer(file);
-  });
+export async function readExcelFile(
+  file: File,
+  readFile: ReadFileAsArrayBuffer = browserReadFileAsArrayBuffer
+): Promise<XLSX.WorkBook> {
+  try {
+    const arrayBuffer = await readFile(file);
+    const data = new Uint8Array(arrayBuffer);
+    return XLSX.read(data, { type: 'array' });
+  } catch (error) {
+    throw new Error(`Failed to read Excel file: ${(error as Error).message}`);
+  }
 }
 
 /**
