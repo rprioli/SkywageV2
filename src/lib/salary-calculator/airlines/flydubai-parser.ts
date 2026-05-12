@@ -11,7 +11,7 @@ import {
   FLYDUBAI_TIME_FORMATS,
   isValidFlydubaiFlightNumber,
   isValidFlydubaiSector
-} from './flydubai-config';
+} from './flydubai-rules';
 
 export class FlydubaiCSVParser implements CSVParser {
   

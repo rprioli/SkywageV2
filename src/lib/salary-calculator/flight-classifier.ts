@@ -6,7 +6,7 @@
 
 import { FlightClassificationResult, Position, TimeValue, DutyType } from '@/types/salary-calculator';
 import { calculateRecurrentPay, calculateAsbyPay, calculateFlightPay, FLYDUBAI_RATES } from './calculation-engine';
-import { FLYDUBAI_BUSINESS_RULES } from './airlines/flydubai-config';
+import { FLYDUBAI_BUSINESS_RULES } from './airlines/flydubai-rules';
 import { calculateDuration } from './time-calculator';
 
 /**

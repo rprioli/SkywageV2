@@ -89,8 +89,12 @@ export {
 } from './csv-parser';
 
 // Flydubai-specific configuration
+export { FLYDUBAI_CONFIG } from './airlines/flydubai-config';
+
+// Flydubai pure rules — constants + validators + helpers
+// (Split: pure leaf module the cyclic peers import without pulling in
+// `FlydubaiCSVParser`. Mirrors the skywage-mobile Phase 4 Slice 1 fix.)
 export {
-  FLYDUBAI_CONFIG,
   FLYDUBAI_CSV_COLUMNS,
   FLYDUBAI_CSV_VALIDATION,
   FLYDUBAI_FLIGHT_PATTERN,
@@ -106,7 +110,7 @@ export {
   isLikelyTurnaround,
   getFlydubaiRate,
   getFlydubaiMonthlyMinimums
-} from './airlines/flydubai-config';
+} from './airlines/flydubai-rules';
 
 // Flydubai CSV parser
 export { FlydubaiCSVParser } from './airlines/flydubai-parser';
