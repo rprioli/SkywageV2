@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated:** 1 July 2026
+**Last updated:** 20 October 2026
 **Effective date:** 1 July 2026
 
 This Privacy Policy explains how **Skywage** ("Skywage", "we", "us", or "our") collects, uses, shares, and protects your personal information when you use the Skywage mobile application (the "App").
@@ -27,6 +27,7 @@ A short summary of the most important points. The full detail is in the sections
 - We use this information **only** to provide the App's features — calculating your salary, syncing your data across your devices, the friends feature, and notifications.
 - **We do not use any analytics, advertising, or third-party tracking technologies. We do not sell or rent your personal data. We do not track you across other apps or websites.**
 - Your data is stored using **Supabase**, hosted on Amazon Web Services in **Mumbai, India**.
+- **eCrew Import is optional.** If you use it, your eCrew Friends & Family login is saved only on your phone and sent only to eCrew — never to Skywage. The roster it imports is saved to your Skywage account like any uploaded roster.
 - You can **edit or delete your data at any time**, including permanently deleting your entire account and all associated data from within the App.
 
 ---
@@ -50,7 +51,7 @@ When you register and set up your profile, we collect:
 
 ### 3.2 Roster and salary information
 
-This is the core data the App is built to process. When you upload a roster file (Excel/CSV) or enter duties manually, we collect and generate:
+This is the core data the App is built to process. When you upload a roster file (PDF or Excel), import a roster from eCrew (see **Section 3.6**), or enter duties manually, we collect and generate:
 
 - **Flight duty records** — dates, flight numbers, sectors, reporting and debriefing times, duty hours, and duty type (turnaround, layover, standby, etc.)
 - **Layover rest periods** and associated per-diem calculations
@@ -86,7 +87,19 @@ To make the App fast and usable offline, some information is stored locally on y
 
 This locally stored data stays on your device and is removed when you delete your account or sign out (tokens and cache are cleared).
 
-### 3.6 What we do NOT collect
+### 3.6 eCrew Import (optional)
+
+The App can import a month's roster directly from **eCrew**, the online crew roster system, instead of you uploading a roster file. eCrew Import is **optional**; nothing described here happens unless you use it. eCrew is a separate system: Skywage does not operate or control it, and is not affiliated with it.
+
+- **Your Friends & Family login only.** eCrew Import signs in with your eCrew **Friends & Family** login — your staff ID and Friends & Family password. It never uses, and never asks for, your main eCrew account. Do not enter your main account password.
+- **You sign in yourself, each time.** Every import opens eCrew's own sign-in page inside the App, with your login filled in, and **you tap eCrew's Log in button yourself**. The App never submits the sign-in for you. It keeps no eCrew cookies or session between imports.
+- **Only when you start it.** An import runs only when you start it, with the App open on your screen. The App never signs in to eCrew, or reads your eCrew roster, in the background, on a schedule, or automatically.
+- **Where your login is kept.** Once eCrew accepts your login, it is saved **only on your phone**, in the iOS Keychain, and tied to your Skywage account; it can only be read while your phone is unlocked. It is not restored to a new phone, including from a backup, and another Skywage account signing in on the same phone cannot use it.
+- **Who receives your login.** Your login is sent **only to eCrew**, to sign you in. It is **never sent to Skywage's servers** or to our service providers, and we never have access to it.
+- **What eCrew sends back.** eCrew's response is read **on your phone** and is never sent to Skywage's servers. From it, the App works out your duties (dates, flight numbers, sectors, and report and debrief times) and your pay, just as it does from an uploaded roster file. **Those duties and pay calculations are saved to your Skywage account and synced across your devices like any other roster** (see **Section 3.2**), and you can edit or delete them the same way.
+- **Removing your login.** Your saved login is deleted from your phone when you tap **Disconnect eCrew** (Profile → eCrew Import), when you sign out of the App, and when you delete your account. Disconnecting does not delete rosters you have already imported.
+
+### 3.7 What we do NOT collect
 
 We want to be explicit about this. The App does **not**:
 
@@ -107,6 +120,7 @@ We use your personal information solely to operate and improve the App, specific
 - Calculate your salary, allowances, and per-diem based on your roster and position
 - Store and sync your data across your devices in real time
 - Provide the friends feature, including searching by username and sharing roster/profile information you choose to share
+- Import your roster from eCrew, only when you start an import (see Section 3.6)
 - Send you notifications you have enabled (for example, friend requests)
 - Maintain the integrity, security, and recoverability of your data
 - Respond to your support requests and enforce our Terms of Service
@@ -141,11 +155,15 @@ When you connect with another user as a friend, you are choosing to share certai
 
 A friend **cannot** see your **email address** or your **nationality**. You control roster visibility at any time using the **hide roster from friends** setting, and you can remove a friend (unfriend) at any time.
 
-### 5.3 Legal and safety
+### 5.3 eCrew
+
+eCrew is not one of our service providers. When you use eCrew Import (see **Section 3.6**), your phone connects directly to eCrew and sends your Friends & Family login to eCrew to sign you in. eCrew's own terms and privacy practices apply to your eCrew login and to what eCrew records when you sign in.
+
+### 5.4 Legal and safety
 
 We may disclose information if required to do so by law, regulation, legal process, or governmental request, or where we believe disclosure is necessary to protect our rights, your safety or the safety of others, or to investigate fraud or security issues.
 
-### 5.4 Business transfers
+### 5.5 Business transfers
 
 If Skywage is involved in a merger, acquisition, or sale of assets, your information may be transferred as part of that transaction. We will notify you of any such change and of any choices you may have.
 
@@ -166,6 +184,7 @@ We keep your personal data for as long as your account is active and as needed t
 - **Account, profile, roster, and salary data** — retained until you delete it or delete your account
 - **Friends data** — retained until the friendship is removed or an account is deleted
 - **Push tokens** — removed when you sign out of a device or disable notifications
+- **eCrew login** — kept on your phone until you disconnect eCrew, sign out, or delete your account
 - **Local on-device data** — cleared when you sign out or delete your account
 
 When you delete your account, your data is permanently deleted as described in **Section 9**. We may retain limited records where we are legally required to do so, for the minimum period required.
@@ -188,6 +207,7 @@ You can exercise many of these rights directly in the App:
 - **Edit** your profile, position, name, username, and roster data at any time
 - **Control notifications** via the notifications setting and your device's system settings
 - **Control roster visibility** to friends via the "hide roster from friends" setting
+- **Disconnect eCrew** at any time, which deletes your saved eCrew login from your phone (Profile → eCrew Import)
 - **Delete your account** and all associated data (see Section 9)
 
 For any request you cannot complete in the App, or to ask a question about your rights, contact us at **support@skywage.ae** or via the in-app Contact Us form. We will respond within the timeframe required by applicable law. You also have the right to lodge a complaint with your local data protection authority.
@@ -203,7 +223,7 @@ You can permanently delete your account from within the App (Profile → Delete 
 - All of your friendships and friend requests
 - Your uploaded avatar and files
 
-Your local on-device cache is also wiped. This action is **irreversible**. If you have any difficulty deleting your account in the App, contact us at **support@skywage.ae** or via the in-app Contact Us form and we will action your request.
+Your local on-device cache is also wiped, and your saved eCrew login, if any, is deleted from your phone. This action is **irreversible**. If you have any difficulty deleting your account in the App, contact us at **support@skywage.ae** or via the in-app Contact Us form and we will action your request.
 
 ---
 
