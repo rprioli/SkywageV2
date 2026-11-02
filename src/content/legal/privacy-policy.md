@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated:** 20 October 2026
+**Last updated:** 2 November 2026
 **Effective date:** 1 July 2026
 
 This Privacy Policy explains how **Skywage** ("Skywage", "we", "us", or "our") collects, uses, shares, and protects your personal information when you use the Skywage mobile application (the "App").
@@ -40,7 +40,7 @@ We collect the following categories of personal information.
 
 When you register and set up your profile, we collect:
 
-- **Email address** (used to create and sign in to your account)
+- **Email address** (used to create and sign in to your account, and to send you a code if you reset your password)
 - **Password** (set by you; it is handled by our authentication provider and stored only in a securely hashed form — we never have access to your plaintext password)
 - **First name and last name** (optional)
 - **Username** (optional; used so friends can find and add you)
@@ -137,11 +137,12 @@ We do **not sell or rent** your personal data. We share information only in the 
 
 We rely on a small number of trusted service providers to run the App. They process data only on our instructions and only to provide their service to us:
 
-| Provider | Purpose | Data involved |
-| --- | --- | --- |
-| **Supabase** (hosted on AWS, Mumbai, India) | Authentication, database, file storage, and real-time sync — our core backend | All account, roster, salary, friends, and avatar data |
-| **Expo** (Expo push notification service) | Delivering push notifications to your device | Push token, device identifier, notification content |
-| **Apple Push Notification service (APNs)** and **Google Firebase Cloud Messaging (FCM)** | Operating-system push delivery on iOS and Android | Push token and notification payload |
+| Provider                                                                                 | Purpose                                                                       | Data involved                                         |
+| ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------- |
+| **Supabase** (hosted on AWS, Mumbai, India)                                              | Authentication, database, file storage, and real-time sync — our core backend | All account, roster, salary, friends, and avatar data |
+| **Resend**                                                                               | Sending the App's emails: password reset codes, security notices, and messages you send us through Contact Us | Your email address and the content of the email       |
+| **Expo** (Expo push notification service)                                                | Delivering push notifications to your device                                  | Push token, device identifier, notification content   |
+| **Apple Push Notification service (APNs)** and **Google Firebase Cloud Messaging (FCM)** | Operating-system push delivery on iOS and Android                             | Push token and notification payload                   |
 
 ### 5.2 Other users (the friends feature)
 
@@ -171,7 +172,7 @@ If Skywage is involved in a merger, acquisition, or sale of assets, your informa
 
 ## 6. Where your data is stored and international transfers
 
-Your data is stored and processed by Supabase on Amazon Web Services infrastructure located in the **`ap-south-1` region (Mumbai, India)**. Push notification infrastructure is operated by Expo, Apple, and Google and may process data in other countries.
+Your data is stored and processed by Supabase on Amazon Web Services infrastructure located in the **`ap-south-1` region (Mumbai, India)**. Push notification infrastructure is operated by Expo, Apple, and Google and may process data in other countries. Emails from the App, such as password reset codes, are sent through Resend, which processes them in the **United States**.
 
 If you are located in the United Arab Emirates, the European Economic Area, the United Kingdom, or elsewhere, this means your personal data is transferred to and stored in India. Where required by applicable law (including the UAE PDPL and the EU/UK GDPR), we rely on appropriate safeguards for these transfers and limit the data transferred to what is necessary to provide the App.
 
